@@ -13,9 +13,13 @@ the library is headonly library, basically you can copy to you project and use i
 
 
 ## build samples
+```shell
 
 ./setup.sh   # install asio fmt lib to deps directory, no need root permissions. 
+
 cmake . 
+
 make -j4 
 
+```
 
