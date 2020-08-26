@@ -25,3 +25,23 @@ make -j4
 
 ```
 
+
+
+## Tcp Server 
+
+create a tcp server , you need define a tcp session type,  with the session type , you can create the listener. 
+start it with the port. now you get a discard tcp server. 
+
+```cpp
+
+#include "knet.hpp"
+class TcpSession : public TcpConnection<TcpSession> {
+      public:
+
+}; 
+
+TcpListener<TcpSession> listener;
+listener.start(8899); 
+
+
+```
