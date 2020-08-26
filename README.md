@@ -5,6 +5,8 @@ Simple morden c++ network library wrapper based on asio standalone version , pro
 
 
 ## Build 
+it uses the std::string_view api for http parser, so we need c++17 to compile it. 
+
 the library contains a simple log library to print debug log. using fmt library to accelerate the log output.
 
 you can use "setup.sh" to install dependence lib into deps directory.   
