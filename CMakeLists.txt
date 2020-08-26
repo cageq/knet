@@ -21,6 +21,7 @@ include_directories("kcp")
 
 include_directories("${LIBPATH}/include")
 link_directories("${LIBPATH}/lib") 
+link_directories("deps/lib") 
 link_directories("/usr/local/lib") 
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
