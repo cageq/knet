@@ -8,16 +8,16 @@
 #include <string>
 #include <memory>
 #include <asio.hpp>
-#include "glog.hpp"
+#include "klog.hpp"
 #include "utils.hpp"
 #include "timer.hpp"
 #include "event_worker.hpp"
 
-namespace gnet {
+namespace knet {
 namespace udp {
 
 using asio::ip::udp;
-using namespace gnet::utils;
+using namespace knet::utils;
 using namespace std::chrono;
 
 using UdpSocketPtr = std::shared_ptr<udp::socket>;
@@ -39,7 +39,7 @@ public:
 	};
 
 	using TPtr = std::shared_ptr<T>;
-	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
+	using EventHandler = std::function<TPtr(TPtr, knet::NetEvent, const std::string & )>;
 	using Buffers = std::vector<std::string>;
 
 	static TPtr create() { return std::make_shared<T>(); }

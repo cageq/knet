@@ -22,7 +22,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 int main(int argc, char* argv[]) {
 
 	UdpListener<MyConnection> udpListener;
-	udpListener.start([](MyConnection::TPtr conn, NetEvent evt, std::string dv) {
+	udpListener.start([](MyConnection::TPtr conn, knet::NetEvent evt, const std::string &dv) {
 		dlog("received connection event {}", evt);
 		if (conn)
 		{

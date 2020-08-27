@@ -16,8 +16,7 @@ template <typename T, typename Worker = EventWorker>
 class UdpListener {
 public:
 	using TPtr = std::shared_ptr<T>;
-	//using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string  & )>;
-	using typename T::EventHandler; 
+	using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string  & )>;
 	using WorkerPtr = std::shared_ptr<Worker>;
 	UdpListener(WorkerPtr w = nullptr)
 		: worker(w) {
@@ -133,7 +132,7 @@ private:
 						// }
 					}
 					recv_buffer[bytes_recvd] = 0;
-					conn->on_package(std::string_view((const char*)recv_buffer, bytes_recvd));
+					conn->on_package(std::string((const char*)recv_buffer, bytes_recvd));
 
 					if (event_handler) {
 						event_handler(conn, EVT_RECV, {recv_buffer, bytes_recvd});

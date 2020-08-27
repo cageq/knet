@@ -100,10 +100,10 @@ target_link_libraries(kcpclient fmt )
 
  
 
-# add_executable(udpclient samples/udpclient.cpp  )
-# target_link_libraries(udpclient fmt)
-# add_executable(udpserver samples/udpserver.cpp  )
-# target_link_libraries(udpserver fmt)
+ add_executable(udpclient samples/udpclient.cpp  )
+ target_link_libraries(udpclient fmt)
+ add_executable(udpserver samples/udpserver.cpp  )
+ target_link_libraries(udpserver fmt)
 
 
 
