@@ -18,7 +18,7 @@
 #endif
 
 #ifndef DLEVEL
-#define DLEVEL 0
+#define DLEVEL 5
 #endif
 enum KLogLevel
 {
@@ -134,6 +134,11 @@ namespace klog
 		{
 		}
 
+		~KLog(){
+			if (buffer.size() > 0){
+				std::cout << fmt::to_string(buffer) ;
+			}
+		}
 		void add_sink(LogSinkPtr sink)
 		{
 			log_sinks.push_back(sink);
@@ -145,18 +150,41 @@ namespace klog
 		KLog &operator<<(StandardEndLine manip)
 		{
 			std::cout << fmt::to_string(buffer) << std::endl;
+			buffer.clear(); 
 			return *this;
 		}
+ 
+		template <class T> 
+		KLog& operator << (const T & log) {  
+			fmt::format_to(buffer, "{}", log);
+			if (buffer.size()> 1024)
+			{
+				flush(); 
+			} 
+			return *this; 
+		}
+		inline KLog & with_level(int lv){
+			level = lv; 
+			return *this; 
+		}
+
+		void flush(){
+			std::cout << fmt::to_string(buffer);
+			buffer.clear(); 
+		}
+ 
+
 		template <class... Args>
 		KLog &debug(Args... args)
 		{
 			if (level >= 3)
 			{
-				fmt::memory_buffer buf;
-				format_log_prefix(buf, args...);
+				// fmt::memory_buffer buf;
+				format_log_prefix(buffer, args...);
 				// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
-				fmt::print("{}[DEBUG] " + fmt::to_string(buf) + "{}\n", ANSI_COLOR_CYAN, args...,
+				fmt::print("{}[DEBUG] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, args...,
 						   ANSI_COLOR_RESET);
+				buffer.clear(); 
 			}
 			return *this;
 		}
@@ -170,6 +198,7 @@ namespace klog
 			}
 			fprintf(stdout, "\n");
 		}
+
 		template <class... Args>
 		KLog &debug_format(const std::string &fmt, Args... args)
 		{
@@ -186,6 +215,7 @@ namespace klog
 			}
 			return *this;
 		}
+
 		void write(int32_t level, const std::string &msg)
 		{
 			for (auto &sink : log_sinks)
@@ -199,11 +229,12 @@ namespace klog
 		{
 			if (level >= 2)
 			{
-				fmt::memory_buffer buf;
-				format_log_prefix(buf, args...);
+				// fmt::memory_buffer buf;
+				format_log_prefix(buffer, args...);
 				// std::string log = fmt::format("[INFO] " + fmt::to_string(buf) ,    args...);
-				fmt::print("{}[INFO] " + fmt::to_string(buf) + "{}\n", ANSI_COLOR_GREEN, args...,
+				fmt::print("{}[INFO] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_GREEN, args...,
 						   ANSI_COLOR_RESET);
+				buffer.clear(); 
 			}
 			return *this;
 		}
@@ -224,11 +255,12 @@ namespace klog
 		{
 			if (level >= 1)
 			{
-				fmt::memory_buffer buf;
-				format_log_prefix(buf, args...);
+				// fmt::memory_buffer buffer;
+				format_log_prefix(buffer, args...);
 				// std::string log = fmt::format("[WARN] " + fmt::to_string(buf) ,    args...);
-				fmt::print("{}[WARN] " + fmt::to_string(buf) + "{}\n", ANSI_COLOR_YELLOW, args...,
+				fmt::print("{}[WARN] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_YELLOW, args...,
 						   ANSI_COLOR_RESET);
+				buffer.clear(); 
 			}
 			return *this;
 		}
@@ -251,11 +283,12 @@ namespace klog
 			if (level >= 0)
 			{
 
-				fmt::memory_buffer buf;
-				format_log_prefix(buf, args...);
+				// fmt::memory_buffer buf;
+				format_log_prefix(buffer, args...);
 				// std::string log = fmt::format("[ERROR] " + fmt::to_string(buf) , args...);
-				fmt::print("{}[ERROR] " + fmt::to_string(buf) + "{}\n", ANSI_COLOR_RED, args...,
+				fmt::print("{}[ERROR] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_RED, args...,
 						   ANSI_COLOR_RESET);
+				buffer.clear(); 
 			}
 			return *this;
 		}
@@ -271,12 +304,6 @@ namespace klog
 			return *this;
 		}
 
-		template <class T>
-		KLog &operator<<(const T &val)
-		{
-			fmt::format_to(buffer, "{}", val);
-			return *this;
-		}
 
 #if WITH_COMMA_SUPPORT
 		template <class T>
@@ -304,10 +331,8 @@ namespace klog
 		void set_level(uint32_t lv) { level = lv; };
 
 	private:
-		fmt::memory_buffer buffer;
-
-		std::vector<LogSinkPtr> log_sinks;
-
+		fmt::memory_buffer buffer; 
+		std::vector<LogSinkPtr> log_sinks; 
 		uint32_t level = 5;
 	};
 
@@ -409,6 +434,13 @@ namespace klog
 #define ilog(fmt, ...)
 #define wlog(fmt, ...)
 #define elog(fmt, ...)
+
+
+#define kdebug  klog::KLog::instance().debug()
+#define kinfo   klog::KLog::instance().info()
+#define kwarn   klog::KLog::instance().warn()
+#define kerror  klog::KLog::instance().error(2)
+ 
 
 #endif
 
