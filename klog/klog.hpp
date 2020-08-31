@@ -394,6 +394,13 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
+
+#define dlogger  
+#define ilogger (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
+#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+
+
 #elif LOG_LEVEL == 2
 
 #define kdebug(...)
@@ -408,6 +415,12 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
+
+#define dlogger  
+#define ilogger  
+#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+
 #elif LOG_LEVEL == 1
 
 #define kdebug(...)
@@ -421,6 +434,11 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
+
+#define dlogger  
+#define ilogger  
+#define wlogger  
+#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 #elif LOG_LEVEL == 0
 
 #define kdebug(...)
@@ -432,5 +450,10 @@ namespace klog
 #define ilog(fmt, ...)
 #define wlog(fmt, ...)
 #define elog(fmt, ...)
- 
+
+
+#define dlogger  
+#define ilogger  
+#define wlogger  
+#define elogger  
 #endif
