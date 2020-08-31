@@ -1,11 +1,11 @@
 
-#include "gnet.hpp"
+#include "knet.hpp"
 
 #include "websocket/wsock_connection.hpp"
 #include <iostream>
 
-using namespace gnet::tcp;
-using namespace gnet::websocket;
+using namespace knet::tcp;
+using namespace knet::websocket;
 
 
 int main(int argc, char** argv)

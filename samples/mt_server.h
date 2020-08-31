@@ -1,11 +1,11 @@
 #pragma once 
 #include <stdio.h>
-#include "gnet.hpp"
+#include "knet.hpp"
 #include <iostream>
 
 
 
-using namespace gnet::tcp;
+using namespace knet::tcp;
 
 
 class MyFactory; 
