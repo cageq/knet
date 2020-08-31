@@ -203,7 +203,23 @@ namespace klog
 			}
 			return *this;
 		}
+	
+		template <class... Args>
+		KLog &debug(const char * func, int32_t no, Args... args)
+		{
+			if (level >= 3)
+			{
+				// fmt::memory_buffer buf;
+				format_log_prefix(buffer, args...);
+				// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
+				fmt::print("{}[DEBUG] {}:{} " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, func, no, args...,
+						   ANSI_COLOR_RESET);
+				buffer.clear();
+			}
+			return *this;
+		}
 		 
+	 
 
 		static void dump_hex(const char *title, const char *buf, size_t bufLen, uint32_t line = 8)
 		{
@@ -360,10 +376,10 @@ namespace klog
 
 #if LOG_LEVEL > 3
 
-#define kdebug(...) klog::KLog::instance().debug(__VA_ARGS__)
-#define kinfo(...) klog::KLog::instance().info(__VA_ARGS__)
-#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
+#define dput(...) klog::KLog::instance().debug( __FUNCTION__, __LINE__,  __VA_ARGS__)
+#define iput(...) klog::KLog::instance().info(__VA_ARGS__)
+#define wput(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define eput(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...) \
 	klog::KLog::instance().debug_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -374,17 +390,17 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#define dlogger (klog::KLog::instance().debug_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
-#define ilogger (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
-#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
-#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define dout (klog::KLog::instance().debug_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
+#define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 
 #elif LOG_LEVEL == 3
 
-#define kdebug(...)
-#define kinfo(...) klog::KLog::instance().info(__VA_ARGS__)
-#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
+#define dput(...)
+#define iput(...) klog::KLog::instance().info(__VA_ARGS__)
+#define wput(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define eput(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...) \
@@ -395,18 +411,18 @@ namespace klog
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dlogger  
-#define ilogger (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
-#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
-#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define dout  
+#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
+#define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 
 
 #elif LOG_LEVEL == 2
 
-#define kdebug(...)
-#define kinfo(...)
-#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
+#define dput(...)
+#define iput(...)
+#define wput(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define eput(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
@@ -416,17 +432,17 @@ namespace klog
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dlogger  
-#define ilogger  
-#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
-#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define dout  
+#define iout  
+#define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 
 #elif LOG_LEVEL == 1
 
-#define kdebug(...)
-#define kinfo(...)
-#define kwarn(...)
-#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
+#define dput(...)
+#define iput(...)
+#define wput(...)
+#define eput(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
@@ -435,16 +451,16 @@ namespace klog
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dlogger  
-#define ilogger  
-#define wlogger  
-#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define dout  
+#define iout  
+#define wout  
+#define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 #elif LOG_LEVEL == 0
 
-#define kdebug(...)
-#define kinfo(...)
-#define kwarn(...)
-#define kerror(...)
+#define dput(...)
+#define iput(...)
+#define wput(...)
+#define eput(...)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
@@ -452,8 +468,8 @@ namespace klog
 #define elog(fmt, ...)
 
 
-#define dlogger  
-#define ilogger  
-#define wlogger  
-#define elogger  
+#define dout  
+#define iout  
+#define wout  
+#define eout  
 #endif
