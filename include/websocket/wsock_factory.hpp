@@ -166,4 +166,4 @@ public:
 };
 
 } // namespace websocket
-} // namespace gnet
+} // namespace knet

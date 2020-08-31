@@ -105,4 +105,4 @@ public:
 using HttpRequestPtr = std::shared_ptr<HttpRequest>;
 
 } // namespace http
-} // namespace gnet
+} // namespace knet

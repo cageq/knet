@@ -265,4 +265,4 @@ struct WSMessageReader {
 	}
 };
 } // namespace ws
-} // namespace gnet
+} // namespace knet

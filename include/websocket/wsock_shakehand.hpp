@@ -209,6 +209,6 @@ public:
 };
 
 } // namespace websocket
-} // namespace gnet
+} // namespace knet
 
 #endif // WSOCK_SHAKEHAND_HPP

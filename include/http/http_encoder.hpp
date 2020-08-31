@@ -169,4 +169,4 @@ public:
 	std::map<std::string, std::string> http_headers;
 };
 } // namespace http
-} // namespace gnet
+} // namespace knet

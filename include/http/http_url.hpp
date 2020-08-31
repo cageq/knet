@@ -1144,6 +1144,6 @@ private:
 };
 
 } // namespace http
-} // namespace gnet
+} // namespace knet
 
 #endif // URL_HPP
