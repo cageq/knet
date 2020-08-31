@@ -29,6 +29,10 @@ class TcpSession : public TcpConnection<TcpSession>{
 int main(int argc, char **argv)
 {
  
+    dlogger << "test tcp server with cout format " << std::endl; 
+    ilogger << "test tcp server with cout format " << std::endl; 
+    wlogger << "test tcp server with cout format " << std::endl; 
+    elogger << "test tcp server with cout format " << std::endl; 
 
 	// auto lisWorker = std::make_shared<knet::CoEventWorker>();
 	// lisWorker->start(); 

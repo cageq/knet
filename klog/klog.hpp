@@ -17,8 +17,8 @@
 #define NONE_FORMAT 0
 #endif
 
-#ifndef DLEVEL
-#define DLEVEL 5
+#ifndef LOG_LEVEL
+#define LOG_LEVEL 5
 #endif
 enum KLogLevel
 {
@@ -134,9 +134,11 @@ namespace klog
 		{
 		}
 
-		~KLog(){
-			if (buffer.size() > 0){
-				std::cout << fmt::to_string(buffer) ;
+		~KLog()
+		{
+			if (buffer.size() > 0)
+			{
+				std::cout << fmt::to_string(buffer);
 			}
 		}
 		void add_sink(LogSinkPtr sink)
@@ -149,30 +151,43 @@ namespace klog
 
 		KLog &operator<<(StandardEndLine manip)
 		{
-			std::cout << fmt::to_string(buffer) << std::endl;
-			buffer.clear(); 
+			flush();
 			return *this;
 		}
- 
-		template <class T> 
-		KLog& operator << (const T & log) {  
+
+		template <class T>
+		KLog &operator<<(const T &log)
+		{
 			fmt::format_to(buffer, "{}", log);
-			if (buffer.size()> 1024)
+			if (buffer.size() > 1024)
 			{
-				flush(); 
-			} 
-			return *this; 
-		}
-		inline KLog & with_level(int lv){
-			level = lv; 
-			return *this; 
+				flush();
+			}
+			return *this;
 		}
 
-		void flush(){
-			std::cout << fmt::to_string(buffer);
-			buffer.clear(); 
+	 	inline KLog & debug_logger(){
+			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_CYAN);
+			return *this;
 		}
- 
+		inline KLog & info_logger(){
+			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_GREEN);
+			return *this;
+		}
+		inline KLog & warn_logger(){
+			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_YELLOW);
+			return *this;
+		}
+		inline KLog & error_logger(){
+			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_RED);
+			return *this;
+		}
+
+		void flush()
+		{ 
+			fmt::print(  fmt::to_string(buffer) + "{}\n", ANSI_COLOR_RESET); 
+			buffer.clear();
+		}
 
 		template <class... Args>
 		KLog &debug(Args... args)
@@ -184,10 +199,11 @@ namespace klog
 				// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
 				fmt::print("{}[DEBUG] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, args...,
 						   ANSI_COLOR_RESET);
-				buffer.clear(); 
+				buffer.clear();
 			}
 			return *this;
 		}
+		 
 
 		static void dump_hex(const char *title, const char *buf, size_t bufLen, uint32_t line = 8)
 		{
@@ -234,7 +250,7 @@ namespace klog
 				// std::string log = fmt::format("[INFO] " + fmt::to_string(buf) ,    args...);
 				fmt::print("{}[INFO] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_GREEN, args...,
 						   ANSI_COLOR_RESET);
-				buffer.clear(); 
+				buffer.clear();
 			}
 			return *this;
 		}
@@ -260,7 +276,7 @@ namespace klog
 				// std::string log = fmt::format("[WARN] " + fmt::to_string(buf) ,    args...);
 				fmt::print("{}[WARN] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_YELLOW, args...,
 						   ANSI_COLOR_RESET);
-				buffer.clear(); 
+				buffer.clear();
 			}
 			return *this;
 		}
@@ -288,7 +304,7 @@ namespace klog
 				// std::string log = fmt::format("[ERROR] " + fmt::to_string(buf) , args...);
 				fmt::print("{}[ERROR] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_RED, args...,
 						   ANSI_COLOR_RESET);
-				buffer.clear(); 
+				buffer.clear();
 			}
 			return *this;
 		}
@@ -303,7 +319,6 @@ namespace klog
 			}
 			return *this;
 		}
-
 
 #if WITH_COMMA_SUPPORT
 		template <class T>
@@ -328,12 +343,12 @@ namespace klog
 			return *_instance;
 		}
 
-		void set_level(uint32_t lv) { level = lv; };
+		inline void set_level(uint32_t lv) { level = lv; }
 
 	private:
-		fmt::memory_buffer buffer; 
-		std::vector<LogSinkPtr> log_sinks; 
-		uint32_t level = 5;
+		fmt::memory_buffer buffer;
+		std::vector<LogSinkPtr> log_sinks;
+		uint32_t level = LOG_LEVEL;
 	};
 
 	template <class... Args>
@@ -341,18 +356,14 @@ namespace klog
 	{
 		return std::move(fmt::format(args...));
 	}
-} // namespace log
+} // namespace klog
 
-#if DLEVEL > 3
+#if LOG_LEVEL > 3
 
-#if NONE_FORMAT
-
-#define dlog(...) klog::KLog::instance().debug(__VA_ARGS__)
-#define ilog(...) klog::KLog::instance().info(__VA_ARGS__)
-#define wlog(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define elog(...) klog::KLog::instance().error(__VA_ARGS__)
-
-#else
+#define kdebug(...) klog::KLog::instance().debug(__VA_ARGS__)
+#define kinfo(...) klog::KLog::instance().info(__VA_ARGS__)
+#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...) \
 	klog::KLog::instance().debug_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -363,17 +374,18 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#endif
+#define dlogger (klog::KLog::instance().debug_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define ilogger (klog::KLog::instance().info_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ") 
+#define wlogger (klog::KLog::instance().warn_logger()    << __FUNCTION__ << "(" << __LINE__ << ") ")
+#define elogger (klog::KLog::instance().error_logger()   << __FUNCTION__ << "(" << __LINE__ << ") ")
 
-#elif DLEVEL == 3
+#elif LOG_LEVEL == 3
 
-#if NONE_FORMAT
-#define dlog(...)
-#define ilog(...) klog::KLog::instance().info(__VA_ARGS__)
-#define wlog(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define elog(...) klog::KLog::instance().error(__VA_ARGS__)
+#define kdebug(...)
+#define kinfo(...) klog::KLog::instance().info(__VA_ARGS__)
+#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
 
-#else
 #define dlog(fmt, ...)
 #define ilog(fmt, ...) \
 	klog::KLog::instance().info_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
@@ -382,18 +394,12 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#endif
+#elif LOG_LEVEL == 2
 
-#elif DLEVEL == 2
-
-#if NONE_FORMAT
-
-#define dlog(...)
-#define ilog(...)
-#define wlog(...) klog::KLog::instance().warn(__VA_ARGS__)
-#define elog(...) klog::KLog::instance().error(__VA_ARGS__)
-
-#else
+#define kdebug(...)
+#define kinfo(...)
+#define kwarn(...) klog::KLog::instance().warn(__VA_ARGS__)
+#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
@@ -402,16 +408,12 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#endif
+#elif LOG_LEVEL == 1
 
-#elif DLEVEL == 1
-
-#if NONE_FORMAT
-#define _d(...)
-#define _i(...)
-#define _w(...)
-#define _e(...) klog::KLog::instance().error(__VA_ARGS__)
-#else
+#define kdebug(...)
+#define kinfo(...)
+#define kwarn(...)
+#define kerror(...) klog::KLog::instance().error(__VA_ARGS__)
 
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
@@ -419,29 +421,16 @@ namespace klog
 #define elog(fmt, ...) \
 	klog::KLog::instance().error_format("{}({})" fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
-#endif
+#elif LOG_LEVEL == 0
 
-#elif DLEVEL == 0
+#define kdebug(...)
+#define kinfo(...)
+#define kwarn(...)
+#define kerror(...)
 
-#if NONE_FORMAT
-#define _d(...)
-#define _i(...)
-#define _w(...)
-#define _e(...)
-
-#else
 #define dlog(fmt, ...)
 #define ilog(fmt, ...)
 #define wlog(fmt, ...)
 #define elog(fmt, ...)
-
-
-#define kdebug  klog::KLog::instance().debug()
-#define kinfo   klog::KLog::instance().info()
-#define kwarn   klog::KLog::instance().warn()
-#define kerror  klog::KLog::instance().error(2)
  
-
-#endif
-
 #endif
