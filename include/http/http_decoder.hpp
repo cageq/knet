@@ -201,4 +201,4 @@ protected:
 };
 
 } // namespace http
-} // namespace gnet
+} // namespace knet

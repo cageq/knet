@@ -58,4 +58,4 @@ private:
 
 } // namespace http
 
-} // namespace gnet
+} // namespace knet

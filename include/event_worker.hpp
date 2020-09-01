@@ -116,4 +116,4 @@ protected:
 	TimerPtr event_timer;
 };
 using EventWorkerPtr = std::shared_ptr<EventWorker>;
-} // namespace gnet
+} // namespace knet

@@ -173,4 +173,4 @@ const std::string crlf = "\r\n";
 } // namespace misc_strings
 
 } // namespace http
-} // namespace gnet
+} // namespace knet

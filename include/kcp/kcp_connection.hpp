@@ -499,4 +499,4 @@ public:
 };
 
 } // namespace udp
-} // namespace gnet
+} // namespace knet
