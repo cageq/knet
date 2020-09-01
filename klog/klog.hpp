@@ -114,6 +114,51 @@ namespace klog
     struct KLog
     {
 
+	typedef std::basic_ostream<char, std::char_traits<char>> CoutType;
+	// this is the function signature of std::endl
+	typedef CoutType &(*StandardEndLine)(CoutType &);
+
+	class FlowHelper{
+	    private: 
+		FlowHelper( const FlowHelper& ) = delete ; 
+		const FlowHelper& operator=( const FlowHelper& ) = delete; 
+	    public: 
+		FlowHelper(KLog *log = nullptr):logger(log){ }
+		FlowHelper(FlowHelper&& other ) :logger(other.logger){
+		    other.logger = nullptr; 
+		    std::cout << "move to my body" << std::endl; 
+		}
+		FlowHelper& operator=(FlowHelper&& other) {
+		    logger = other.logger; 
+		    other.logger = nullptr; 
+		    return *this; 
+		}
+
+		FlowHelper &operator<<(StandardEndLine manip) {
+		    if (logger){
+			logger->flush();
+		    }
+		    return *this;
+		}
+
+		template <class T>
+		    FlowHelper &  operator<<(const T &log) {
+			if (logger){
+			    (*logger) << log; 
+			}	    
+			return *this; 
+		    }
+
+		~FlowHelper() {
+		    if (logger ) {
+			std::cout << "== destroy == " << std::endl; 
+			logger->flush(); 
+		    }
+		}
+
+		KLog *logger = nullptr; 
+	}; 
+
 	//	const char * kFormat = "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}
 	//{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} "
 	//						   "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}
@@ -129,15 +174,11 @@ namespace klog
 	//{}
 	//{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}" ;
 	// this is the type of std::cout
-	typedef std::basic_ostream<char, std::char_traits<char>> CoutType;
-	KLog()
-	{
-	}
+	KLog() { }
 
 	~KLog()
 	{
-	    if (buffer.size() > 0)
-	    {
+	    if (buffer.size() > 0) {
 		std::cout << fmt::to_string(buffer);
 	    }
 	}
@@ -146,25 +187,42 @@ namespace klog
 	    log_sinks.push_back(sink);
 	}
 
-	// this is the function signature of std::endl
-	typedef CoutType &(*StandardEndLine)(CoutType &);
-
-	KLog &operator<<(StandardEndLine manip)
-	{
+	KLog & operator<<(StandardEndLine manip) {
 	    flush();
-	    return *this;
+	    //return std::move(FlowHelper(this)); 
+	    return *this; 
 	}
 
+
+	//	FlowHelper &operator<<(StandardEndLine manip)
+	//	{
+	//	    flush();
+	//	    return std::move(FlowHelper(this); 
+	//	}
 	template <class T>
-	    KLog &operator<<(const T &log)
+	    KLog & operator<<(const T &log)
 	    {
 		fmt::format_to(buffer, "{}", log);
-		if (buffer.size() > 1024)
-		{
+		if (buffer.size() > 1024) {
 		    flush();
 		}
-		return *this;
+		//return std::move(FlowHelper(this)); 
+		return  *this; 
 	    }
+
+
+	/*
+	   template <class T>
+	   KLog &operator<<(const T &log)
+	   {
+	   fmt::format_to(buffer, "{}", log);
+	   if (buffer.size() > 1024)
+	   {
+	   flush();
+	   }
+	   return *this;
+	   }
+	   */
 
 	inline KLog & debug_logger(){
 	    fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_CYAN);
