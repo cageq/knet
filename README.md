@@ -3,7 +3,6 @@
 Simple morden c++ network library wrapper based on asio standalone version , provide simple apis to write network applications. 
 
 
-
 ## Build 
 it uses the std::string_view api for http parser, so we need c++17 to compile it. 
 
@@ -131,6 +130,16 @@ class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your re
 	listener.start(  port); 
 
 ```
+
+
+## Thread mode 
+you can create one or multi EventWorker to process the connections, but we will keep one connecion's events will always  be in one thread  in its lifecycle.  
+for example   it is safe to create one lua engine in your session , all net events will be called in the same thread.  
+
+
+
+
+
 
 
 
