@@ -131,7 +131,7 @@ namespace klog
 					other.logger = nullptr; 
 				}
 				FlowHelper& operator=(FlowHelper&& other) {
-				
+
 					logger = other.logger; 
 					other.logger = nullptr; 
 					return *this; 
@@ -182,7 +182,8 @@ namespace klog
 		~KLog()
 		{
 			if (buffer.size() > 0) {
-				std::cout << fmt::to_string(buffer);
+				fmt::print(  fmt::to_string(buffer) ); 
+				//std::cout << fmt::to_string(buffer);
 			}
 		}
 		void add_sink(LogSinkPtr sink)
@@ -201,27 +202,27 @@ namespace klog
 		//	    flush();
 		//	    return std::move(FlowHelper(this); 
 		//	}
-//		template <class T>
-//			KLog & operator<<(const T &log)
-//			{
-//				fmt::format_to(buffer, "{}", log);
-//				if (buffer.size() > 1024) {
-//					flush();
-//				}
-//				//return std::move(FlowHelper(this)); 
-//				return  *this; 
-//			}
-//
+		//		template <class T>
+		//			KLog & operator<<(const T &log)
+		//			{
+		//				fmt::format_to(buffer, "{}", log);
+		//				if (buffer.size() > 1024) {
+		//					flush();
+		//				}
+		//				//return std::move(FlowHelper(this)); 
+		//				return  *this; 
+		//			}
+		//
 
-	   template <class T>
-		   FlowHelper operator<<(const T &log)
-		   {
-			   fmt::format_to(buffer, "{}", log);
-			   if (buffer.size() > MAX_LOG_LINE) {
-			       flush();
-			   }
-			   return std::move(FlowHelper(this)); 
-		   }
+		template <class T>
+			FlowHelper operator<<(const T &log)
+			{
+				fmt::format_to(buffer, "{}", log);
+				if (buffer.size() > MAX_LOG_LINE) {
+					flush();
+				}
+				return std::move(FlowHelper(this)); 
+			}
 
 
 		inline KLog & debug_logger(){

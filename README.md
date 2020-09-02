@@ -45,3 +45,92 @@ listener.start(8899);
 
 
 ```
+
+
+## Tcp Client 
+It's almost the same with the server code, you need define a tcp session first , then connect to server will create a session for you . 
+
+```cpp 
+	class TcpSession : public TcpConnection<TcpSession> {
+		public:
+
+	}; 
+
+
+	TcpConnector<TcpSession>  connector;
+	connector.start(); 
+	connector.add_connection("127.0.0.1", 8899);
+``` 
+	
+## Bind the event handler 
+there are two different handler , event handler and data handler, you can bind your handlers in your session . 
+using the bind_event_handler and bind_data_handler to get data or connection events. 
+
+```cpp 
+class TcpSession : public TcpConnection<TcpSession > 
+{
+	public:
+		typedef std::shared_ptr<TcpSession> TcpSessionPtr; 
+
+		TcpSession() 
+		{
+			bind_data_handler(&TcpSession::process_data); 
+			bind_event_handler([this](  TcpSessionPtr,knet::NetEvent ){
+
+			std::string msg("hello world"); 
+			this->send(msg.c_str(),msg.length()); 
+					return 0; 
+					} ); 
+	
+		}
+
+		uint32_t process_data(const std::string & msg , knet::MessageStatus status)
+		{
+			//    trace;
+			dlog("received data {} ",msg); 
+			this->send(msg.data(),msg.length());   
+			return msg.length(); 
+		}
+}; 
+
+
+```
+
+
+## Session Factory 
+most of the time , we need a manager to manage all the sessions, so you need create a factory to handle all connections' events . 
+
+if you use your own factory, you cann't get data or events in your own session . 
+
+```cpp 
+
+
+class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your real session class  to process your session events and data 
+
+	public:
+
+		virtual void destroy(TPtr conn) {
+			dlog("connection factory destroy connection in my factory "); 
+		}	
+
+		virtual void handle_event(TPtr conn, knet::NetEvent evt) {
+			ilog("handle event in connection my factory"); 
+		}
+
+		virtual int32_t handle_data(TPtr conn, char * data, uint32_t len) { 
+			conn->send(data,len); 
+			return len ;
+		}; 
+
+}; 
+
+	MyFactory factory; 
+	dlog("start server");
+	TcpListener<TcpSession,MyFactory> listener(&factory);// you need create a factory instance and pass it to listener.
+	int port = 8899;
+	listener.start(  port); 
+
+```
+
+
+
