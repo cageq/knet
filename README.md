@@ -50,6 +50,8 @@ listener.start(8899);
 It's almost the same code with the server, you need define a tcp session , then connect to server will create a session for you. 
 
 ```cpp 
+#include "knet.hpp"
+using namespace knet::tcp; 
 class TcpSession : public TcpConnection<TcpSession> {
 	public:
 
@@ -58,9 +60,20 @@ class TcpSession : public TcpConnection<TcpSession> {
 TcpConnector<TcpSession>  connector;
 connector.start(); 
 connector.add_connection("127.0.0.1", 8899);
-``` 
-	
+```
+
+
+
+## UDP/KCP/HTTP/WEBSOCK
+
+​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has  the same apis with tcp. you can peek the  code in samples . 
+
+​	it have basic http/websocket protocol server-side implements,  but need more work to make it  complete.
+
+
+
 ## Bind the event handler 
+
 There are two different handlers , Event handler and Data handler, you can bind your handlers in your session . 
 using the bind_event_handler and bind_data_handler to get data or connection events. 
 
@@ -84,7 +97,6 @@ class TcpSession : public TcpConnection<TcpSession >
 
 		uint32_t process_data(const std::string & msg , knet::MessageStatus status)
 		{
-			//    trace;
 			dlog("received data {} ",msg); 
 			this->send(msg.data(),msg.length());   
 			return msg.length(); 
@@ -101,11 +113,9 @@ you can create a factory, then handle all sessions' event in the factory instanc
 
 ```cpp 
 
-
-class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your real session class  to process your session events and data 
-
+class MyFactory: public ConnectionFactory<TcpSession> { 
+// TcpSession is your real session class  to process your session events and data 
 	public:
-
 		virtual void destroy(TPtr conn) {
 			dlog("connection factory destroy connection in my factory "); 
 		}	
@@ -123,31 +133,43 @@ class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your re
 
 	MyFactory factory; 
 	dlog("start server");
-	TcpListener<TcpSession,MyFactory> listener(&factory);// you need create a factory instance and pass it to listener.
+  // you need create a factory instance and pass it to listener.
+	TcpListener<TcpSession,MyFactory> listener(&factory);
 	int port = 8899;
 	listener.start(  port); 
 
 ```
 
 
+
 ## Thread mode 
-	You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread of its lifecycle.  
-so it is safty to create a lua engine in your session, all net events will be called in the same thread.  
+
+​	You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread of its lifecycle.  so it is safty to create a lua engine in your session, all net events will be called in the same thread.  
+
 
 
 ## Backends 
-    There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple api for user to build your network components.  Will it can help.
+
+​	There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple api for user to build your network components.  Will it can help.
+
+
 
 ## Performance 
+
    I have not test the performance of this library, but it's a very thin wrapper over the asio, I think the performace will be close to asio. 
 
-## github and gitee  address 
-  [github]: https://github.com/cageq/knet "github main"
-  [gitee]: https://gitee.com/fatihwk/knet "gitee mirror"
 
 
-## Thanks . 
-  Welcome all of you to make it better. 
+## github and gitee   
+
+[github]: https://github.com/cageq/knet "github main"
+[gitee]: https://gitee.com/fatihwk/knet "gitee mirror"
+
+
+
+## welcome to contribute
+
+  If you think it's a little useful,  welcome all of you to make it better. 
 
 
 
