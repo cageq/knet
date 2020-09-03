@@ -68,7 +68,7 @@ connector.add_connection("127.0.0.1", 8899);
 
 ​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has  the same apis with tcp. you can peek the  code in samples directory. 
 
-​	It have basic http/websocket protocol server-side implements,  but need more work to make it complete.
+​	It have basic http/websocket protocol server-side implements,  and need more work to make it complete.
 
 
 
