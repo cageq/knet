@@ -4,13 +4,13 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 
 
 ## Build 
-It uses the some api like std::string_view for http parser, so we need c++17 to compile it. 
+It uses  some apis like std::string_view for http parser, so we need c++17 to compile it. 
 
-the library contains a simple colorful log library to print debug log and it depends fmt library to accelerate the log output.
+the library contains a simple colorful log library to print debug log and it need  [fmtlib]: https://fmt.dev/  library to accelerate the log output.
 
-you can use scripts "setup.sh" to install dependence libs into deps directory in library root directory, no root permissions  needed. 
+You can use scripts "setup.sh" to install dependence libs into deps directory in this library root directory, no root permissions  needed. 
 
-it is a headonly library, basically you can copy all files to you project and use it. (except fmt lib, you can set LOG_LEVEL to 0 in klog.hpp to get rid of the dependence ) 
+It is a headonly library, basically you can copy all files to you project and use it. (except fmt lib, you can alse set LOG_LEVEL to 0 in klog.hpp to get rid of the dependence ) 
 
 
 ## build samples
@@ -29,7 +29,7 @@ make -j4
 ## Tcp Server 
 
 Create a tcp server , you need define a tcp session inherited  to TcpConnection class, with the session type , you can create the listener. 
-start it with the port. now you get a discard tcp server. 
+Start it with the port. now you get a discard tcp server. 
 
 ```cpp
 
@@ -66,9 +66,9 @@ connector.add_connection("127.0.0.1", 8899);
 
 ## UDP/KCP/HTTP/WEBSOCK
 
-​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has  the same apis with tcp. you can peek the  code in samples . 
+​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has  the same apis with tcp. you can peek the  code in samples directory. 
 
-​	it have basic http/websocket protocol server-side implements,  but need more work to make it  complete.
+​	It have basic http/websocket protocol server-side implements,  but need more work to make it complete.
 
 
 
