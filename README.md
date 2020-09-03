@@ -160,7 +160,7 @@ class MyFactory: public ConnectionFactory<TcpSession> {
 
 
 
-## github and gitee   
+## github & gitee   
 
 https://github.com/cageq/knet 
 
