@@ -162,8 +162,9 @@ class MyFactory: public ConnectionFactory<TcpSession> {
 
 ## github and gitee   
 
-[github]: https://github.com/cageq/knet "github main"
-[gitee]: https://gitee.com/fatihwk/knet "gitee mirror"
+https://github.com/cageq/knet 
+
+https://gitee.com/fatihwk/knet  
 
 
 
