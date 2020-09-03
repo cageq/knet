@@ -34,6 +34,7 @@ start it with the port. now you get a discard tcp server.
 ```cpp
 
 #include "knet.hpp"
+using namespace knet::tcp; 
 class TcpSession : public TcpConnection<TcpSession> {
       public:
 
@@ -46,18 +47,17 @@ listener.start(8899);
 
 
 ## Tcp Client 
-It's almost the same with the server code, you need define a tcp session first , then connect to server will create a session for you. 
-
+It's almost the same code with the server, you need define a tcp session , then connect to server will create a session for you. 
 
 ```cpp 
-	class TcpSession : public TcpConnection<TcpSession> {
-		public:
+class TcpSession : public TcpConnection<TcpSession> {
+	public:
 
-	}; 
+}; 
 
-	TcpConnector<TcpSession>  connector;
-	connector.start(); 
-	connector.add_connection("127.0.0.1", 8899);
+TcpConnector<TcpSession>  connector;
+connector.start(); 
+connector.add_connection("127.0.0.1", 8899);
 ``` 
 	
 ## Bind the event handler 
@@ -95,9 +95,9 @@ class TcpSession : public TcpConnection<TcpSession >
 
 
 ## Session Factory 
-most of the time , we need a manager to manage all the sessions, so you need create a factory to handle all connections' events . 
+As a server, most of the time , we need a manager to manage all the incoming sessions, so you need create a factory to handle all sessions' events . 
 
-if you use your own factory, you cann't get data or events in your own session . 
+you can create a factory, then handle all sessions' event in the factory instance. if you have used factory ,  you cann't get data or events in your own session again. 
 
 ```cpp 
 
@@ -131,15 +131,23 @@ class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your re
 
 
 ## Thread mode 
-You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread in its lifecycle.  
+	You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread of its lifecycle.  
 so it is safty to create a lua engine in your session, all net events will be called in the same thread.  
 
-## git address 
-  https://github.com/cageq/knet
-  https://gitee.com/fatihwk/knet
+
+## Backends 
+    There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple api for user to build your network components.  Will it can help.
+
+## Performance 
+   I have not test the performance of this library, but it's a very thin wrapper over the asio, I think the performace will be close to asio. 
+
+## github and gitee  address 
+  [github]: https://github.com/cageq/knet "github main"
+  [gitee]: https://gitee.com/fatihwk/knet "gitee mirror"
 
 
-
+## Thanks . 
+  Welcome all of you to make it better. 
 
 
 
