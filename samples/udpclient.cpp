@@ -20,8 +20,8 @@ int main(int argc , char * argv[])
     UdpConnector<MyConnection> connector; 
     connector.start(); 
 
-    auto conn = connector.connect("192.168.110.12",9000); 
-    //auto conn = connector.connect("10.254.2.39",9000); 
+    //auto conn = connector.connect("192.168.110.12",9000); 
+    auto conn = connector.connect("10.254.2.39",9000); 
 
     while(1){
 	conn->send("hello world",11);  

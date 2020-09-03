@@ -1,5 +1,4 @@
 #!/bin/bash 
-
 curPath=`pwd`
 
 #depsPath=`realpath $curPath/deps`
@@ -7,7 +6,6 @@ depsPath=${curPath}/deps
 mkdir -p ${depsPath}/lib
 echo "deps path is" $depsPath
 echo "SET(WORKROOT $curPath )" > env.cmake 
-
 
 LIBFMTVER=fmt-7.0.3
 unzip -o opt/${LIBFMTVER}.zip -d opt 

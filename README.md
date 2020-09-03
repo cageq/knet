@@ -1,22 +1,22 @@
 
 # KNet 
-Simple morden c++ network library wrapper based on asio standalone version , provide simple apis to write network applications. 
+Simple morden c++ network library wrapper based on asio standalone version, provide very simple APIs to build your network applications. 
 
 
 ## Build 
-it uses the std::string_view api for http parser, so we need c++17 to compile it. 
+It uses the some api like std::string_view for http parser, so we need c++17 to compile it. 
 
-the library contains a simple log library to print debug log. using fmt library to accelerate the log output.
+the library contains a simple colorful log library to print debug log and it depends fmt library to accelerate the log output.
 
-you can use "setup.sh" to install dependence lib into deps directory.   
+you can use scripts "setup.sh" to install dependence libs into deps directory in library root directory, no root permissions  needed. 
 
-the library is headonly library, basically you can copy to you project and use it.
+it is a headonly library, basically you can copy all files to you project and use it. (except fmt lib, you can set LOG_LEVEL to 0 in klog.hpp to get rid of the dependence ) 
 
 
 ## build samples
 ```shell
 
-./setup.sh   # install asio fmt lib to deps directory, no need root permissions. 
+./setup.sh   # copy asio files and fmt lib to deps directory, no need root permissions. 
 
 cmake . 
 
@@ -28,7 +28,7 @@ make -j4
 
 ## Tcp Server 
 
-create a tcp server , you need define a tcp session type,  with the session type , you can create the listener. 
+Create a tcp server , you need define a tcp session inherited  to TcpConnection class, with the session type , you can create the listener. 
 start it with the port. now you get a discard tcp server. 
 
 ```cpp
@@ -42,12 +42,12 @@ class TcpSession : public TcpConnection<TcpSession> {
 TcpListener<TcpSession> listener;
 listener.start(8899); 
 
-
 ```
 
 
 ## Tcp Client 
-It's almost the same with the server code, you need define a tcp session first , then connect to server will create a session for you . 
+It's almost the same with the server code, you need define a tcp session first , then connect to server will create a session for you. 
+
 
 ```cpp 
 	class TcpSession : public TcpConnection<TcpSession> {
@@ -55,14 +55,13 @@ It's almost the same with the server code, you need define a tcp session first ,
 
 	}; 
 
-
 	TcpConnector<TcpSession>  connector;
 	connector.start(); 
 	connector.add_connection("127.0.0.1", 8899);
 ``` 
 	
 ## Bind the event handler 
-there are two different handler , event handler and data handler, you can bind your handlers in your session . 
+There are two different handlers , Event handler and Data handler, you can bind your handlers in your session . 
 using the bind_event_handler and bind_data_handler to get data or connection events. 
 
 ```cpp 
@@ -91,7 +90,6 @@ class TcpSession : public TcpConnection<TcpSession >
 			return msg.length(); 
 		}
 }; 
-
 
 ```
 
@@ -133,8 +131,12 @@ class MyFactory: public ConnectionFactory<TcpSession> { // TcpSession is your re
 
 
 ## Thread mode 
-you can create one or multi EventWorker to process the connections, but we will keep one connecion's events will always  be in one thread  in its lifecycle.  
-for example   it is safe to create one lua engine in your session , all net events will be called in the same thread.  
+You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread in its lifecycle.  
+so it is safty to create a lua engine in your session, all net events will be called in the same thread.  
+
+## git address 
+  https://github.com/cageq/knet
+  https://gitee.com/fatihwk/knet
 
 
 
