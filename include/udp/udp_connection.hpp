@@ -128,9 +128,8 @@ public:
 	}
 
 	virtual PackageType on_package(const std::string_view& msg) {
-		ilog("========================{}========================", msg.length());
-		wlog("{}", msg.data());
-		ilog("========================end========================");
+		 
+		wlog("{}", msg.data()); 
 		return PACKAGE_USER;
 	}
 
@@ -159,7 +158,7 @@ private:
 			sock->open(lisPoint.protocol());
 			sock->set_option(asio::ip::udp::socket::reuse_address(true));
 			if (localPort > 0) {
-			//	sock->set_option(asio::ip::udp::socket::reuse_address(true));
+				sock->set_option(asio::ip::udp::socket::reuse_address(true));
 				sock->bind(lisPoint);
 			}
 

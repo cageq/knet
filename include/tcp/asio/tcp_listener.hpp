@@ -31,7 +31,7 @@ public:
 
 		tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
 		for (uint32_t i = 0; i < num; i++) {
-			user_workers.push_back(std::make_shared<Worker>());
+			m.user_workers.push_back(std::make_shared<Worker>());
 		}
 	}
 
@@ -47,7 +47,7 @@ public:
 		tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
 		if (!workers.empty()) {
 			for (auto worker : workers) {
-				user_workers.push_back(worker);
+				m.user_workers.push_back(worker);
 			}
 		}
 	}
@@ -80,7 +80,7 @@ public:
 	void add_worker(WorkerPtr worker) {
 		if (worker)
 		{
-			user_workers.push_back(worker); 
+			m.user_workers.push_back(worker); 
 		} 
 	}
 
@@ -89,10 +89,10 @@ public:
 	~TcpListener() {}
 
 	bool start(NetOptions opt, void* sslCtx = nullptr) {
-		m_options = opt;
-		ssl_context = sslCtx;
-		if (!is_running) {
-			is_running = true;
+		m.options = opt;
+		m.ssl_context = sslCtx;
+		if (!m.is_running) {
+			m.is_running = true;
 
 			asio::ip::tcp::endpoint endpoint(asio::ip::make_address(opt.host), opt.port);
  
@@ -103,23 +103,23 @@ public:
 				//	this->tcp_acceptor.set_option(asio::ip::tcp::no_delay(true));
 				this->tcp_acceptor->non_blocking(true);
 
-				asio::socket_base::send_buffer_size SNDBUF(m_options.send_buffer_size);
+				asio::socket_base::send_buffer_size SNDBUF(m.options.send_buffer_size);
 				this->tcp_acceptor->set_option(SNDBUF);
-				asio::socket_base::receive_buffer_size RCVBUF(m_options.recv_buffer_size);
+				asio::socket_base::receive_buffer_size RCVBUF(m.options.recv_buffer_size);
 				this->tcp_acceptor->set_option(RCVBUF);
 
 				asio::error_code ec;
 				this->tcp_acceptor->bind(endpoint, ec);
 				if (ec) {
 					elog("bind address failed {}:{}", opt.host, opt.port);
-					is_running = false;
+					m.is_running = false;
 					return false;
 				}
-				this->tcp_acceptor->listen(m_options.backlogs, ec);
+				this->tcp_acceptor->listen(m.options.backlogs, ec);
 
 				if (ec) {
 					elog("start listen failed");
-					is_running = false;
+					m.is_running = false;
 					return false;
 				}
 				this->do_accept();
@@ -132,15 +132,15 @@ public:
 	}
 
 	bool start(uint32_t port = 9999, const std::string& host = "0.0.0.0", void* ssl = nullptr) {
-		m_options.host = host;
-		m_options.port = port;
-		return start(m_options, ssl);
+		m.options.host = host;
+		m.options.port = port;
+		return start(m.options, ssl);
 	}
 
 	void stop() {
 		dlog("stop listener thread");
-		if (is_running) {
-			is_running = false;
+		if (m.is_running) {
+			m.is_running = false;
 			tcp_acceptor->close();
 		}
 	}
@@ -163,7 +163,7 @@ private:
 		}
 
 		auto socket = std::make_shared<typename T::ConnSock>(
-			worker->thread_id(), worker->context(), ssl_context);
+			worker->thread_id(), worker->context(), m.ssl_context);
 		tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 			if (!ec) {
 				dlog("accept new connection ");
@@ -176,9 +176,9 @@ private:
 	}
 
 	WorkerPtr get_worker() {
-		if (!user_workers.empty()) {
-			dlog("dispatch to worker {}", worker_index);
-			return user_workers[worker_index++ % user_workers.size()];
+		if (!m.user_workers.empty()) {
+			dlog("dispatch to worker {}", m.worker_index);
+			return m.user_workers[m.worker_index++ % m.user_workers.size()];
 		} else {
 			dlog("dispatch work  to listen worker {}", std::this_thread::get_id());
 			return listen_worker;
@@ -219,16 +219,23 @@ private:
 		return conn;
 	}
 
-	uint32_t worker_index = 0;
-	std::vector<WorkerPtr> user_workers;
-	FactoryPtr m_factory = nullptr;
+	struct {
 
-	WorkerPtr listen_worker;
-	NetOptions m_options;
-	bool is_running = false;
+		uint32_t worker_index = 0;
+		std::vector<WorkerPtr> user_workers;
+		NetOptions options;
+		bool is_running = false;
+		void* ssl_context = nullptr;
+
+	}m ; 
+
 	std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
+	FactoryPtr m_factory = nullptr;
+	WorkerPtr listen_worker;
 	std::tuple<Args...> conn_args;
-	void* ssl_context = nullptr;
+
+
+
 };
 
 } // namespace tcp
