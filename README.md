@@ -176,25 +176,19 @@ https://gitee.com/fatihwk/knet
 
 ## Thinking about coding style
 
-	I prefer good coding style , but not must-be coding style. code is also a language , it expresses your ideas, your thinking about it work for. basically I follow these rules to make code clear. 
+​	I prefer good coding style , but not must-be coding style. code is also a language , it expresses your ideas, your thinking about it work for. basically I follow these rules to make code clear. 
 
-	1. class name will be camel name , with the first capitalize letter  : 
-		TcpConnection , TcpServer , TcpListener
-
-	2. method name will lower case with "_" connects all words together  
-
-
-	3. class members are hard to name, google add postfix "_" , some add prefix "m_" to the word . I don't like them all.  
-
-	All members are part of the class, inner the class, it also a world to express something, I wish it be naturally.  In this library, I didn't add any prefix or postfix to members, sometimes it mix with the methods' name or other names, It's not a good naming style. 
-	
-	I start a new branch to put some members into a "m" struct of the class.  so all access to the members should using "m." , it looks like a namespace, but namespace can't be used inner class. 
-	It works and looks better, but there are insufficient when init members in class initialization list, will there are better way to naming. 
+1. class name will be camel name , with the first capitalize letter  : 
+	TcpConnection , TcpServer , TcpListener
+2. method name will lower case with "_" connects all words together  
+3. class members are hard to name, google add postfix "_" , some add prefix "m_" to the word . I don't like them all.  
 
 
 
+​	All members are part of the class, inner the class, it also a world to express something, I wish it be naturally.  In this library, I didn't add any prefix or postfix to members, sometimes it mix with the methods' name or other names, It's not a good naming style. 
 
-	
+​	I start a new branch to put some members into a "m" struct of the class.  so all access to the members should using "m." , it looks like a namespace, but namespace can't be used inner class. 
+It works and looks better, but there are insufficient that can't init members in class initialization list, and the performace will be lower? I have not  test it. If you have better ideas for naming, we can have a discuss. 
 
 
 

@@ -60,7 +60,11 @@ namespace knet
 				return true;
 			}
 
-			void stop() {}
+			void stop() {
+				for(auto & conn :connections){
+					conn->close(); 
+				}
+			}
 
 	 
 
