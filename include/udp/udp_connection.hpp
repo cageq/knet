@@ -163,8 +163,8 @@ private:
 				sock->bind(lisPoint);
 			}
 
-			m_timer = std::unique_ptr<Timer>(new Timer(ctx));
-			m_timer->start_timer(
+			m.timer = std::unique_ptr<Timer>(new Timer(ctx));
+			m.timer->start_timer(
 				[this]() {
 					std::chrono::steady_clock::time_point nowPoint =
 						std::chrono::steady_clock::now();
@@ -219,8 +219,13 @@ private:
 	udp::endpoint remote_point;
 	udp::endpoint multicast_point;
 	EventHandler event_handler = nullptr;
-	std::unique_ptr<Timer> m_timer = nullptr;
+
+private: 
 	std::chrono::steady_clock::time_point last_msg_time;
+
+	struct {
+		std::unique_ptr<Timer> timer = nullptr;
+	} m ; 
 };
 
 } // namespace udp

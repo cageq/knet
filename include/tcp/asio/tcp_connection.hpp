@@ -96,14 +96,13 @@ public:
 		}
 	}
 
-	void bind_data_handler(DataHandler handler) { data_handler = handler; }
+	inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
 	void bind_data_handler(SelfDataHandler handler) {
 		T* child = static_cast<T*>(this);
 		data_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 	}
 
-	void bind_event_handler(NetEventHandler handler) { event_handler = handler; }
-
+	inline void bind_event_handler(NetEventHandler handler) { event_handler = handler; }
 	void bind_event_handler(SelfNetEventHandler handler) {
 		T* child = static_cast<T*>(this);
 		event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);

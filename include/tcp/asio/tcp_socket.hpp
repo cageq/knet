@@ -350,7 +350,6 @@ public:
 						read_buffer_pos = 0; 
 						return;
 					} else { // buffer hold one or more package
-
 						dlog("process just one message {}", pkgLen);
 						readPos += pkgLen;
 					}
@@ -439,7 +438,7 @@ public:
 	inline asio::io_context& context() { return io_context; }
 
 private:
-	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 1024 * 1024 };
+	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 	asio::io_context& io_context;
  
  
