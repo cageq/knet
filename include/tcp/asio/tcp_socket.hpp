@@ -36,8 +36,8 @@ public:
 		: io_context(ctx)
 		, sock(ctx) {
 		worker_tid = tid;
-		m_status = SocketStatus::SOCKET_INIT;
-		//send_buffer.reserve(4096);
+		m.status = SocketStatus::SOCKET_INIT;
+		//m.send_buffer.reserve(4096);
 	}
 
 	~Socket() {}
@@ -77,7 +77,7 @@ public:
 	void do_read() {
 		if (sock.is_open()) {
 
-			m_status = SocketStatus::SOCKET_OPEN;
+			m.status = SocketStatus::SOCKET_OPEN;
 
 			auto self = this->shared_from_this();
 			auto buf = asio::buffer((char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
@@ -136,9 +136,9 @@ public:
 	int msend(const P& first, const Args&... rest) {
 		if (sock.is_open()) {
 			if (!first.empty()) {
-				m_mutex.lock();
+				m.mutex.lock();
 				this->mpush(first, rest...);
-				m_mutex.unlock();
+				m.mutex.unlock();
 			}
 			return 0;
 		}
@@ -148,14 +148,14 @@ public:
 	template <class... Args>
 	void mpush(const std::string& first, Args... rest) { 
 		
-		std::ostream outbuf (&send_buffer); 
+		std::ostream outbuf (&m.send_buffer); 
 		outbuf << first; 
 		mpush(rest...);
 	}
 
 	template <class... Args>
 	void mpush(const std::string_view& first, Args... rest) {
-		std::ostream outbuf (&send_buffer); 
+		std::ostream outbuf (&m.send_buffer); 
 		outbuf << first; 
 		mpush(rest...);
 	}
@@ -173,19 +173,19 @@ public:
 	}
 
 	bool do_async_write() {
-		if (send_buffer.size() > 0 ) {  
+		if (m.send_buffer.size() > 0 ) {  
 	 		is_writing = true; 
-			ilog("send data length in single buffer {}", send_buffer.size());
+			ilog("send data length in single buffer {}", m.send_buffer.size());
 			auto self = this->shared_from_this();			
-			asio::async_write(sock, asio::buffer(send_buffer.data(), send_buffer.size()),
+			asio::async_write(sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
 				[this, self](std::error_code ec, std::size_t length) {
 					if (!ec && sock.is_open() && length > 0 ) {					
 						connection->handle_event(EVT_SEND);
 						{
 							ilog("send out length {}",length); 
-							std::lock_guard<std::mutex>  guard(m_mutex); 
-							send_buffer.consume(length); 					 	
-							if (send_buffer.size() == 0){
+							std::lock_guard<std::mutex>  guard(m.mutex); 
+							m.send_buffer.consume(length); 					 	
+							if (m.send_buffer.size() == 0){
 								is_writing = false;
 								return ; 
 							}			 								
@@ -227,8 +227,8 @@ public:
 	}
 	
 	bool is_open() {
-		//		dlog("status is {}", static_cast<uint32_t>(m_status ));
-		return sock.is_open() && m_status == SocketStatus::SOCKET_OPEN;
+		//		dlog("status is {}", static_cast<uint32_t>(m.status ));
+		return sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 	}
 
 #if (WITH_PACKAGE_HANDLER)
@@ -374,17 +374,17 @@ public:
 	void close() { do_close(true); }
 	void do_close(bool force = false) {
 
-		if (m_status == SocketStatus::SOCKET_CLOSING || m_status == SocketStatus::SOCKET_CLOSED) {
-			dlog("already in closing status {}", m_status);
+		if (m.status == SocketStatus::SOCKET_CLOSING || m.status == SocketStatus::SOCKET_CLOSED) {
+			dlog("already in closing status {}", m.status);
 			return;
 		}
 
 		if (force) {
-			m_status = SocketStatus::SOCKET_CLOSING;
+			m.status = SocketStatus::SOCKET_CLOSING;
 		}
 
 		auto self = this->shared_from_this();
-		if (send_buffer.size() > 0  &&  !is_writing ){
+		if (m.send_buffer.size() > 0  &&  !is_writing ){
 			do_async_write(); //try last write
 		}
 		asio::post(io_context, [self]() {
@@ -395,9 +395,9 @@ public:
 				self->connection->handle_event(EVT_DISCONNECT);
 				self->read_buffer_pos = 0;
 				if (self->connection->reconn_flag) {
-					self->m_status = SocketStatus::SOCKET_RECONNECT;
+					self->m.status = SocketStatus::SOCKET_RECONNECT;
 				} else {
-					self->m_status = SocketStatus::SOCKET_CLOSED;
+					self->m.status = SocketStatus::SOCKET_CLOSED;
 					if (self->socket().is_open()) {
 						self->socket().close();
 					}
@@ -406,7 +406,7 @@ public:
 				}
 
 			} else {
-				self->m_status = SocketStatus::SOCKET_CLOSED;
+				self->m.status = SocketStatus::SOCKET_CLOSED;
 				if (self->socket().is_open()) {
 					self->socket().close();
 					self->read_buffer_pos = 0;
@@ -440,16 +440,15 @@ public:
 private:
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 	asio::io_context& io_context;
- 
- 
 	bool is_writing = false;
-	asio::streambuf send_buffer;  
- 
-	std::mutex m_mutex;
-
 	tcp::socket sock;
 
-	SocketStatus m_status = SocketStatus::SOCKET_IDLE;
+	struct {
+		asio::streambuf send_buffer;  
+		std::mutex mutex;
+		SocketStatus status = SocketStatus::SOCKET_IDLE;
+	} m; 
+
 
 	char read_buffer[kReadBufferSize];
 	uint32_t read_buffer_pos = 0;
