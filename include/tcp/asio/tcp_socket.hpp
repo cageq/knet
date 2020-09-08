@@ -34,7 +34,7 @@ public:
 	};
 	Socket(const std::thread::id& tid, asio::io_context& ctx, void * = nullptr)
 		: io_context(ctx)
-		, sock(ctx) {
+		, tcp_sock(ctx) {
 		worker_tid = tid;
 		m.status = SocketStatus::SOCKET_INIT;
 		//m.send_buffer.reserve(4096);
@@ -50,7 +50,7 @@ public:
 		auto result = resolver.resolve(host, std::to_string(port));
 		dlog("connect to server {}:{}", host.c_str(), port);
 		auto self = this->shared_from_this();
-		async_connect(sock, result,
+		async_connect(tcp_sock, result,
 			[self](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 				if (!ec) {
 
@@ -63,7 +63,7 @@ public:
 					self->do_read();
 				} else {
 					dlog("connect failed");
-					self->sock.close();
+					self->tcp_sock.close();
 				}
 			});
 		return true;
@@ -75,14 +75,14 @@ public:
 	}
 
 	void do_read() {
-		if (sock.is_open()) {
+		if (tcp_sock.is_open()) {
 
 			m.status = SocketStatus::SOCKET_OPEN;
 
 			auto self = this->shared_from_this();
 			auto buf = asio::buffer((char*)m.read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
 			// dlog("left buffer size {}", kReadBufferSize - read_buffer_pos);
-			sock.async_read_some(
+			tcp_sock.async_read_some(
 				buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
 					if (!ec) {
 						// dlog("received data {}", bytes_transferred);
@@ -102,7 +102,7 @@ public:
 	int send_inloop(const char* pData, uint32_t dataLen) {
 
 		asio::async_write(
-			sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
+			tcp_sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
 				if (!ec) {
 					if (length < dataLen) {
 						send_inloop(pData + length, dataLen - length);
@@ -134,7 +134,7 @@ public:
 
 	template <class P, class... Args>
 	int msend(const P& first, const Args&... rest) {
-		if (sock.is_open()) {
+		if (tcp_sock.is_open()) {
 			if (!first.empty()) {
 				m.mutex.lock();
 				this->mpush(first, rest...);
@@ -163,9 +163,9 @@ public:
 	void mpush() {
 		auto self = this->shared_from_this();
 		asio::dispatch(io_context, [this, self]() {
-			if (sock.is_open()) {							
+			if (tcp_sock.is_open()) {							
 
-				if (!is_writing) {
+				if (!m.is_writing) {
 					self->do_async_write();
 				}
 			}
@@ -174,19 +174,19 @@ public:
 
 	bool do_async_write() {
 		if (m.send_buffer.size() > 0 ) {  
-	 		is_writing = true; 
+	 		m.is_writing = true; 
 			ilog("send data length in single buffer {}", m.send_buffer.size());
 			auto self = this->shared_from_this();			
-			asio::async_write(sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
+			asio::async_write(tcp_sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
 				[this, self](std::error_code ec, std::size_t length) {
-					if (!ec && sock.is_open() && length > 0 ) {					
+					if (!ec && tcp_sock.is_open() && length > 0 ) {					
 						connection->handle_event(EVT_SEND);
 						{
 							ilog("send out length {}",length); 
 							std::lock_guard<std::mutex>  guard(m.mutex); 
 							m.send_buffer.consume(length); 					 	
 							if (m.send_buffer.size() == 0){
-								is_writing = false;
+								m.is_writing = false;
 								return ; 
 							}			 								
 						}		
@@ -197,7 +197,7 @@ public:
 				});
 		
 		} else {
-			is_writing = false;
+			m.is_writing = false;
 		}
 		return true;
 	}
@@ -211,8 +211,8 @@ public:
 		}
 		auto self = this->shared_from_this();
 		asio::async_write(
-			sock, bufs, [this, self, totalSize](std::error_code ec, std::size_t length) {
-				if (!ec && (sock.is_open())) {
+			tcp_sock, bufs, [this, self, totalSize](std::error_code ec, std::size_t length) {
+				if (!ec && (tcp_sock.is_open())) {
 					if (length < totalSize) {
 						wlog("send data not finished,  total {}, sent {} ", totalSize, length);
 						// self->batch_async_write();
@@ -228,7 +228,7 @@ public:
 	
 	bool is_open() {
 		//		dlog("status is {}", static_cast<uint32_t>(m.status ));
-		return sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
+		return tcp_sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 	}
 
 #if (WITH_PACKAGE_HANDLER)
@@ -384,12 +384,11 @@ public:
 		}
 
 		auto self = this->shared_from_this();
-		if (m.send_buffer.size() > 0  &&  !is_writing ){
+		if (m.send_buffer.size() > 0  &&  !m.is_writing ){
 			do_async_write(); //try last write
 		}
 		asio::post(io_context, [self]() {
-			elog("try to do close connection ...");
-
+			elog("try to close connection ..."); 
 
 			if (self->connection) {
 				self->connection->handle_event(EVT_DISCONNECT);
@@ -417,7 +416,7 @@ public:
 
 	utils::Endpoint local_endpoint() {
 		utils::Endpoint endpoint;
-		auto ep = sock.local_endpoint();
+		auto ep = tcp_sock.local_endpoint();
 		endpoint.host = ep.address().to_string();
 		endpoint.port = ep.port();
 		return endpoint;
@@ -425,36 +424,34 @@ public:
 
 	utils::Endpoint remote_endpoint() {
 		utils::Endpoint endpoint;
-		auto ep = sock.remote_endpoint();
+		auto ep = tcp_sock.remote_endpoint();
 		endpoint.host = ep.address().to_string();
 		endpoint.port = ep.port();
 		return endpoint;
 	}
-	inline tcp::socket& socket() { return sock; }
+	inline tcp::socket& socket() { return tcp_sock; }
 
 	std::shared_ptr<T> connection;
-	bool is_inloop() { return worker_tid == std::this_thread::get_id(); }
+	inline bool is_inloop() { return worker_tid == std::this_thread::get_id(); }
 
 	inline asio::io_context& context() { return io_context; }
 
 private:
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 
-	asio::io_context& io_context;
-	tcp::socket sock;
-
-	bool is_writing = false;
-
+	asio::io_context& io_context; 
+	tcp::socket tcp_sock; 
 	struct {
 		asio::streambuf send_buffer;  
 		char read_buffer[kReadBufferSize];
 		std::mutex mutex;
 		SocketStatus status = SocketStatus::SOCKET_IDLE;
+		bool is_writing = false;
 	} m; 
-
-
-	uint32_t read_buffer_pos = 0;
+ 
+	
 	std::thread::id worker_tid;
+	uint32_t read_buffer_pos = 0;
 	uint32_t need_package_length = 0;
 };
 

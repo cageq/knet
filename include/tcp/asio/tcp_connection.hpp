@@ -5,11 +5,12 @@
 
 #pragma once
 
-#include <vector>
 #include <unordered_map>
 #include "tcp_socket.hpp"
 #include "tcp_factory.hpp"
 #include "event_worker.hpp"
+#include <vector>
+#include <set>
 using asio::ip::tcp;
 
 namespace knet
@@ -21,14 +22,12 @@ namespace knet
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
-			// template <class>
-			// friend class template.Sock;
 			template <class, class, class, class...>
 			friend class Listener;
 			template <class, class, class>
 			friend class Connector;
-			using ConnSock = Sock;
 
+			using ConnSock = Sock; 
 			using NetEventHandler = std::function<void(std::shared_ptr<T>, NetEvent)>;
 			using SelfNetEventHandler = void (T::*)(std::shared_ptr<T>, NetEvent);
 			using DataHandler = std::function<uint32_t(const std::string &, MessageStatus)>;
@@ -36,19 +35,6 @@ namespace knet
 			using SocketPtr = std::shared_ptr<Sock>;
 			using ConnFactory = ConnectionFactory<T>;
 			using FactoryPtr = ConnFactory *;
-
-			// using TimerHandler = std::function<void()>;
-			// struct TimerItem {
-			// 	TimerItem(asio::io_context& ctx)
-			// 		: timer(ctx) {}
-			// 	asio::steady_timer timer;
-			// 	TimerHandler handler;
-			// 	uint64_t interval;
-			// 	bool alive = false;
-			// 	uint64_t id;
-			// 	bool loop = true;
-			// };
-			// using TimerItemPtr = std::shared_ptr<TimerItem>;
 
 			TcpConnection() {}
 
@@ -60,16 +46,26 @@ namespace knet
 
 			virtual ~TcpConnection()
 			{
+				//clear all timers to keep safety
+				if (event_worker)
+				{
+					for (auto &tid : timers)
+					{
+						event_worker->stop_timer(tid);
+					}
+					timers.clear();
+				}
 			}
 
-			void init(FactoryPtr fac = nullptr, SocketPtr sock = nullptr)
+			void init(FactoryPtr fac = nullptr, SocketPtr sock = nullptr, EventWorkerPtr worker = nullptr)
 			{
 				static uint64_t index = 1024;
+				event_worker = worker;
 				this->factory = fac;
 				cid = ++index;
-				std::shared_ptr<T> self = this->shared_from_this();
+				//std::shared_ptr<T> self = this->shared_from_this();
 				socket = sock;
-				socket->connection = self;
+				socket->connection = this->shared_from_this();
 				handle_event(EVT_CREATE);
 			}
 
@@ -86,7 +82,10 @@ namespace knet
 			void close()
 			{
 				reconn_flag = false;
-				socket->close();
+				if (socket)
+				{
+					socket->close();
+				}
 			}
 			void post(std::function<void()> handler)
 			{
@@ -114,13 +113,14 @@ namespace knet
 				event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
 
-			bool is_connected() { return socket && socket->is_open(); }
+			inline bool is_connected() { return socket && socket->is_open(); }
 
 			bool connect(const std::string &host, uint32_t port)
 			{
 				dlog("start to connect {}:{}", host, port);
 				this->remote_host = host;
 				this->remote_port = port;
+				is_passive = false; 
 				return socket->connect(host, port);
 			}
 
@@ -136,7 +136,7 @@ namespace knet
 
 			uint32_t get_remote_port() { return socket->remote_endpoint().port; }
 
-			uint64_t get_cid() { return cid; }
+			inline uint64_t get_cid() const { return cid; }
 
 			bool passive() { return is_passive; }
 
@@ -175,9 +175,7 @@ namespace knet
 				return std::static_pointer_cast<FPtr>(factory);
 			}
 
-			void set_worker(EventWorkerPtr w) { event_worker = w; }
-
-			EventWorkerPtr get_worker() { return event_worker; }
+			inline EventWorkerPtr get_worker() { return event_worker; }
 
 			asio::io_context *get_context()
 			{
@@ -189,10 +187,6 @@ namespace knet
 			}
 			void *user_data = nullptr;
 			uint64_t cid = 0;
-
-		public:
-			bool reconn_flag = false;
-			uint64_t timerid = 0;
 
 			void destroy()
 			{
@@ -219,17 +213,26 @@ namespace knet
 
 			uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
 			{
-				return event_worker->start_timer(handler, interval, bLoop);
+				if (event_worker)
+				{
+					uint64_t tid = event_worker->start_timer(handler, interval, bLoop);
+					timers.insert(tid);
+					return tid;
+				}
+				return 0;
 			}
 
 			void stop_timer(uint64_t timerId)
 			{
-				event_worker->stop_timer(timerId);
+				if (event_worker)
+				{
+					event_worker->stop_timer(timerId);
+					timers.erase(timerId);
+				}
 			}
 
 			virtual void handle_event(NetEvent evt)
 			{
-
 				dlog("handle event in connection {}", evt);
 				if (event_handler)
 				{
@@ -242,14 +245,15 @@ namespace knet
 				}
 			}
 
-			friend class ConnectionFactory<T>;
+			//friend class ConnectionFactory<T>;
 
-			static std::shared_ptr<T> create(SocketPtr sock)
-			{
-				auto self = std::make_shared<T>();
-				self->init(self->factory, sock);
-				return self;
-			}
+			// static std::shared_ptr<T> create(SocketPtr sock)
+			// {
+			// 	auto self = std::make_shared<T>();
+			// 	self->init(self->factory, sock);
+			// 	return self;
+			// }
+
 			void set_remote_addr(const std::string &host, uint32_t port)
 			{
 				remote_host = host;
@@ -264,11 +268,16 @@ namespace knet
 				return remote_port;
 			}
 
+		
+			bool reconn_flag = false;
+
+		private:
+			uint64_t timerid = 0;
 			bool is_passive = true;
 
-		protected:
+			std::set<uint64_t> timers;
 			FactoryPtr factory = nullptr;
-			SocketPtr socket;
+			SocketPtr socket = nullptr;
 			NetEventHandler event_handler;
 			DataHandler data_handler;
 			std::string remote_host;

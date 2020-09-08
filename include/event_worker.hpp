@@ -100,6 +100,8 @@ namespace knet
 		
 		void * get_user_data(){ return user_data; }
 
+	 
+
 	protected: 
 
 		void run()
