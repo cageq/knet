@@ -80,14 +80,14 @@ public:
 			m.status = SocketStatus::SOCKET_OPEN;
 
 			auto self = this->shared_from_this();
-			auto buf = asio::buffer((char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
+			auto buf = asio::buffer((char*)m.read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
 			// dlog("left buffer size {}", kReadBufferSize - read_buffer_pos);
 			sock.async_read_some(
 				buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
 					if (!ec) {
 						// dlog("received data {}", bytes_transferred);
 						process_data(bytes_transferred);
-						//dlog("read data: {} length {}", read_buffer, bytes_transferred);
+						//dlog("read data: {} length {}", m.read_buffer, bytes_transferred);
 						self->do_read();
 					} else {
 						dlog("read error ,close connection {} ", ec.value());
@@ -238,10 +238,10 @@ public:
 		}
 
 		this->connection->handle_event(EVT_RECV);
-		//	this->read_buffer.resize(read_buffer.size() + nread);
+		//	this->m.read_buffer.resize(m.read_buffer.size() + nread);
 		read_buffer_pos += nread;
 		uint32_t readPos = 0;
-		int32_t pkgLen = this->connection->handle_package(read_buffer, read_buffer_pos);
+		int32_t pkgLen = this->connection->handle_package(m.read_buffer, read_buffer_pos);
 		dlog("process data  pkg size is {}", pkgLen);
 		if (pkgLen < 0 || pkgLen > kReadBufferSize) {
 			elog("single package size ({}) error, close connection", pkgLen);
@@ -251,22 +251,22 @@ public:
 		while (pkgLen > 0) {
 			dlog("read package length {}", pkgLen);
 			if (readPos + pkgLen <= read_buffer_pos) {
-				char* pkgEnd = (char*)read_buffer + readPos + pkgLen + 1;
+				char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 				char endChar = *pkgEnd;
 				*pkgEnd = 0;
-				this->connection->handle_data((char*)read_buffer + readPos, pkgLen);
+				this->connection->handle_data((char*)m.read_buffer + readPos, pkgLen);
 				*pkgEnd = endChar;
 				readPos += pkgLen;
 			}
 
 			if (readPos < read_buffer_pos) {
 				pkgLen = this->connection->handle_package(
-					(char*)read_buffer + readPos, read_buffer_pos - readPos);
+					(char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 				if (pkgLen <= 0) {
 					elog("moving buffer to front {} ", read_buffer_pos - readPos);
-					memmove(read_buffer, (char*)read_buffer + readPos, read_buffer_pos - readPos);
+					memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 					read_buffer_pos -= readPos;
-					// this->read_buffer.erase(read_buffer.begin(),read_buffer.begin()+ readPos);
+					// this->m.read_buffer.erase(m.read_buffer.begin(),m.read_buffer.begin()+ readPos);
 					break;
 				}
 			} else {
@@ -302,7 +302,7 @@ public:
 			if (need_package_length > 0) {
 
 				if (need_package_length <= readLen) {
-					pkgLen = this->connection->handle_data(std::string((char*)read_buffer + readPos,
+					pkgLen = this->connection->handle_data(std::string((char*)m.read_buffer + readPos,
 						need_package_length), MessageStatus::MESSAGE_END);
 					dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
 					readPos += need_package_length;
@@ -316,7 +316,7 @@ public:
 				} else {
 
 					pkgLen = this->connection->handle_data(
-						std::string((char*)read_buffer + readPos, readLen), MessageStatus::MESSAGE_CHUNK);
+						std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_CHUNK);
 
 					dlog(" need length {} package len {} , data len is {} chunk",
 						need_package_length, pkgLen, readLen);
@@ -327,7 +327,7 @@ public:
 
 			} else {
 				pkgLen = this->connection->handle_data(
-					std::string((char*)read_buffer + readPos, readLen), MessageStatus::MESSAGE_NONE);
+					std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_NONE);
 				dlog(" need length {} package len {} , data len is {}", need_package_length, pkgLen,
 					readLen);
 				if (pkgLen > kMaxPackageLimit) {
@@ -338,7 +338,7 @@ public:
 				if (pkgLen == 0) { // no enough data 
 
 					if (read_buffer_pos > readPos && readPos > 0) {
-						memmove(read_buffer, (char*)read_buffer + readPos, read_buffer_pos - readPos);
+						memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 					}
 					read_buffer_pos -= readPos;
 					return;
@@ -360,7 +360,7 @@ public:
 		} while (read_buffer_pos > readPos);
 
 		if (read_buffer_pos > readPos && readPos > 0) {
-			memmove(read_buffer, (char*)read_buffer + readPos, read_buffer_pos - readPos);
+			memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 			read_buffer_pos -= readPos;
 		} else {
 			read_buffer_pos = 0;
@@ -439,18 +439,20 @@ public:
 
 private:
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
+
 	asio::io_context& io_context;
-	bool is_writing = false;
 	tcp::socket sock;
+
+	bool is_writing = false;
 
 	struct {
 		asio::streambuf send_buffer;  
+		char read_buffer[kReadBufferSize];
 		std::mutex mutex;
 		SocketStatus status = SocketStatus::SOCKET_IDLE;
 	} m; 
 
 
-	char read_buffer[kReadBufferSize];
 	uint32_t read_buffer_pos = 0;
 	std::thread::id worker_tid;
 	uint32_t need_package_length = 0;
