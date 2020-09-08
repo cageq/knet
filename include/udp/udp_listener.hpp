@@ -29,28 +29,28 @@ public:
 	bool start(EventHandler evtHandler, uint32_t port, const std::string& lisHost = "0.0.0.0",
 		const std::string& multiHost = "", bool reuse = true) {
 
-		m_port = port;
-		event_handler = evtHandler;
+		m.port = port;
+		m.event_handler = evtHandler;
 		asio::ip::address lisAddr = asio::ip::make_address(lisHost);
 
-		server_socket = std::make_shared<udp::socket>(worker->context());
+		m.server_socket = std::make_shared<udp::socket>(worker->context());
 
-		// server_socket =
+		// m.server_socket =
 		// 	std::make_shared<udp::socket>(worker->context(),  udp::endpoint(lisAddr, port) );
 
 		asio::ip::udp::endpoint lisPoint(lisAddr, port);
 
-		server_socket->open(lisPoint.protocol());
-		server_socket->set_option(asio::ip::udp::socket::reuse_address(reuse));
-		server_socket->bind(lisPoint);
+		m.server_socket->open(lisPoint.protocol());
+		m.server_socket->set_option(asio::ip::udp::socket::reuse_address(reuse));
+		m.server_socket->bind(lisPoint);
 
-		multi_host = multiHost;
+		m.multi_host = multiHost;
 
 		if (!multiHost.empty()) {
 			// Create the socket so that multiple may be bound to the same address.
 			dlog("join multi address {}", multiHost);
 			asio::ip::address multiAddr = asio::ip::make_address(multiHost);
-			server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
+			m.server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 		}
 
 		dlog("start udp server {}:{}", lisHost, port);
@@ -59,30 +59,30 @@ public:
 	}
 
 	TPtr find_connection(udp::endpoint pt) {
-		auto itr = connections.find(addrstr(pt));
-		if (itr != connections.end()) {
+		auto itr = m.connections.find(addrstr(pt));
+		if (itr != m.connections.end()) {
 			return itr->second;
 		}
 		return nullptr;
 	}
 	void broadcast(const std::string& msg) {
 
-		if (multi_host.empty()) {
-			for (auto& item : connections) {
+		if (m.multi_host.empty()) {
+			for (auto& item : m.connections) {
 				auto conn = item.second;
 				conn->send(msg);
 			}
 		} else {
 			auto buffer = std::make_shared<std::string>(std::move(msg));
-			asio::ip::address multiAddr = asio::ip::make_address(multi_host);
+			asio::ip::address multiAddr = asio::ip::make_address(m.multi_host);
 
-			asio::ip::udp::endpoint multiPoint(multiAddr, m_port);
+			asio::ip::udp::endpoint multiPoint(multiAddr, m.port);
 			dlog("broadcast message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
-			server_socket->async_send_to(asio::buffer(*buffer), multiPoint,
+			m.server_socket->async_send_to(asio::buffer(*buffer), multiPoint,
 				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-						if (event_handler) {
-							event_handler(nullptr, EVT_SEND, {nullptr, len});
+						if (m.event_handler) {
+							m.event_handler(nullptr, EVT_SEND, {nullptr, len});
 						}
 					} else {
 						dlog("sent message error : {}, {}", ec.value(), ec.message());
@@ -93,17 +93,17 @@ public:
 
 	TPtr create_connection(udp::endpoint pt) {
 		TPtr conn = nullptr;
-		if (event_handler) {
-			conn = event_handler(nullptr, EVT_CREATE, {});
+		if (m.event_handler) {
+			conn = m.event_handler(nullptr, EVT_CREATE, {});
 		}
 
 		if (!conn) {
 			conn = T::create();
 		}
 		conn->status = T::CONN_OPEN;
-		conn->event_handler = event_handler;
+		conn->event_handler = m.event_handler;
 		dlog("add remote connection {}", addrstr(pt));
-		connections[addrstr(pt)] = conn;
+		m.connections[addrstr(pt)] = conn;
 		return conn;
 	}
 
@@ -112,30 +112,30 @@ public:
 private:
 	void do_receive() {
 
-		server_socket->async_receive_from(asio::buffer(recv_buffer, max_length), remote_point,
+		m.server_socket->async_receive_from(asio::buffer(m.recv_buffer, max_length), m.remote_point,
 			[this](std::error_code ec, std::size_t bytes_recvd) {
 				if (!ec && bytes_recvd > 0) {
 
-					dlog("get message from {}:{}", remote_point.address().to_string(),
-						remote_point.port());
-					auto conn = this->find_connection(remote_point);
+					dlog("get message from {}:{}", m.remote_point.address().to_string(),
+						m.remote_point.port());
+					auto conn = this->find_connection(m.remote_point);
 					if (!conn) {
-						conn = this->create_connection(remote_point);
-						conn->sock = server_socket;
+						conn = this->create_connection(m.remote_point);
+						conn->sock = m.server_socket;
 
-						conn->remote_point = remote_point;
-						// if (multi_host.empty()) {
-						// 	conn->remote_point = remote_point;
+						conn->remote_point = m.remote_point;
+						// if (m.multi_host.empty()) {
+						// 	conn->remote_point = m.remote_point;
 						// } else {
 						// 	conn->remote_point =
-						// 		asio::ip::udp::endpoint(asio::ip::make_address(multi_host), m_port);
+						// 		asio::ip::udp::endpoint(asio::ip::make_address(m.multi_host), m.port);
 						// }
 					}
-					recv_buffer[bytes_recvd] = 0;
-					conn->on_package(std::string((const char*)recv_buffer, bytes_recvd));
+					m.recv_buffer[bytes_recvd] = 0;
+					conn->on_package(std::string((const char*)m.recv_buffer, bytes_recvd));
 
-					if (event_handler) {
-						event_handler(conn, EVT_RECV, {recv_buffer, bytes_recvd});
+					if (m.event_handler) {
+						m.event_handler(conn, EVT_RECV, {m.recv_buffer, bytes_recvd});
 					}
 
 				} else {
@@ -147,26 +147,27 @@ private:
 
 	// void run() {
 	// 	worker->post([this]() {
-	// 		dlog("start udp server @ {}", m_port);
-	// 		server_socket =
-	// 			std::make_shared<udp::socket>(worker->context(), udp::endpoint(udp::v4(), m_port));
+	// 		dlog("start udp server @ {}", m.port);
+	// 		m.server_socket =
+	// 			std::make_shared<udp::socket>(worker->context(), udp::endpoint(udp::v4(), m.port));
 	// 		do_receive();
 	// 	});
 	// }
 
 	enum { max_length = 4096 };
-	char recv_buffer[max_length];
 
-	uint32_t m_port;
-
-	std::string multi_host;
+	struct {
+		char recv_buffer[max_length];
+		uint32_t port;
+		std::string multi_host;
+		udp::endpoint remote_point;
+		std::shared_ptr<udp::socket> server_socket;
+		std::unordered_map<std::string, TPtr> connections;
+		EventHandler event_handler;
+	} m; 
 
 	WorkerPtr worker;
-	std::shared_ptr<udp::socket> server_socket;
-	std::unordered_map<std::string, TPtr> connections;
-	EventHandler event_handler;
 
-	udp::endpoint remote_point;
 };
 
 } // namespace udp

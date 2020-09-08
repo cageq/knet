@@ -22,10 +22,10 @@ class MyConnection : public UdpConnection<MyConnection> {
 		start = end;
 	    }
 
-	    if (total > 1000000) {
-		    running = false; 
+	    // if (total > 1000000) {
+		//    // running = false; 
 
-	    }
+	    // }
 
 	//	ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 
 		//std::string rsp = "message from server" ; 
