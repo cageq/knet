@@ -4,12 +4,13 @@
 //	author:		wkui
 //***************************************************************
 #pragma once
+#include <string_view>
+
 
 #include "http/http_parser.hpp"
 #include "http/http_request.hpp"
 #include "http/http_connection.hpp"
 #include "wsock_shakehand.hpp"
-#include <string_view>
 
 #include "wsock_protocol.hpp"
 
@@ -19,9 +20,7 @@ using namespace knet::http;
 
 namespace knet {
 namespace websocket {
- 
-
-
+  
  
 class WSockConnection : public TcpConnection<WSockConnection> 
 {

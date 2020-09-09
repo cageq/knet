@@ -5,11 +5,10 @@
 
 #pragma once
 
-#include "timer.hpp"
+#include "utils/timer.hpp"
 using namespace knet::utils;
 namespace knet
-{
-
+{ 
 	class EventWorker
 	{
 	public:

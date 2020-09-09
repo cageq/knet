@@ -4,6 +4,7 @@
 //***************************************************************
 
 #pragma once 
+#include <functional>
 
 namespace knet {
 	namespace tcp{

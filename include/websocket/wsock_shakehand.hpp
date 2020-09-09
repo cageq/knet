@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <random>
 
 namespace knet {
 namespace websocket {

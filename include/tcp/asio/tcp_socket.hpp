@@ -10,16 +10,14 @@
 #include <string>
 #include <chrono>
 #include <string_view> 
-#include "utils.hpp"
-#include "loop_buffer.hpp"
+ 
 
 #define WITH_PACKAGE_HANDLER 0
-using namespace knet::utils;
+
 namespace knet {
 namespace tcp {
-
-using asio::ip::tcp;
  
+using asio::ip::tcp;
 
 template <class T>
 class TcpSocket : public std::enable_shared_from_this<TcpSocket<T>>  {
@@ -414,21 +412,16 @@ public:
 		});
 	}
 
-	utils::Endpoint local_endpoint() {
-		utils::Endpoint endpoint;
-		auto ep = tcp_sock.local_endpoint();
-		endpoint.host = ep.address().to_string();
-		endpoint.port = ep.port();
-		return endpoint;
+	tcp::endpoint local_endpoint() {
+		 
+		return tcp_sock.local_endpoint();
+	
 	}
 
-	utils::Endpoint remote_endpoint() {
-		utils::Endpoint endpoint;
-		auto ep = tcp_sock.remote_endpoint();
-		endpoint.host = ep.address().to_string();
-		endpoint.port = ep.port();
-		return endpoint;
+	tcp::endpoint remote_endpoint() { 
+		return tcp_sock.remote_endpoint(); 
 	}
+
 	inline tcp::socket& socket() { return tcp_sock; }
 
 	std::shared_ptr<T> connection;

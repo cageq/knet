@@ -3,8 +3,8 @@
 //	author:		wkui
 //***************************************************************
 
-#ifndef __GNET_H__
-#define __GNET_H__
+#ifndef __KNET_H__
+#define __KNET_H__
 
 #include <thread>
 #include "klog.hpp"
@@ -70,7 +70,7 @@ namespace knet
 		MESSAGE_CHUNK = 1,
 		MESSAGE_END = 2,
 	};
-}
+} // namespace knet
 
 #define USING_LOOP_BUFFER 0
 #define USING_SINGLE_BUFFER 1

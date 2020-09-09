@@ -9,16 +9,18 @@
 #include <memory>
 #include <asio.hpp>
 #include "klog.hpp"
-#include "utils.hpp"
-#include "timer.hpp"
+ 
+#include "utils/timer.hpp"
 #include "event_worker.hpp"
+
+
+using namespace knet::utils;
+using namespace std::chrono;
+
 
 namespace knet {
 namespace udp {
-
 using asio::ip::udp;
-using namespace knet::utils;
-using namespace std::chrono;
 
 using UdpSocketPtr = std::shared_ptr<udp::socket>;
 

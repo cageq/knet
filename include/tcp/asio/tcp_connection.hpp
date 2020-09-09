@@ -4,13 +4,14 @@
 //***************************************************************
 
 #pragma once
-
+#include <vector>
+#include <set>
 #include <unordered_map>
+
 #include "tcp_socket.hpp"
 #include "tcp_factory.hpp"
 #include "event_worker.hpp"
-#include <vector>
-#include <set>
+
 using asio::ip::tcp;
 
 namespace knet
@@ -128,9 +129,9 @@ namespace knet
 
 			bool connect() { return socket->connect(remote_host, remote_port); }
 
-			utils::Endpoint local_endpoint() { return socket->local_endpoint(); }
+			tcp::endpoint local_endpoint() { return socket->local_endpoint(); }
 
-			utils::Endpoint remote_endpoint() { return socket->remote_endpoint(); }
+			tcp::endpoint remote_endpoint() { return socket->remote_endpoint(); }
 
 			std::string get_remote_ip() { return socket->remote_endpoint().host; }
 

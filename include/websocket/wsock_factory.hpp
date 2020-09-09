@@ -12,6 +12,7 @@
 
 using namespace knet::tcp;
 using namespace knet::http;
+
 namespace knet {
 namespace websocket {
 

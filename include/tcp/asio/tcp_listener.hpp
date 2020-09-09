@@ -4,9 +4,10 @@
 //***************************************************************
 
 #pragma once
-#include "tcp_connection.hpp"
 #include <tuple>
 #include <memory>
+
+#include "tcp_connection.hpp"
 
 namespace knet
 {
