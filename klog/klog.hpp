@@ -21,13 +21,13 @@
 #define KLOG_SEPRATOR " "
 #endif
 
-// enum KLogLevel
-// {
-// 	LOG_LEVEL_INFO,
-// 	LOG_LEVEL_DEBUG,
-// 	LOG_LEVEL_WARN,
-// 	LOG_LEVEL_ERROR,
-// };
+ enum KLogLevel
+ {
+ 	LOG_LEVEL_INFO,
+ 	LOG_LEVEL_DEBUG,
+ 	LOG_LEVEL_WARN,
+ 	LOG_LEVEL_ERROR,
+ };
 
 
 #define MAX_LOG_LINE 1024 
