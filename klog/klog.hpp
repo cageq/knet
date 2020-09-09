@@ -18,7 +18,7 @@
 #endif
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 0
+#define LOG_LEVEL 5
 #endif
 enum KLogLevel
 {
@@ -163,9 +163,9 @@ namespace klog
 		}; 
 		class EmptyFlow{
 			public: 
-				EmptyFlow &operator<<(StandardEndLine manip) {return *this;}
-				template <class T>
-					EmptyFlow &  operator<<(const T &log) { return *this; }
+			
+				 template <class T>
+				inline	EmptyFlow &  operator<<(const T &log) { return *this; }
 		}; 
 
 		//	const char * kFormat = "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}
@@ -219,10 +219,7 @@ namespace klog
 		//				return  *this; 
 		//			}
 		//
-
-
-		EmptyFlow  empty_flow; 
-
+ 
 		template <class T>
 			FlowHelper operator<<(const T &log)
 			{
@@ -231,11 +228,10 @@ namespace klog
 					flush();
 				}
 				return std::move(FlowHelper(this)); 
-			}
-
+			} 
 
 		inline EmptyFlow & null_logger(){
-
+			static EmptyFlow  empty_flow; 
 			return empty_flow; 	
 		}
 
@@ -244,15 +240,15 @@ namespace klog
 			return *this;
 		}
 		inline KLog & info_logger(){
-			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_GREEN);
+			fmt::format_to(buffer, "{}[INFO] ", ANSI_COLOR_GREEN);
 			return *this;
 		}
 		inline KLog & warn_logger(){
-			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_YELLOW);
+			fmt::format_to(buffer, "{}[WARN] ", ANSI_COLOR_YELLOW);
 			return *this;
 		}
 		inline KLog & error_logger(){
-			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_RED);
+			fmt::format_to(buffer, "{}[ERROR] ", ANSI_COLOR_RED);
 			return *this;
 		}
 
@@ -487,7 +483,7 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout  (klog::KLog::instance().null_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
+#define dout klog::KLog::instance().null_logger()  
 #define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
@@ -511,8 +507,8 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout  
-#define iout  
+#define dout klog::KLog::instance().null_logger()   
+#define iout klog::KLog::instance().null_logger()   
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
@@ -533,9 +529,9 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout  
-#define iout  
-#define wout  
+#define dout klog::KLog::instance().null_logger()  
+#define iout klog::KLog::instance().null_logger()   
+#define wout klog::KLog::instance().null_logger()   
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__  << " " )
 #elif LOG_LEVEL == 0
 
@@ -549,8 +545,8 @@ namespace klog
 #define wlog(fmt, ...)
 #define elog(fmt, ...)
 
-#define dout  
-#define iout  
-#define wout  
-#define eout  
+#define dout  klog::KLog::instance().null_logger()    
+#define iout  klog::KLog::instance().null_logger()   
+#define wout  klog::KLog::instance().null_logger()   
+#define eout  klog::KLog::instance().null_logger()   
 #endif
