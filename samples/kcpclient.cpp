@@ -10,10 +10,12 @@ class MyConnection : public KcpConnection<MyConnection> {
 public:
 	MyConnection(asio::io_context& ctx)
 		: KcpConnection<MyConnection>(ctx) {}
+	virtual ~MyConnection(){}
 	virtual PackageType on_message(const char* data, uint32_t len) {
 		wlog("on recv udp message {} , lenght is {}", data, len);
 		return PACKAGE_USER;
 	}
+
 };
 
 int main(int argc, char* argv[]) {

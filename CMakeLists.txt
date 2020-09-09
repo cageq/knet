@@ -30,7 +30,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if(APPLE)
   #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wc++11-extensions -std=c++11 -stdlib=libc++  -g  -D NDEBUG")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wc++17-extensions -std=c++17 -stdlib=libc++  -g  ")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wc++17-extensions -Wall -std=c++17 -stdlib=libc++  -Wno-unused-function -g  ")
   include_directories("/usr/local/Cellar/openssl/1.0.2t/include")
   link_directories("/usr/local/Cellar/openssl/1.0.2t/lib") 
   ADD_DEFINITIONS(-fcoroutines-ts --stdlib=libc++ -Xclang -fconcepts-ts)

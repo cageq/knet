@@ -130,7 +130,7 @@ public:
 		return -1;
 	}
 
-	virtual PackageType on_package(const std::string_view& msg) {
+	virtual PackageType on_package(const std::string& msg) {
 		 
 		wlog("{}", msg.data()); 
 		return PACKAGE_USER;
@@ -200,7 +200,7 @@ private:
 					dlog("get message from {}:{}", sender_point.address().to_string(),
 						sender_point.port());
 					recv_buffer[bytes_recvd] = 0;
-					this->on_package(std::string_view((const char*)recv_buffer, bytes_recvd));
+					this->on_package(std::string((const char*)recv_buffer, bytes_recvd));
 					if (event_handler) {
 						event_handler(
 							this->shared_from_this(), EVT_RECV, {recv_buffer, bytes_recvd});

@@ -11,6 +11,7 @@ bool running = true;
 class MyConnection : public UdpConnection<MyConnection> {
 
 	public:
+	virtual ~MyConnection(){}
  
 	virtual PackageType on_package(const std::string& msg) {
 	    total ++; 

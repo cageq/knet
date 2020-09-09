@@ -210,7 +210,7 @@ namespace klog
 				if (buffer.size() > MAX_LOG_LINE) {
 					flush();
 				}
-				return std::move(FlowHelper(this)); 
+				return FlowHelper(this); 
 			} 
 
 		inline EmptyFlow & null_logger(){
