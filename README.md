@@ -164,7 +164,7 @@ class MyFactory: public ConnectionFactory<TcpSession> {
 
 https://github.com/cageq/knet 
 
-https://gitee.com/fatihwk/knet  
+https://gitee.com/cageq/knet  
 
 
 
