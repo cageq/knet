@@ -22,7 +22,7 @@ using asio::ip::tcp;
  
 
 template <class T>
-class Socket : public std::enable_shared_from_this<Socket<T>>  {
+class TcpSocket : public std::enable_shared_from_this<TcpSocket<T>>  {
 public:
 	enum class SocketStatus {
 		SOCKET_IDLE,
@@ -32,7 +32,7 @@ public:
 		SOCKET_RECONNECT,
 		SOCKET_CLOSED,
 	};
-	Socket(const std::thread::id& tid, asio::io_context& ctx, void * = nullptr)
+	TcpSocket(const std::thread::id& tid, asio::io_context& ctx, void * = nullptr)
 		: io_context(ctx)
 		, tcp_sock(ctx) {
 		worker_tid = tid;
@@ -40,7 +40,7 @@ public:
 		//m.send_buffer.reserve(4096);
 	}
 
-	~Socket() {}
+	~TcpSocket() {}
 
 	template <class,class>
 	friend class Connection;

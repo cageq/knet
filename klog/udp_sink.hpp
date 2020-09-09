@@ -38,8 +38,7 @@ class UdpSink : public LogSink {
 		}
 
 	private:
-		int sockfd =-1;
-
+		int sockfd =-1; 
 		struct sockaddr_in serveraddr;
 		struct hostent* server;
 };

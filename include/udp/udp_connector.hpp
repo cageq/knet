@@ -68,15 +68,20 @@ namespace knet
 						conn->connect(m.worker->context(), *endpoints.begin(), localPort);
 					}
 				}
+
+				m.connections[addrstr(remotePoint)] = conn;
 				return conn;
 			}
-			void stop() {}
+			void stop() {
+				m.connections.clear();
+			}
 
 		private:
 			struct
 			{ 
 				WorkerPtr worker;
-				EventHandler event_handler = nullptr;
+				EventHandler event_handler = nullptr; 
+				std::unordered_map<std::string, TPtr> connections;
 			} m;
 		};
 

@@ -1,28 +1,24 @@
 #pragma once 
 #include <vector>
+#include <thread>
+#include <iostream>
 
 class ConsoleSink { 
 
     public: 
 
-        int32_t write(int level , const std::string & ){
+        int32_t write(const std::string & msg , bool sync = true ){
 
-            switch (level)
-            {
-            case /* constant-expression */:
-                /* code */
-                break;
+                if (sync) {
+                    std::cout << msg ;  
+                }else {
+                    buffer_logs.emplace_back(msg);  
+                }
             
-            default:
-                break;
-            }
-
-        }
-
-        void append(int level , const std::string & ){}
-
-
-    std::thread_local std::vector<std::string> buffer_logs; 
-
+            return 0; 
+        }  
+        
+    private: 
+         std::vector<std::string> buffer_logs; 
 
 }; 

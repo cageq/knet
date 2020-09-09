@@ -18,7 +18,7 @@ namespace knet
 	namespace tcp
 	{
 
-		template <class T, class Sock = Socket<T>>
+		template <class T, class Sock = TcpSocket<T>>
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:

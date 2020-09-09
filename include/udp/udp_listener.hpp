@@ -107,7 +107,10 @@ public:
 		return conn;
 	}
 
-	void stop() {}
+	void stop() {
+		m.server_socket.close();
+		m.connections.clear();
+	}
 
 private:
 	void do_receive() {
