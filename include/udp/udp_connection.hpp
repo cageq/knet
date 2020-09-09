@@ -30,13 +30,14 @@ template <typename T>
 class UdpConnection : public std::enable_shared_from_this<T> {
 public:
 	enum ConnectionStatus { CONN_IDLE, CONN_OPEN, CONN_CLOSING, CONN_CLOSED };
-
-	UdpConnection() { status = CONN_IDLE; }
 	enum PackageType {
 		PACKAGE_PING,
 		PACKAGE_PONG,
 		PACKAGE_USER,
 	};
+
+	UdpConnection() { status = CONN_IDLE; }
+	
 
 	using TPtr = std::shared_ptr<T>;
 	using EventHandler = std::function<TPtr(TPtr, knet::NetEvent, const std::string & )>;
@@ -209,7 +210,7 @@ private:
 			});
 	}
 
-	UdpSocketPtr sock;
+	
 	// std::string cid() const { return remote_host + std::to_string(remote_port); }
 	enum { max_length = 4096 };
 	char recv_buffer[max_length];
@@ -220,6 +221,7 @@ private:
 	EventHandler event_handler = nullptr;
 
 private: 
+	UdpSocketPtr sock;
 	std::chrono::steady_clock::time_point last_msg_time;
 
 	struct {
