@@ -15,17 +15,24 @@ class MyConnection : public UdpConnection<MyConnection> {
 	virtual PackageType on_package(const std::string& msg) {
 	    total ++; 
 
-	    if (total %10000 == 0){
-		auto end   = system_clock::now();
-		auto duration = duration_cast<microseconds>(end - start);
+	    if (total %20000 == 0){
+
+		auto now = std::chrono::high_resolution_clock::now();                                          
+		std::chrono::duration<double, std::micro> period = now - measure_time;                         
+		//auto period = std::chrono::duration_cast<std::chrono::milliseconds>(now - measure_time);     
+		measure_time  = now ;                                                                          
+		std::cout << "Package count " << total<< " elapse "<< period.count() << std::endl;   
+
+//		auto end   = system_clock::now();
+//		auto duration = duration_cast<microseconds>(end - start);
 //		std::cerr <<  "asio spend " << double(duration.count()) * microseconds::period::num / microseconds::period::den << " seconds" << std::endl;
-		start = end;
+//		start = end;
 	    }
 
-	    // if (total > 1000000) {
-		//    // running = false; 
+	//    if (total > 1000000) {
+	//	    running = false; 
 
-	    // }
+	//    }
 
 	//	ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 
 		//std::string rsp = "message from server" ; 
@@ -35,7 +42,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	
 
 	uint64_t total =0; 
-	std::chrono::system_clock::time_point start; 
+	std::chrono::time_point<std::chrono::high_resolution_clock> measure_time = std::chrono::high_resolution_clock::now(); 
 
 };
 int main(int argc, char* argv[]) {

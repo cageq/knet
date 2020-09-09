@@ -29,12 +29,10 @@ class TcpSession : public TcpConnection<TcpSession>{
 int main(int argc, char **argv)
 {
  
- klog::KLog::instance().debug_logger()    << "test tcp server with cout format "  << " bad idea"  << "third params" ; 
- klog::KLog::instance().debug_logger()    << "test tcp server with cout format "  << " bad idea"  << "third params" << std::endl; 
- klog::KLog::instance().debug_logger()    << "test tcp server with cout format "  << " bad idea" ; //<< std::endl; 
-    iout << "test tcp server with cout format " ; //<< std::endl; 
-    wout << "test tcp server with cout format " ; //<< std::endl; 
-    eout << "test tcp server with cout format " ; //<< std::endl; 
+//    dout << "test tcp server with cout format " << std::endl; 
+//    iout << "test tcp server with cout format " << std::endl; 
+//    wout << "test tcp server with cout format " << std::endl; 
+//    eout << "test tcp server with cout format " << std::endl; 
     dput("dddd", 333, 4444, 899.222); 
     iput("adfasdfasdf", 21323131, 2323433); 
 
