@@ -35,7 +35,7 @@ namespace knet {
 				}
 
 		
-				virtual uint32_t handle_data(TPtr conn, const std::string_view & msg, MessageStatus status) { 
+				virtual uint32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) { 
 
 					//ilog("handle data in connection factory {}",len); 
 					return msg.length() ;

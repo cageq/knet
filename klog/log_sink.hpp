@@ -1,20 +1,20 @@
-#pragma once 
+#pragma once
 #include <string>
 #include <memory>
-class LogSink{ 
 
-    public: 
+namespace klog
+{
 
-    void init(){
+    class LogSink
+    {
 
-    }
-    
-    int32_t write(int level , const std::string & ){
-	
-		return 0; 
-	}
-    void append(int level , const std::string & ){}
+    public:
+        virtual int32_t write(const std::string &)
+        { 
+            return 0;
+        }
+    };
 
-}; 
+    using LogSinkPtr = std::shared_ptr<LogSink>;
 
-using LogSinkPtr =std::shared_ptr<LogSink>; 
+} // namespace klog

@@ -45,7 +45,7 @@ public:
 		}
 	}
 
-	virtual uint32_t handle_data(TPtr conn, const std::string_view & msg, MessageStatus status) {
+	virtual uint32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) {
 
 		auto req = std::make_shared<HttpRequest>();
 		auto msgLen = req->parse_request(msg.data(), msg.length());

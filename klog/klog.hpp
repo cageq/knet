@@ -10,6 +10,7 @@
 #include <fmt/format.h>
 #include <fmt/printf.h> 
 #include "log_sink.hpp"
+#include "file_sink.hpp"
 
  
 #ifndef KLOG_LEVEL
@@ -237,7 +238,10 @@ namespace klog
 
 		void flush()
 		{ 
-			fmt::print(  fmt::to_string(buffer) + "{}\n", ANSI_COLOR_RESET); 
+			const std::string & log = fmt::to_string(buffer); 
+			fmt::print( log + "{}\n", ANSI_COLOR_RESET); 
+
+			this->write(level, log);
 			buffer.clear();
 		}
 
@@ -246,7 +250,7 @@ namespace klog
 			{
 				if (level >= 3)
 				{
-					// fmt::memory_buffer buf;
+		
 					format_log_prefix(buffer, args...);
 					// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
 					fmt::print("{}[DEBUG] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, args...,
@@ -261,7 +265,7 @@ namespace klog
 			{
 				if (level >= 3)
 				{
-					// fmt::memory_buffer buf;
+			 
 					format_log_prefix(buffer, args...);
 					// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
 					fmt::print("{}[DEBUG] {}:{} " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, func, no, args...,
@@ -289,10 +293,10 @@ namespace klog
 				if (level >= 3)
 				{
 
-					fmt::print("{}[DEBUG] " + fmt + "{}\n", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET);
-
-					std::string log = fmt::format("[DEBUG] " + fmt, args...);
+					
+					std::string log = fmt::format("[DEBUG] " + fmt, args...); 
 					this->write(LOG_LEVEL_DEBUG, log);
+					fmt::print("{}[DEBUG] " + fmt + "{}\n", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET); 
 					// TODO it works, maybe has higher  performance, but it's trivial
 					// fmt::string_view myfmt(kFormat, (sizeof ...(args) + 3 ) * 3 +  -1 );
 					// fmt::print(myfmt, ANSI_COLOR_CYAN , args...,  ANSI_COLOR_RESET, "\n");
@@ -300,11 +304,15 @@ namespace klog
 				return *this;
 			}
 
+		void add_file_sink(const std::string &file){
+			log_sinks.emplace_back(std::make_shared<FileSink>(file));
+		}
+
 		void write(int32_t level, const std::string &msg)
 		{
 			for (auto &sink : log_sinks)
 			{
-				sink->write(level, msg);
+				sink->write(msg);
 			}
 		}
 

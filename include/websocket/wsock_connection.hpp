@@ -286,7 +286,7 @@ public:
 	WSockHandler<WSockConnection>  wsock_handler; 
 
 private:
-	MessageStatus msg_status;
+//	MessageStatus msg_status;
 	WSockStatus m_status = WSockStatus::WSOCK_INIT;
 
 //	WSMessageHandler message_handler;

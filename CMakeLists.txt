@@ -94,16 +94,13 @@ add_executable(kcpclient samples/kcpclient.cpp  kcp/ikcp.c)
 target_link_libraries(kcpclient fmt )
 
 
-
-
-
  
+add_executable(udpclient samples/udpclient.cpp  )
+target_link_libraries(udpclient fmt)
 
- add_executable(udpclient samples/udpclient.cpp  )
- target_link_libraries(udpclient fmt)
- add_executable(udpserver samples/udpserver.cpp  )
- target_link_libraries(udpserver fmt)
 
+add_executable(udpserver samples/udpserver.cpp  )
+target_link_libraries(udpserver fmt)
 
 
 # add_executable(mudpclient samples/mudpclient.cpp  )
@@ -118,6 +115,9 @@ target_link_libraries(kcpclient fmt )
 # target_link_libraries(seqserver fmt)
 # target_link_libraries(seqclient fmt)
 
+ 
 
 
+add_executable(logger samples/logger.cpp  )
+target_link_libraries(logger fmt)
 

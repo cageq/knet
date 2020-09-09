@@ -1,23 +1,55 @@
-#pragma once 
+#pragma once
 #include <string>
+#include <vector>
+#include <fstream>
+#include "log_sink.hpp"
 
+namespace klog
+{
 
-class FileSink { 
+    class FileSink : public LogSink
+    {
 
-    public: 
-
-        int32_t write(const std::string & msg , bool sync = true ){
-
-                if (sync) {
-                    std::cout << msg ;  
-                }else {
-                    buffer_logs.emplace_back(msg);  
-                }
+    public:
+        FileSink(const std::string &filePath, bool sync = true) : logfile(filePath, std::ofstream::app)
+        {
+            m.is_sync = sync;
+        }
+        virtual ~FileSink(){
+            if (logfile.is_open())
+            {
+                logfile.close(); 
+            }
             
-            return 0; 
-        }  
-        
-    private: 
-         std::vector<std::string> buffer_logs; 
+        }
 
-}; 
+        int32_t write(const std::string &msg)
+        {
+           
+            if (m.is_sync)
+            {
+                if (logfile.is_open())
+                {
+                    logfile << msg;
+                    logfile.flush(); 
+                }
+            }
+            else
+            {
+                buffer_logs.emplace_back(msg);
+            }
+
+            return 0;
+        }
+
+    private:
+        struct
+        {
+            bool is_sync = true;
+
+        } m;
+        std::ofstream logfile;
+        std::vector<std::string> buffer_logs;
+    };
+
+} // namespace klog

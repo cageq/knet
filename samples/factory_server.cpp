@@ -13,9 +13,7 @@ class TcpSession : public TcpConnection<TcpSession>
 		virtual ~TcpSession() {
 			dlog("destroy tcp session");
 		}
-
-	private:
-		int m_id;
+ 
 };
 
 
@@ -31,9 +29,9 @@ class MyFactory: public ConnectionFactory<TcpSession> {
 			ilog("handle event in connection my factory"); 
 		}
 
-		virtual int32_t handle_data(TPtr conn, char * data, uint32_t len) { 
-			conn->send(data,len); 
-			return len ;
+		virtual uint32_t handle_data(TPtr conn, const std::string & msg, knet::MessageStatus status) { 
+			conn->send(msg); 
+			return msg.length() ;
 		}; 
 
 }; 

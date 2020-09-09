@@ -12,6 +12,7 @@ class MyConnection : public KcpConnection<MyConnection> {
 	MyConnection(asio::io_context &ctx):KcpConnection<MyConnection>(ctx){ 
 
 	}
+	virtual ~MyConnection(){}
     virtual PackageType on_message(const char* data, uint32_t len) { 
 		ilog("on recv udp message {} , lenght is {} ,cid is ", data, len,cid); 
 		this->send("response from server"); 
