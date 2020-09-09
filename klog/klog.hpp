@@ -161,6 +161,12 @@ namespace klog
 				bool has_end = false; 
 				KLog *logger = nullptr; 
 		}; 
+		class EmptyFlow{
+			public: 
+				EmptyFlow &operator<<(StandardEndLine manip) {return *this;}
+				template <class T>
+					EmptyFlow &  operator<<(const T &log) { return *this; }
+		}; 
 
 		//	const char * kFormat = "{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}
 		//{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} "
@@ -214,6 +220,9 @@ namespace klog
 		//			}
 		//
 
+
+		EmptyFlow  empty_flow; 
+
 		template <class T>
 			FlowHelper operator<<(const T &log)
 			{
@@ -224,6 +233,11 @@ namespace klog
 				return std::move(FlowHelper(this)); 
 			}
 
+
+		inline EmptyFlow & null_logger(){
+
+			return empty_flow; 	
+		}
 
 		inline KLog & debug_logger(){
 			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_CYAN);
@@ -473,7 +487,7 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout  
+#define dout  (klog::KLog::instance().null_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
 #define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
