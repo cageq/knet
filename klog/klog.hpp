@@ -5,28 +5,31 @@
 #endif
 
 #include <iostream>
-#include <stdio.h>
 #include <errno.h>
-#include <fmt/format.h>
-#include <fmt/printf.h>
-#include <mutex>
 #include <vector>
+#include <fmt/format.h>
+#include <fmt/printf.h> 
 #include "log_sink.hpp"
 
-#ifndef NONE_FORMAT
-#define NONE_FORMAT 0
+ 
+#ifndef KLOG_LEVEL
+#define KLOG_LEVEL 5
 #endif
 
-#ifndef LOG_LEVEL
-#define LOG_LEVEL 5
+
+#ifndef KLOG_SEPRATOR
+#define KLOG_SEPRATOR " "
 #endif
-enum KLogLevel
-{
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_WARN,
-	LOG_LEVEL_ERROR,
-};
+
+// enum KLogLevel
+// {
+// 	LOG_LEVEL_INFO,
+// 	LOG_LEVEL_DEBUG,
+// 	LOG_LEVEL_WARN,
+// 	LOG_LEVEL_ERROR,
+// };
+
+
 #define MAX_LOG_LINE 1024 
 #define WITH_COMMA_SUPPORT 0
 
@@ -88,10 +91,6 @@ inline const char *_reset()
 #define ANSI_COLOR_RESET "\x1b[0m"
 #endif
 
-#ifndef GLOG_SEPRATOR
-#define GLOG_SEPRATOR " "
-#endif
-
 namespace klog
 {
 
@@ -100,7 +99,7 @@ namespace klog
 	template <class P, class... Args>
 		void format_log_postfix(fmt::memory_buffer &buf, P first, Args... rest)
 		{
-			fmt::format_to(buf, GLOG_SEPRATOR "{{}}");
+			fmt::format_to(buf, KLOG_SEPRATOR "{{}}");
 			format_log_postfix(buf, rest...);
 		}
 
@@ -433,7 +432,7 @@ namespace klog
 		private:
 		fmt::memory_buffer buffer;
 		std::vector<LogSinkPtr> log_sinks;
-		uint32_t level = LOG_LEVEL;
+		uint32_t level = KLOG_LEVEL;
 	};
 
 	template <class... Args>
@@ -443,7 +442,7 @@ namespace klog
 		}
 } // namespace klog
 
-#if LOG_LEVEL > 3
+#if KLOG_LEVEL > 3
 
 #define dput(...) klog::KLog::instance().debug( __FUNCTION__, __LINE__,  __VA_ARGS__)
 #define iput(...) klog::KLog::instance().info(__FUNCTION__, __LINE__, __VA_ARGS__)
@@ -464,7 +463,7 @@ namespace klog
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
-#elif LOG_LEVEL == 3
+#elif KLOG_LEVEL == 3
 
 
 #define dput(...) 
@@ -489,7 +488,7 @@ namespace klog
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
 
-#elif LOG_LEVEL == 2
+#elif KLOG_LEVEL == 2
 
 
 #define dput(...) 
@@ -512,7 +511,7 @@ namespace klog
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
-#elif LOG_LEVEL == 1
+#elif KLOG_LEVEL == 1
 
 
 #define dput(...) 
@@ -533,7 +532,7 @@ namespace klog
 #define iout klog::KLog::instance().null_logger()   
 #define wout klog::KLog::instance().null_logger()   
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__  << " " )
-#elif LOG_LEVEL == 0
+#elif KLOG_LEVEL == 0
 
 #define dput(...)
 #define iput(...)
