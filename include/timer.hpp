@@ -24,6 +24,11 @@ namespace knet
 				uint64_t id;
 				bool loop = true;
 			};
+
+
+			Timer(asio::io_context &ctx)
+				: context(ctx) {}
+				
 			~Timer()
 			{
 
@@ -60,8 +65,6 @@ namespace knet
 				}
 			}
 
-			Timer(asio::io_context &ctx)
-				: context(ctx) {}
 
 			uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
 			{
@@ -83,8 +86,7 @@ namespace knet
 			}
 
 			void stop_timer(uint64_t timerId)
-			{
-
+			{ 
 				asio::dispatch(context, [this, timerId]() {
 					auto itr = timers.find(timerId);
 					if (itr != timers.end())

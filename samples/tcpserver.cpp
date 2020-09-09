@@ -86,6 +86,6 @@ int main(int argc, char **argv)
 		c = getchar();
 	}
 
-	dlog("quit server");
+	//dlog("quit server");
 	return 0;
 }

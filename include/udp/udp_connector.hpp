@@ -8,62 +8,77 @@
 
 using asio::ip::udp;
 
-namespace knet {
-namespace udp {
+namespace knet
+{
+	namespace udp
+	{
 
-template <typename T, typename Worker = EventWorker>
-class UdpConnector {
+		template <typename T, typename Worker = EventWorker>
+		class UdpConnector
+		{
 
-public:
-	using TPtr = std::shared_ptr<T>;
-	using WorkerPtr = std::shared_ptr<Worker>;
-	UdpConnector(WorkerPtr w = nullptr)
-		: worker(w) {}
+		public:
+			using TPtr = std::shared_ptr<T>;
+			using WorkerPtr = std::shared_ptr<Worker>;
+			UdpConnector(WorkerPtr w = nullptr)
+				: m{w,nullptr} {}
 
-	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
-	bool start(EventHandler evtHandler = nullptr) {
-		event_handler = evtHandler;
-		if (worker == nullptr) {
-			worker = std::make_shared<Worker>();
-			worker->start();
-		}
-		return true;
-	}
-
-	TPtr connect(const std::string& host, uint32_t port, uint32_t localPort = 0,
-		const std::string& localAddr = "0.0.0.0") {
-
-		TPtr conn = nullptr;
-		if (event_handler) {
-			conn = event_handler(nullptr, EVT_CREATE, {});
-		}
-
-		if (!conn) {
-			conn = T::create();
-		}
-		asio::ip::address remoteAddr = asio::ip::make_address(host);
-		asio::ip::udp::endpoint remotePoint(remoteAddr, port);
-
-		conn->event_handler = event_handler;
-		if (remoteAddr.is_multicast()) {
-			conn->connect(worker->context(), remotePoint, localPort, localAddr);
-		} else {
-			udp::resolver resolver(worker->context());
-			udp::resolver::results_type endpoints =
-				resolver.resolve(remotePoint.protocol(), host, std::to_string(port));
-
-			if (!endpoints.empty()) {
-				conn->connect(worker->context(), *endpoints.begin(), localPort);
+			using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
+			bool start(EventHandler evtHandler = nullptr)
+			{
+				m.event_handler = evtHandler;
+				if (m.worker == nullptr)
+				{
+					m.worker = std::make_shared<Worker>();
+					m.worker->start();
+				}
+				return true;
 			}
-		}
-		return conn;
-	}
-	void stop() {}
 
-private:
-	WorkerPtr worker;
-	EventHandler event_handler = nullptr;
-};
+			TPtr connect(const std::string &host, uint32_t port, uint32_t localPort = 0,
+						 const std::string &localAddr = "0.0.0.0")
+			{
 
-} // namespace udp
+				TPtr conn = nullptr;
+				if (m.event_handler)
+				{
+					conn = m.event_handler(nullptr, EVT_CREATE, {});
+				}
+
+				if (!conn)
+				{
+					conn = T::create();
+				}
+				asio::ip::address remoteAddr = asio::ip::make_address(host);
+				asio::ip::udp::endpoint remotePoint(remoteAddr, port);
+
+				conn->event_handler = m.event_handler;
+				if (remoteAddr.is_multicast())
+				{
+					conn->connect(m.worker->context(), remotePoint, localPort, localAddr);
+				}
+				else
+				{
+					udp::resolver resolver(m.worker->context());
+					udp::resolver::results_type endpoints =
+						resolver.resolve(remotePoint.protocol(), host, std::to_string(port));
+
+					if (!endpoints.empty())
+					{
+						conn->connect(m.worker->context(), *endpoints.begin(), localPort);
+					}
+				}
+				return conn;
+			}
+			void stop() {}
+
+		private:
+			struct
+			{ 
+				WorkerPtr worker;
+				EventHandler event_handler = nullptr;
+			} m;
+		};
+
+	} // namespace udp
 } // namespace knet
