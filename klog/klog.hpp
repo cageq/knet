@@ -18,7 +18,7 @@
 #endif
 
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 5
+#define LOG_LEVEL 0
 #endif
 enum KLogLevel
 {
