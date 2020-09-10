@@ -7,6 +7,7 @@
 #include <iostream>
 #include <errno.h>
 #include <vector>
+#include <mutex>
 #include <fmt/format.h>
 #include <fmt/printf.h> 
 #include "log_sink.hpp"
