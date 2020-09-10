@@ -10,6 +10,7 @@ include_directories("deps/include")
 include_directories("klog")
 include_directories("include/tcp")
 include_directories("include/udp")
+include_directories("include/pipe")
 include_directories("opt")
 include_directories("include")
 include_directories("http")
@@ -116,7 +117,11 @@ target_link_libraries(udpserver fmt)
 # target_link_libraries(seqclient fmt)
 
  
+add_executable(pipeserver samples/pipe_server.cpp  )
+target_link_libraries(pipeserver fmt)
 
+add_executable(pipeclient samples/pipe_client.cpp  )
+target_link_libraries(pipeclient fmt)
 
 add_executable(logger samples/logger.cpp  )
 target_link_libraries(logger fmt)
