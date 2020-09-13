@@ -248,12 +248,12 @@ namespace knet
 				if (fac)
 				{
 					wlog("create connection by factory");
-					return fac->create(args...);
+					return fac->create(std::forward<Args>(args)... );
 				}
 				else
 				{
 					wlog("create connection by default");
-					return std::make_shared<T>(args...);
+					return std::make_shared<T>( std::forward<Args>(args)... );
 				}
 			}
 
