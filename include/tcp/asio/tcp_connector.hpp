@@ -61,8 +61,8 @@ namespace knet
 			}
 
 			void stop() {
-				for(auto & conn :connections){
-					conn->close(); 
+				for(auto & elem :connections){
+					elem.second->close(); 
 				}
 			}
 
