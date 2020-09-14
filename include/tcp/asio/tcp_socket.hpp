@@ -43,11 +43,17 @@ public:
 	template <class,class>
 	friend class Connection;
 
-	bool connect(const std::string& host, uint32_t port) {
+	bool connect(const std::string& host, uint32_t port, const std::string & localAddr = "0.0.0.0", uint32_t localPort = 0 ) {
 		tcp::resolver resolver(io_context);
 		auto result = resolver.resolve(host, std::to_string(port));
 		dlog("connect to server {}:{}", host.c_str(), port);
 		auto self = this->shared_from_this();
+		if (localPort > 0) {
+			asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
+
+			tcp_sock.bind(laddr); 
+		}
+
 		async_connect(tcp_sock, result,
 			[self](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 				if (!ec) {

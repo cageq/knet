@@ -79,7 +79,8 @@ namespace knet
 				return false;
 			}
 
-			bool add_connection(TPtr conn, const std::string &host = "", uint16_t port = 0)
+
+			bool add_connection(TPtr conn, const ConnectionInfo & connInfo)
 			{
 				if (conn)
 				{
@@ -90,8 +91,10 @@ namespace knet
 					conn->destroyer =
 						std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
 		 
-					conn->connect(host.empty() ? conn->get_remote_host() : host,
-								  port == 0 ? conn->get_remote_port() : port);
+
+					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
+
+					conn->connect(connInfo);
 					connections[conn->cid] = conn;
 					return true;
 				}
@@ -99,7 +102,7 @@ namespace knet
 			}
 
 			template <class... Args>
-			TPtr add_connection(const std::string &host, uint16_t port, Args... args)
+			TPtr add_connection(const ConnectionInfo & connInfo, Args... args)
 			{
 				auto worker = this->get_worker();
 				auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
@@ -118,7 +121,7 @@ namespace knet
 				conn->destroyer =
 					std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
 			 
-				conn->connect(host, port);
+				conn->connect(connInfo);
 				connections[conn->cid] = conn;
 				return conn;
 			}

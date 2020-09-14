@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < 1; i++)
 	{
-		connector.add_connection("127.0.0.1", 8899);
+		connector.add_connection({"127.0.0.1", 8899});
 		//connector->add_connection("10.246.34.55", 8855);
 	}
 

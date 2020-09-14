@@ -18,6 +18,14 @@ namespace knet
 {
 	namespace tcp
 	{
+		struct ConnectionInfo {
+			std::string server_addr; 
+			uint32_t server_port; 
+			std::string local_addr; 
+			uint32_t local_port; 
+			bool reuse =true; 
+		}; 
+
 
 		template <class T, class Sock = TcpSocket<T>>
 		class TcpConnection : public std::enable_shared_from_this<T>
@@ -116,13 +124,13 @@ namespace knet
 
 			inline bool is_connected() { return socket && socket->is_open(); }
 
-			bool connect(const std::string &host, uint32_t port)
+			bool connect(const ConnectionInfo & connInfo )
 			{
-				dlog("start to connect {}:{}", host, port);
-				this->remote_host = host;
-				this->remote_port = port;
+				dlog("start to connect {}:{}", connInfo.server_addr, connInfo.server_port);
+				this->remote_host = connInfo.server_addr;
+				this->remote_port = connInfo.server_port;
 				is_passive = false; 
-				return socket->connect(host, port);
+				return socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
 			}
 
 			bool vsend(const std::vector<asio::const_buffer> &bufs) { return socket->vsend(bufs); }
