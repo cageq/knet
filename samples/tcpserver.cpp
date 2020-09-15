@@ -7,7 +7,8 @@ using namespace knet::tcp;
 class TcpSession : public TcpConnection<TcpSession>{
 	public: 
 		typedef std::shared_ptr<TcpSession> TcpSessionPtr; 
-		TcpSession() { 
+		TcpSession(int32_t val) { 
+			ilog("session create with {}", val);
 			bind_data_handler(&TcpSession::on_recv ); 
 			bind_event_handler([](   TcpSessionPtr, knet::NetEvent evt  ){ 
 					ilog("on recv event", evt);
@@ -29,12 +30,12 @@ class TcpSession : public TcpConnection<TcpSession>{
 int main(int argc, char **argv)
 {
  
-    dout << "test tcp server with cout format " << std::endl; 
-    iout << "test tcp server with cout format " << std::endl; 
-    wout << "test tcp server with cout format " << std::endl; 
-    eout << "test tcp server with cout format " << std::endl; 
-    dput("dddd", 333, 4444, 899.222); 
-    iput("adfasdfasdf", 21323131, 2323433); 
+    // dout << "test tcp server with cout format " << std::endl; 
+    // iout << "test tcp server with cout format " << std::endl; 
+    // wout << "test tcp server with cout format " << std::endl; 
+    // eout << "test tcp server with cout format " << std::endl; 
+    // dput("dddd", 333, 4444, 899.222); 
+    // iput("adfasdfasdf", 21323131, 2323433); 
 
 	// auto lisWorker = std::make_shared<knet::CoEventWorker>();
 	// lisWorker->start(); 
@@ -48,8 +49,9 @@ int main(int argc, char **argv)
 	// ConnectionFactory<TcpSession> factory; 
 	// TcpListener<TcpSession> listener(&factory, workers); 
 
-
-	TcpListener<TcpSession> listener; 
+	std::shared_ptr<knet::EventWorker> myworker = std::make_shared<knet::EventWorker>();
+	//TcpListener<TcpSession, ConnectionFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
+	DefaultTcpListener<TcpSession,  int32_t> listener(myworker,222); 
 	int port = 8855;
 	listener.start( port); 
 

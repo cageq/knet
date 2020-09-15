@@ -24,45 +24,45 @@ namespace knet
 			using WorkerPtr = std::shared_ptr<Worker>;
 			using SocketPtr = std::shared_ptr<typename T::ConnSock>;
 
-			TcpListener(FactoryPtr fac, uint32_t num, WorkerPtr lisWorker = std::make_shared<Worker>())
-				: listen_worker(lisWorker)
-			{
-				m.factory = fac;
-				if (!listen_worker)
-				{
-					elog("can't live without listen worker, fail to start ");
-					return;
-				}
-				listen_worker->start();
+			// TcpListener(FactoryPtr fac, uint32_t num, WorkerPtr lisWorker = std::make_shared<Worker>())
+			// 	: listen_worker(lisWorker)
+			// {
+			// 	m.factory = fac;
+			// 	if (!listen_worker)
+			// 	{
+			// 		elog("can't live without listen worker, fail to start ");
+			// 		return;
+			// 	}
+			// 	listen_worker->start();
 
-				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
-				for (uint32_t i = 0; i < num; i++)
-				{
-					m.user_workers.push_back(std::make_shared<Worker>());
-				}
-			}
+			// 	tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
+			// 	for (uint32_t i = 0; i < num; i++)
+			// 	{
+			// 		m.user_workers.push_back(std::make_shared<Worker>());
+			// 	}
+			// }
 
-			TcpListener(FactoryPtr fac, std::vector<WorkerPtr> workers,
-						WorkerPtr lisWorker = std::make_shared<Worker>())
-				: listen_worker(lisWorker)
-			{
+			// TcpListener(FactoryPtr fac, std::vector<WorkerPtr> workers,
+			// 			WorkerPtr lisWorker = std::make_shared<Worker>())
+			// 	: listen_worker(lisWorker)
+			// {
 
-				m.factory = fac;
-				if (!listen_worker)
-				{
-					elog("can't live without listen worker");
-				}
-				listen_worker->start();
-				dlog("start listener in one worker");
-				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
-				if (!workers.empty())
-				{
-					for (auto worker : workers)
-					{
-						m.user_workers.push_back(worker);
-					}
-				}
-			}
+			// 	m.factory = fac;
+			// 	if (!listen_worker)
+			// 	{
+			// 		elog("can't live without listen worker");
+			// 	}
+			// 	listen_worker->start();
+			// 	dlog("start listener in one worker");
+			// 	tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
+			// 	if (!workers.empty())
+			// 	{
+			// 		for (auto worker : workers)
+			// 		{
+			// 			m.user_workers.push_back(worker);
+			// 		}
+			// 	}
+			// }
 
 			TcpListener(
 				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>(), Args... args)
@@ -83,7 +83,7 @@ namespace knet
 			TcpListener(WorkerPtr lisWorker, Args... args)
 				: listen_worker(lisWorker), conn_args(args...)
 			{
-
+				dlog("create listener without factory");
 				m.factory = nullptr;
 
 				if (listen_worker)
@@ -281,6 +281,9 @@ namespace knet
 			WorkerPtr listen_worker;
 			std::tuple<Args...> conn_args;
 		};
+
+		template <typename T, typename ... Args >
+		    using DefaultTcpListener = TcpListener<T, ConnectionFactory<T>, EventWorker, Args...>;
 
 	} // namespace tcp
 
