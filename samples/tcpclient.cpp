@@ -21,7 +21,7 @@ class TcpSession : public TcpConnection<TcpSession >
 	
 		}
 
-		uint32_t process_data(const std::string & msg , knet::MessageStatus status)
+		int32_t process_data(const std::string & msg , knet::MessageStatus status)
 		{
 			//    trace;
 			dlog("received data {} ",msg); 

@@ -80,9 +80,7 @@ public:
 
 	void do_read() {
 		if (tcp_sock.is_open()) {
-
 			m.status = SocketStatus::SOCKET_OPEN;
-
 			auto self = this->shared_from_this();
 			auto buf = asio::buffer((char*)m.read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
 			// dlog("left buffer size {}", kReadBufferSize - read_buffer_pos);
@@ -235,7 +233,7 @@ public:
 		return tcp_sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 	}
 
-#if (WITH_PACKAGE_HANDLER)
+#if WITH_PACKAGE_HANDLER
 	void process_data(uint32_t nread) {
 		if (!connection) {
 			return;
@@ -296,7 +294,7 @@ public:
 		read_buffer_pos += nread;
 		dlog("read data {} total is {}", nread, read_buffer_pos);
 		uint32_t readPos = 0;
-		uint32_t pkgLen = 0;
+		int32_t pkgLen = 0;
 
 		do {
 
@@ -308,6 +306,10 @@ public:
 				if (need_package_length <= readLen) {
 					pkgLen = this->connection->handle_data(std::string((char*)m.read_buffer + readPos,
 						need_package_length), MessageStatus::MESSAGE_END);
+					if (pkgLen < 0) {
+						connection->close(); 
+						return ; 
+					}
 					dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
 					readPos += need_package_length;
 					// if (readPos >= read_buffer_pos) {
@@ -321,7 +323,10 @@ public:
 
 					pkgLen = this->connection->handle_data(
 						std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_CHUNK);
-
+					if (pkgLen < 0) {
+						connection->close(); 
+						return ; 
+					}
 					dlog(" need length {} package len {} , data len is {} chunk",
 						need_package_length, pkgLen, readLen);
 					read_buffer_pos = 0;

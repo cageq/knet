@@ -39,13 +39,13 @@ namespace knet
 			using ConnSock = Sock; 
 			using NetEventHandler = std::function<void(std::shared_ptr<T>, NetEvent)>;
 			using SelfNetEventHandler = void (T::*)(std::shared_ptr<T>, NetEvent);
-			using DataHandler = std::function<uint32_t(const std::string &, MessageStatus)>;
-			using SelfDataHandler = uint32_t (T::*)(const std::string &, MessageStatus);
+			using NetDataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
+			using SelfNetDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
 			using SocketPtr = std::shared_ptr<Sock>;
 			using ConnFactory = ConnectionFactory<T>;
 			using FactoryPtr = ConnFactory *;
 
-			TcpConnection() {}
+			TcpConnection() {} // for passive connection 
 
 			TcpConnection(const std::string &host, uint32_t port)
 			{
@@ -108,8 +108,8 @@ namespace knet
 				}
 			}
 
-			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
-			void bind_data_handler(SelfDataHandler handler)
+			inline void bind_data_handler(NetDataHandler handler) { data_handler = handler; }
+			void bind_data_handler(SelfNetDataHandler handler)
 			{
 				T *child = static_cast<T *>(this);
 				data_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
@@ -121,6 +121,9 @@ namespace knet
 				T *child = static_cast<T *>(this);
 				event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
+
+
+
 
 			inline bool is_connected() { return socket && socket->is_open(); }
 
@@ -205,6 +208,12 @@ namespace knet
 				}
 			}
 
+#if WITH_PACKAGE_HANDLER
+			virtual uint32_t handle_package(const char * data, uint32_t len ){
+				return len  ; 
+			}
+#endif 
+
 			std::function<void(std::shared_ptr<T>)> destroyer;
 			virtual uint32_t handle_data(const std::string &msg, MessageStatus status)
 			{
@@ -277,7 +286,6 @@ namespace knet
 				return remote_port;
 			}
 
-		
 			bool reconn_flag = false;
 
 		private:
@@ -288,7 +296,7 @@ namespace knet
 			FactoryPtr factory = nullptr;
 			SocketPtr socket = nullptr;
 			NetEventHandler event_handler;
-			DataHandler data_handler;
+			NetDataHandler data_handler;
 			std::string remote_host;
 			uint32_t remote_port;
 			EventWorkerPtr event_worker;
