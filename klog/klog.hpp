@@ -8,12 +8,13 @@
 #include <errno.h>
 #include <vector>
 #include <mutex>
+#include <thread>
 #include <fmt/format.h>
-#include <fmt/printf.h> 
+#include <fmt/printf.h>
 #include "log_sink.hpp"
-#include "file_sink.hpp"
+#include "sync_queue.hpp"
 
- 
+
 #ifndef KLOG_LEVEL
 #define KLOG_LEVEL 5
 #endif
@@ -23,19 +24,20 @@
 #define KLOG_SEPRATOR " "
 #endif
 
- enum KLogLevel
- {
- 	LOG_LEVEL_INFO,
- 	LOG_LEVEL_DEBUG,
- 	LOG_LEVEL_WARN,
- 	LOG_LEVEL_ERROR,
- };
+enum KLogLevel
+{
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_DEBUG,
+	LOG_LEVEL_WARN,
+	LOG_LEVEL_ERROR,
+};
 
 
-#define MAX_LOG_LINE 1024 
+#define MAX_LOG_LINE 1024
 #define WITH_COMMA_SUPPORT 0
 
 #ifdef _WIN32
+
 
 inline const char *_red()
 {
@@ -96,6 +98,12 @@ inline const char *_reset()
 namespace klog
 {
 
+    inline uint32_t args_length(){ return 0; }
+    template <class T, class ... Args> 
+        uint32_t args_length( T, Args ... args) {
+            return sizeof(T) + args_length( args...); 
+        }
+
 	inline void format_log_postfix(fmt::memory_buffer &buf) {}
 
 	template <class P, class... Args>
@@ -105,14 +113,13 @@ namespace klog
 			format_log_postfix(buf, rest...);
 		}
 
-	inline void format_log_prefix(fmt::memory_buffer &buf) {}
 	template <class P, class... Args>
-		void format_log_prefix(fmt::memory_buffer &buf, P first, Args... rest)
+		void format_log_prefix(const std::string & prefix, fmt::memory_buffer &buf, P first, Args... rest)
 		{
-			fmt::format_to(buf, "{{}}");
+			fmt::format_to(buf, prefix+ "{{}}");
 			format_log_postfix(buf, rest...);
 		}
-	struct KLog
+	class KLog
 	{
 
 		typedef std::basic_ostream<char, std::char_traits<char>> CoutType;
@@ -120,27 +127,28 @@ namespace klog
 		typedef CoutType &(*StandardEndLine)(CoutType &);
 
 		class FlowHelper{
-			public: 
-				FlowHelper( const FlowHelper& other)  = delete ; 
+			public:
+				FlowHelper( const FlowHelper& other)  = delete ;
 
-				const FlowHelper& operator=( const FlowHelper& other)  = delete; 
+				const FlowHelper& operator=( const FlowHelper& other)  = delete;
 
 				FlowHelper(KLog *log = nullptr):logger(log){   }
 
 				FlowHelper(FlowHelper&& other ){
-					this->logger = other.logger; 
-					other.logger = nullptr; 
+					this->logger = other.logger;
+					other.logger = nullptr;
 				}
 				FlowHelper& operator=(FlowHelper&& other) {
-
-					logger = other.logger; 
-					other.logger = nullptr; 
-					return *this; 
+					logger = other.logger;
+					other.logger = nullptr;
+					return *this;
 				}
 
 				FlowHelper &operator<<(StandardEndLine manip) {
 					if (logger){
-						has_end = true; 
+						has_end = true;
+						fmt::format_to(logger->buffer, "{}", ANSI_COLOR_RESET ); 
+						logger->write_sinks(fmt::to_string(logger->buffer)); 
 						logger->flush();
 					}
 					return *this;
@@ -150,48 +158,74 @@ namespace klog
 					FlowHelper &  operator<<(const T &log) {
 						if (logger){
 							fmt::format_to(logger->buffer, "{}", log);
-						}	    
-						return *this; 
+						}
+						return *this;
 					}
 
 				~FlowHelper() {
 					if (logger  && !has_end) {
-						logger->flush(); 
+						fmt::format_to(logger->buffer, "{}", ANSI_COLOR_RESET ); 
+						logger->write_sinks(fmt::to_string(logger->buffer)); 
+						logger->flush();
 					}
 				}
-				bool has_end = false; 
-				KLog *logger = nullptr; 
-		}; 
+				bool has_end = false;
+				KLog *logger = nullptr;
+		};
 		class EmptyFlow{
-			public: 
-			
-				 template <class T>
-				inline	EmptyFlow &  operator<<(const T &log) { return *this; }
-		};  
-	 
-		KLog() { }
+			public:
+				template <class T>
+					inline	EmptyFlow &  operator<<(const T &log) { return *this; }
+		};
+
 
 		~KLog()
 		{
-			if (buffer.size() > 0) {
-				fmt::print(  fmt::to_string(buffer) );  
+			// if (buffer.size() > 0) {
+			// 	fmt::print(  fmt::to_string(buffer) );
+			// }
+		}
+
+		void write_sinks(const std::string & log ){
+			for(auto & sink :log_sinks){
+				sink->write(log);
+			}
+            buffer.clear(); 
+		}
+
+		public:
+		void init_async(bool async = false){
+
+			if (async && sink_thread.joinable())
+			{
+				sink_thread = std::thread([this](){
+						log_queue.process([this](const std::string &log){
+								this->write_sinks(log);
+								return true;
+								});
+						});
 			}
 		}
+
 		void add_sink(LogSinkPtr sink)
 		{
 			log_sinks.push_back(sink);
 		}
 
+		template <class T, class ... Args> void add_sink( Args &&... args){
+			log_sinks.push_back(std::make_shared<T>(args ... ));
+		}
+
 		KLog & operator<<(StandardEndLine manip) {
 			flush();
-			return *this; 
+			return *this;
 		}
 
 
 		//	FlowHelper &operator<<(StandardEndLine manip)
 		//	{
 		//	    flush();
-		//	    return std::move(FlowHelper(this); 
+		//	    return std::move(FlowHelper(this);
 		//	}
 		//		template <class T>
 		//			KLog & operator<<(const T &log)
@@ -200,11 +234,11 @@ namespace klog
 		//				if (buffer.size() > 1024) {
 		//					flush();
 		//				}
-		//				//return std::move(FlowHelper(this)); 
-		//				return  *this; 
+		//				//return std::move(FlowHelper(this));
+		//				return  *this;
 		//			}
 		//
- 
+
 		template <class T>
 			FlowHelper operator<<(const T &log)
 			{
@@ -212,71 +246,87 @@ namespace klog
 				if (buffer.size() > MAX_LOG_LINE) {
 					flush();
 				}
-				return FlowHelper(this); 
-			} 
+				return FlowHelper(this);
+			}
 
 		inline EmptyFlow & null_logger(){
-			static EmptyFlow  empty_flow; 
-			return empty_flow; 	
+			static EmptyFlow  empty_flow;
+			return empty_flow;
 		}
 
 		inline KLog & debug_logger(){
 			fmt::format_to(buffer, "{}[DEBUG] ", ANSI_COLOR_CYAN);
 			return *this;
 		}
+
 		inline KLog & info_logger(){
 			fmt::format_to(buffer, "{}[INFO] ", ANSI_COLOR_GREEN);
 			return *this;
 		}
+
 		inline KLog & warn_logger(){
 			fmt::format_to(buffer, "{}[WARN] ", ANSI_COLOR_YELLOW);
 			return *this;
 		}
+
 		inline KLog & error_logger(){
 			fmt::format_to(buffer, "{}[ERROR] ", ANSI_COLOR_RED);
 			return *this;
 		}
 
-		void flush()
-		{ 
-			const std::string & log = fmt::to_string(buffer); 
-			fmt::print( log + "{}\n", ANSI_COLOR_RESET); 
+		void flush() {
+			//fmt::format_to(buffer, "{}\n", ANSI_COLOR_RED);
+			//const std::string & log = fmt::to_string(buffer);
+			//fmt::print( log + "{}\n", ANSI_COLOR_RESET);
+			//this->write(level, log);
 
-			this->write(level, log);
+			for(auto & sink :log_sinks){
+				sink->flush(); 
+			}
 			buffer.clear();
 		}
+
 
 		template <class... Args>
 			KLog &debug(Args... args)
 			{
 				if (level >= 3)
 				{
-		
-					format_log_prefix(buffer, args...);
+                    fmt::memory_buffer fmtBuf; 
+                    fmtBuf.reserve(256 ); 
+					format_log_prefix("{{}}[DEBUG]", fmtBuf, args...);
+                    fmt::format_to(fmtBuf, "{{}}"); 
 					// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
-					fmt::print("{}[DEBUG] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, args...,
-							ANSI_COLOR_RESET);
+					//fmt::print( fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET);
+
+                    fmt::format_to(buffer, fmt::to_string(fmtBuf), ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET); 
+					this->write(LOG_LEVEL_DEBUG, fmt::to_string(buffer));
+					this->flush(); 
 					buffer.clear();
 				}
 				return *this;
 			}
 
-		template <class... Args>
-			KLog &debug(const char * func, int32_t no, Args... args)
-			{
-				if (level >= 3)
-				{
-			 
-					format_log_prefix(buffer, args...);
-					// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
-					fmt::print("{}[DEBUG] {}:{} " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, func, no, args...,
-							ANSI_COLOR_RESET);
-					buffer.clear();
-				}
-				return *this;
-			}
-
-
+//		template <class... Args>
+//			KLog &debug(const char * func, int32_t no, Args... args)
+//			{
+//				if (level >= 3)
+//				{
+//                    fmt::memory_buffer fmtBuf; 
+//                    fmtBuf.reserve( 256); 
+//					format_log_prefix("{{}}[DEBUG] {{}}:{{}} " , fmtBuf, args...);
+//                    fmt::format_to(fmtBuf, "{{}}"); 
+//					// std::string log = fmt::format("[DEBUG] " + fmt::to_string(buf) ,    args...);
+//					//fmt::print( fmt::to_string(buffer) + "{}\n", ANSI_COLOR_CYAN, func, no, args..., ANSI_COLOR_RESET);
+//
+//                    fmt::format_to(buffer, fmtBuf.data(), ANSI_COLOR_CYAN, func, no , args..., ANSI_COLOR_RESET); 
+//					this->write(LOG_LEVEL_DEBUG, fmt::to_string(buffer));
+//                    this->flush(); 
+//					buffer.clear();
+//				}
+//				return *this;
+//			}
+//
 
 		static void dump_hex(const char *title, const char *buf, size_t bufLen, uint32_t line = 8)
 		{
@@ -294,10 +344,11 @@ namespace klog
 				if (level >= 3)
 				{
 
-					
-					std::string log = fmt::format("[DEBUG] " + fmt, args...); 
-					this->write(LOG_LEVEL_DEBUG, log);
-					fmt::print("{}[DEBUG] " + fmt + "{}\n", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET); 
+					fmt::format_to(buffer, "{}[DEBUG] " + fmt + "{}", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET ); 
+					this->write(LOG_LEVEL_DEBUG, fmt::to_string(buffer));
+					this->flush(); 
+
+					//fmt::print("{}[DEBUG] " + fmt + "{}\n", ANSI_COLOR_CYAN, args..., ANSI_COLOR_RESET);
 					// TODO it works, maybe has higher  performance, but it's trivial
 					// fmt::string_view myfmt(kFormat, (sizeof ...(args) + 3 ) * 3 +  -1 );
 					// fmt::print(myfmt, ANSI_COLOR_CYAN , args...,  ANSI_COLOR_RESET, "\n");
@@ -305,9 +356,6 @@ namespace klog
 				return *this;
 			}
 
-		void add_file_sink(const std::string &file){
-			log_sinks.emplace_back(std::make_shared<FileSink>(file));
-		}
 
 		void write(int32_t level, const std::string &msg)
 		{
@@ -322,11 +370,15 @@ namespace klog
 			{
 				if (level >= 2)
 				{
-					// fmt::memory_buffer buf;
-					format_log_prefix(buffer, args...);
+					fmt::memory_buffer fmtBuf;
+					format_log_prefix("{{}}[INFO]", fmtBuf, args...);
+                    fmt::format_to(fmtBuf, "{{}}"); 
+                    fmt::format_to(buffer, fmt::to_string(fmtBuf), ANSI_COLOR_GREEN, args..., ANSI_COLOR_RESET); 
+					this->write(LOG_LEVEL_INFO, fmt::to_string(buffer));
+					this->flush(); 
+
 					// std::string log = fmt::format("[INFO] " + fmt::to_string(buf) ,    args...);
-					fmt::print("{}[INFO] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_GREEN, args...,
-							ANSI_COLOR_RESET);
+					//fmt::print( fmt::to_string(buffer) + "{}\n", ANSI_COLOR_GREEN, args..., ANSI_COLOR_RESET);
 					buffer.clear();
 				}
 				return *this;
@@ -336,9 +388,9 @@ namespace klog
 			{
 				if (level >= 2)
 				{
-					std::string log = fmt::format("[INFO] " + fmt, args...);
-					this->write(LOG_LEVEL_INFO, log);
-					fmt::print("{}[INFO] " + fmt + "{}\n", ANSI_COLOR_GREEN, args..., ANSI_COLOR_RESET);
+					fmt::format_to(buffer, "{}[INFO] " + fmt + "{}", ANSI_COLOR_GREEN , args..., ANSI_COLOR_RESET ); 
+					this->write(LOG_LEVEL_INFO, fmt::to_string(buffer));
+					this->flush(); 
 				}
 				return *this;
 			}
@@ -348,12 +400,15 @@ namespace klog
 			{
 				if (level >= 1)
 				{
-					// fmt::memory_buffer buffer;
-					format_log_prefix(buffer, args...);
-					// std::string log = fmt::format("[WARN] " + fmt::to_string(buf) ,    args...);
-					fmt::print("{}[WARN] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_YELLOW, args...,
-							ANSI_COLOR_RESET);
+					fmt::memory_buffer fmtBuf; 
+					fmtBuf.reserve(256 ); 
+					format_log_prefix("{{}}[WARN]", fmtBuf, args...);
+					fmt::format_to(fmtBuf, "{{}}"); 
+					fmt::format_to(buffer, fmt::to_string(fmtBuf), ANSI_COLOR_YELLOW, args..., ANSI_COLOR_RESET); 
+					this->write(LOG_LEVEL_WARN, fmt::to_string(buffer));
+                    this->flush(); 
 					buffer.clear();
+
 				}
 				return *this;
 			}
@@ -363,9 +418,9 @@ namespace klog
 			{
 				if (level >= 1)
 				{
-					std::string log = fmt::format("[WARN] " + fmt, args...);
-					this->write(LOG_LEVEL_WARN, log);
-					fmt::print("{}[WARN] " + fmt + "{}\n", ANSI_COLOR_YELLOW, args..., ANSI_COLOR_RESET);
+					fmt::format_to(buffer, "{}[WARN] " + fmt + "{}", ANSI_COLOR_YELLOW, args..., ANSI_COLOR_RESET ); 
+					this->write(LOG_LEVEL_WARN, fmt::to_string(buffer));
+					this->flush(); 
 				}
 				return *this;
 			}
@@ -376,12 +431,16 @@ namespace klog
 				if (level >= 0)
 				{
 
-					// fmt::memory_buffer buf;
-					format_log_prefix(buffer, args...);
-					// std::string log = fmt::format("[ERROR] " + fmt::to_string(buf) , args...);
-					fmt::print("{}[ERROR] " + fmt::to_string(buffer) + "{}\n", ANSI_COLOR_RED, args...,
-							ANSI_COLOR_RESET);
+
+                    fmt::memory_buffer fmtBuf; 
+					fmtBuf.reserve(256 ); 
+					format_log_prefix("{{}}[ERROR]", fmtBuf, args...);
+					fmt::format_to(fmtBuf, "{{}}"); 
+					fmt::format_to(buffer, fmt::to_string(fmtBuf), ANSI_COLOR_RED, args..., ANSI_COLOR_RESET); 
+					this->write(LOG_LEVEL_ERROR, fmt::to_string(buffer));
+                    this->flush(); 
 					buffer.clear();
+
 				}
 				return *this;
 			}
@@ -390,9 +449,9 @@ namespace klog
 			{
 				if (level >= 0)
 				{
-					std::string log = fmt::format("[ERROR] " + fmt, args...);
-					this->write(LOG_LEVEL_ERROR, log);
-					fmt::print("{}[ERROR] " + fmt + "{}\n", ANSI_COLOR_RED, args..., ANSI_COLOR_RESET);
+					fmt::format_to(buffer, "{}[ERROR] " + fmt + "{}", ANSI_COLOR_RED, args..., ANSI_COLOR_RESET ); 
+					this->write(LOG_LEVEL_ERROR, fmt::to_string(buffer));
+					this->flush(); 
 				}
 				return *this;
 			}
@@ -426,6 +485,9 @@ namespace klog
 		fmt::memory_buffer buffer;
 		std::vector<LogSinkPtr> log_sinks;
 		uint32_t level = KLOG_LEVEL;
+
+		std::thread sink_thread;
+		SyncQueue<std::string>  log_queue;
 	};
 
 	template <class... Args>
@@ -452,14 +514,14 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 #define dout (klog::KLog::instance().debug_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
-#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
+#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
 #elif KLOG_LEVEL == 3
 
 
-#define dput(...) 
+#define dput(...)
 #define iput(...) klog::KLog::instance().info(__FUNCTION__, __LINE__, __VA_ARGS__)
 #define wput(...) klog::KLog::instance().warn(__FUNCTION__, __LINE__, __VA_ARGS__)
 #define eput(...) klog::KLog::instance().error(__FUNCTION__, __LINE__, __VA_ARGS__)
@@ -475,8 +537,8 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout klog::KLog::instance().null_logger()  
-#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ") 
+#define dout klog::KLog::instance().null_logger()
+#define iout (klog::KLog::instance().info_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
@@ -484,8 +546,8 @@ namespace klog
 #elif KLOG_LEVEL == 2
 
 
-#define dput(...) 
-#define iput(...) 
+#define dput(...)
+#define iput(...)
 #define wput(...) klog::KLog::instance().warn(__FUNCTION__, __LINE__, __VA_ARGS__)
 #define eput(...) klog::KLog::instance().error(__FUNCTION__, __LINE__, __VA_ARGS__)
 
@@ -499,17 +561,17 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout klog::KLog::instance().null_logger()   
-#define iout klog::KLog::instance().null_logger()   
+#define dout klog::KLog::instance().null_logger()
+#define iout klog::KLog::instance().null_logger()
 #define wout (klog::KLog::instance().warn_logger()    << __FUNCTION__ << ":" << __LINE__ << " ")
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__ << " ")
 
 #elif KLOG_LEVEL == 1
 
 
-#define dput(...) 
-#define iput(...) 
-#define wput(...) 
+#define dput(...)
+#define iput(...)
+#define wput(...)
 #define eput(...) klog::KLog::instance().error(__FUNCTION__, __LINE__, __VA_ARGS__)
 
 
@@ -521,9 +583,9 @@ namespace klog
 	klog::KLog::instance().error_format("{}:{} " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 
-#define dout klog::KLog::instance().null_logger()  
-#define iout klog::KLog::instance().null_logger()   
-#define wout klog::KLog::instance().null_logger()   
+#define dout klog::KLog::instance().null_logger()
+#define iout klog::KLog::instance().null_logger()
+#define wout klog::KLog::instance().null_logger()
 #define eout (klog::KLog::instance().error_logger()   << __FUNCTION__ << ":" << __LINE__  << " " )
 #elif KLOG_LEVEL == 0
 
@@ -537,8 +599,8 @@ namespace klog
 #define wlog(fmt, ...)
 #define elog(fmt, ...)
 
-#define dout  klog::KLog::instance().null_logger()    
-#define iout  klog::KLog::instance().null_logger()   
-#define wout  klog::KLog::instance().null_logger()   
-#define eout  klog::KLog::instance().null_logger()   
+#define dout  klog::KLog::instance().null_logger()
+#define iout  klog::KLog::instance().null_logger()
+#define wout  klog::KLog::instance().null_logger()
+#define eout  klog::KLog::instance().null_logger()
 #endif

@@ -6,37 +6,27 @@
 namespace klog
 {
 
-    class ConsoleSink : public LogSink
-    {
+	class ConsoleSink : public LogSink
+	{
 
-    public:
-        ConsoleSink(bool sync = true)
-        {
-            m.is_sync = sync;
-        }
-        virtual ~ConsoleSink(){}
+		public:
+			virtual ~ConsoleSink(){}
 
-        int32_t write(const std::string &msg, bool sync = true)
-        {
+			int32_t write(const std::string &msg)
+			{
+				buffer.append(msg); 
+				return 0;
+			}
+			virtual void flush(const std::string & log = "")
+			{
+				buffer.append(log); 
+				std::cout << buffer << std::endl; 
+				buffer.clear(); 
+			}
 
-            if (sync)
-            {
-                std::cout << msg;
-            }
-            else
-            {
-                buffer_logs.emplace_back(msg);
-            }
 
-            return 0;
-        }
-
-    private:
-        struct
-        {
-            bool is_sync = true;
-        } m;
-        std::vector<std::string> buffer_logs;
-    };
+		private:
+			std::string buffer; 
+	};
 
 } // namespace klog
