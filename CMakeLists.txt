@@ -50,13 +50,13 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 #add_library(knet ${SRCS})
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
-##add_executable(tcpserver samples/tcpserver.cpp  )
-##target_link_libraries(tcpserver fmt dl)
-##
-##add_executable(tcpclient samples/tcpclient.cpp)
-##target_link_libraries(tcpclient fmt)
-##add_executable(fserver  samples/factory_server.cpp)
-##target_link_libraries(fserver fmt)
+add_executable(tcpserver samples/tcpserver.cpp  )
+target_link_libraries(tcpserver fmt dl)
+
+add_executable(tcpclient samples/tcpclient.cpp)
+target_link_libraries(tcpclient fmt)
+add_executable(fserver  samples/factory_server.cpp)
+target_link_libraries(fserver fmt)
  
 # add_executable(tlsclient samples/tlsclient.cpp)
 # add_executable(tlsserver samples/tlsserver.cpp)
@@ -64,21 +64,21 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 # target_link_libraries(tlsserver fmt ssl crypto)
  
 
-## add_executable(webserver samples/webserver.cpp   )
-## target_link_libraries(webserver fmt  dl)
-##
-##add_executable(webclient samples/webclient.cpp   )
-##target_link_libraries(webclient fmt)
+add_executable(webserver samples/webserver.cpp   )
+target_link_libraries(webserver fmt  dl)
+
+add_executable(webclient samples/webclient.cpp   )
+target_link_libraries(webclient fmt)
 
 
 # add_executable(websslserver samples/websslserver.cpp   )
 # target_link_libraries(websslserver fmt ssl crypto)
 
-##add_executable(wsclient samples/wsclient.cpp    )
-##target_link_libraries(wsclient fmt   )
-##
-## add_executable(wsserver samples/wsserver.cpp    )
-## target_link_libraries(wsserver fmt )
+add_executable(wsclient samples/wsclient.cpp    )
+target_link_libraries(wsclient fmt   )
+
+add_executable(wsserver samples/wsserver.cpp    )
+target_link_libraries(wsserver fmt )
 
 
 # add_executable(wssclient samples/wssclient.cpp    )
@@ -87,17 +87,17 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 # add_executable(wssserver samples/wssserver.cpp    )
 # target_link_libraries(wssserver fmt ssl crypto)
 
-##add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
-##target_link_libraries(kcpserver fmt )
-##
-##add_executable(kcpclient samples/kcpclient.cpp  kcp/ikcp.c)
-##target_link_libraries(kcpclient fmt )
-## 
-##add_executable(udpclient samples/udpclient.cpp  )
-##target_link_libraries(udpclient fmt)
-##
-##add_executable(udpserver samples/udpserver.cpp  )
-##target_link_libraries(udpserver fmt)
+add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
+target_link_libraries(kcpserver fmt )
+
+add_executable(kcpclient samples/kcpclient.cpp  kcp/ikcp.c)
+target_link_libraries(kcpclient fmt )
+ 
+add_executable(udpclient samples/udpclient.cpp  )
+target_link_libraries(udpclient fmt)
+
+add_executable(udpserver samples/udpserver.cpp  )
+target_link_libraries(udpserver fmt)
 
 
 # add_executable(mudpclient samples/mudpclient.cpp  )
@@ -113,11 +113,11 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 # target_link_libraries(seqclient fmt)
 
  
-##add_executable(pipeserver samples/pipe_server.cpp  )
-##target_link_libraries(pipeserver fmt)
-##
-##add_executable(pipeclient samples/pipe_client.cpp  )
-##target_link_libraries(pipeclient fmt)
+add_executable(pipeserver samples/pipe_server.cpp  )
+target_link_libraries(pipeserver fmt)
+
+add_executable(pipeclient samples/pipe_client.cpp  )
+target_link_libraries(pipeclient fmt)
 
 add_executable(logger samples/logger.cpp  )
 target_link_libraries(logger fmt)
