@@ -16,8 +16,8 @@ jobs:
     
     - name: Setup C++ environment
       uses: kurocha/setup-cpp@v1
-    - name: Setup 
-      run: ./setup.sh  
+    - name: Init Submodules 
+      run:  git submodule init && git submodule update --recursive   
     - name: Build
       run: cmake . && make 
  
