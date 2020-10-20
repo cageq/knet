@@ -17,7 +17,9 @@ It is a headonly library, basically you can copy all files to you project and us
 ## build samples
 ```shell
 
-./setup.sh   # copy asio files and fmt lib to deps directory, no need root permissions. 
+git submodule init 
+
+git submodule update --recursive 
 
 cmake . 
 
