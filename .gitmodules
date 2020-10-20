@@ -1,0 +1,6 @@
+[submodule "opt/asio"]
+	path = opt/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "opt/fmt"]
+	path = opt/fmt
+	url = https://github.com/fmtlib/fmt.git

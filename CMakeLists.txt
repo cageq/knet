@@ -1,29 +1,19 @@
 cmake_minimum_required (VERSION 3.1.0)
 project (knet)
 
-set(LIBPATH "$ENV{HOME}/app")
+set(CMAKE_CXX_STANDARD 17)
 
-
-include_directories(".")
 include_directories("include")
-include_directories("deps/include")
 include_directories("klog")
 include_directories("include/tcp")
 include_directories("include/udp")
 include_directories("include/pipe")
-include_directories("opt")
-include_directories("include")
-include_directories("http")
-include_directories("utils")
+include_directories("opt/asio/asio/include")
  
-include_directories("opt/libgo/libgo")
 include_directories("kcp")
 
-
-include_directories("${LIBPATH}/include")
-link_directories("${LIBPATH}/lib") 
-link_directories("deps/lib") 
 link_directories("/usr/local/lib") 
+link_directories("/usr/local/lib64") 
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -43,11 +33,11 @@ elseif(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17  -D NDEBUG")
 endif()
 
+add_subdirectory(opt/fmt EXCLUDE_FROM_ALL) 
 
 ADD_DEFINITIONS(-DASIO_STANDALONE)
 
 #add the executable
-#add_library(knet ${SRCS})
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
 add_executable(tcpserver samples/tcpserver.cpp  )
@@ -111,7 +101,6 @@ target_link_libraries(udpserver fmt)
 
 # target_link_libraries(seqserver fmt)
 # target_link_libraries(seqclient fmt)
-
  
 add_executable(pipeserver samples/pipe_server.cpp  )
 target_link_libraries(pipeserver fmt)
