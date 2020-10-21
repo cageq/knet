@@ -48,14 +48,14 @@ public:
 	static TPtr create() { return std::make_shared<T>(); }
 
 	int32_t send(const char* data, std::size_t length) {
-		if (sock) {
+		if (udp_socket) {
 			dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
 				remote_point.port());
 
 			dlog("send thread id is {}", std::this_thread::get_id());
 
 			auto buffer = std::make_shared<std::string>(data, length);
-			sock->async_send_to(asio::buffer(*buffer), remote_point,
+			udp_socket->async_send_to(asio::buffer(*buffer), remote_point,
 				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
 						if (event_handler) {
@@ -67,7 +67,7 @@ public:
 					}
 				}); 
 
-			// sock->async_send_to(asio::buffer(data, length), remote_point,
+			// udp_socket->async_send_to(asio::buffer(data, length), remote_point,
 			// 	[this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 			// 		if (!ec) {
 			// 			if (event_handler) {
@@ -94,7 +94,7 @@ public:
 			// Create the socket so that multiple may be bound to the same address.
 			dlog("join multi address {}", multiHost);
 			asio::ip::address multiAddr = asio::ip::make_address(multiHost);
-			sock->set_option(asio::ip::multicast::join_group(multiAddr));
+			udp_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 		}
 		return true;
 	}
@@ -102,9 +102,9 @@ public:
 	int32_t send(const std::string& msg) {
 		dlog("send message to remote {}:{}", remote_point.address().to_string(),
 			remote_point.port());
-		if (sock) {
+		if (udp_socket) {
 			auto buffer = std::make_shared<std::string>(std::move(msg));
-			sock->async_send_to(asio::buffer(*buffer), remote_point,
+			udp_socket->async_send_to(asio::buffer(*buffer), remote_point,
 				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
 						if (event_handler) {
@@ -120,9 +120,9 @@ public:
 	}
 
 	int32_t sync_send(const std::string& msg) {
-		if (sock) {
+		if (udp_socket) {
 			asio::error_code ec;
-			auto ret = sock->send_to(asio::buffer(msg), remote_point, 0, ec);
+			auto ret = udp_socket->send_to(asio::buffer(msg), remote_point, 0, ec);
 			if (!ec) {
 				return ret;
 			}
@@ -140,8 +140,8 @@ public:
 	bool pong() { return true; }
 	uint32_t cid = 0;
 	void close() {
-		if (sock && sock->is_open()) {
-			sock->close();
+		if (udp_socket && udp_socket->is_open()) {
+			udp_socket->close();
 		}
 	}
 
@@ -154,15 +154,15 @@ private:
 	void connect(asio::io_context& ctx, udp::endpoint pt, uint32_t localPort = 0,
 		const std::string& localAddr = "0.0.0.0") {
 		remote_point = pt;
-		// this->sock = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
-		this->sock = std::make_shared<udp::socket>(ctx);
-		if (sock) {
+		// this->udp_socket = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
+		this->udp_socket = std::make_shared<udp::socket>(ctx);
+		if (udp_socket) {
 			asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
-			sock->open(lisPoint.protocol());
-			sock->set_option(asio::ip::udp::socket::reuse_address(true));
+			udp_socket->open(lisPoint.protocol());
+			udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
 			if (localPort > 0) {
-				sock->set_option(asio::ip::udp::socket::reuse_address(true));
-				sock->bind(lisPoint);
+				udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
+				udp_socket->bind(lisPoint);
 			}
 
 			m.timer = std::unique_ptr<Timer>(new Timer(ctx));
@@ -192,7 +192,7 @@ private:
 	}
 
 	void do_receive() {
-		sock->async_receive_from(asio::buffer(recv_buffer, max_length), sender_point,
+		udp_socket->async_receive_from(asio::buffer(recv_buffer, max_length), sender_point,
 			[this](std::error_code ec, std::size_t bytes_recvd) {
 				if (!ec && bytes_recvd > 0) {
 
@@ -223,7 +223,7 @@ private:
 	EventHandler event_handler = nullptr;
 
 private: 
-	UdpSocketPtr sock;
+	UdpSocketPtr udp_socket;
 	std::chrono::steady_clock::time_point last_msg_time;
 
 	struct {

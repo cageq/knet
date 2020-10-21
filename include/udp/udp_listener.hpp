@@ -124,7 +124,7 @@ private:
 					auto conn = this->find_connection(m.remote_point);
 					if (!conn) {
 						conn = this->create_connection(m.remote_point);
-						conn->sock = m.server_socket;
+						conn->udp_socket = m.server_socket;
 
 						conn->remote_point = m.remote_point;
 						// if (m.multi_host.empty()) {
