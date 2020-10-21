@@ -73,8 +73,8 @@ namespace knet
 				this->factory = fac;
 				cid = ++index;
 				//std::shared_ptr<T> self = this->shared_from_this();
-				socket = sock;
-				socket->connection = this->shared_from_this();
+				tcp_socket = sock;
+				tcp_socket->connection = this->shared_from_this();
 				handle_event(EVT_CREATE);
 			}
 
@@ -85,22 +85,22 @@ namespace knet
 			template <class P, class... Args>
 			int msend(const P &first, const Args &... rest)
 			{
-				return socket->msend(first, rest...);
+				return tcp_socket->msend(first, rest...);
 			}
 
 			void close()
 			{
 				reconn_flag = false;
-				if (socket)
+				if (tcp_socket)
 				{
-					socket->close();
+					tcp_socket->close();
 				}
 			}
 			void post(std::function<void()> handler)
 			{
-				if (socket)
+				if (tcp_socket)
 				{
-					socket->run_inloop(handler);
+					tcp_socket->run_inloop(handler);
 				}
 				else
 				{
@@ -125,7 +125,7 @@ namespace knet
 
 
 
-			inline bool is_connected() { return socket && socket->is_open(); }
+			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
 
 			bool connect(const ConnectionInfo & connInfo )
 			{
@@ -133,20 +133,20 @@ namespace knet
 				this->remote_host = connInfo.server_addr;
 				this->remote_port = connInfo.server_port;
 				is_passive = false; 
-				return socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
+				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
 			}
 
-			bool vsend(const std::vector<asio::const_buffer> &bufs) { return socket->vsend(bufs); }
+			bool vsend(const std::vector<asio::const_buffer> &bufs) { return tcp_socket->vsend(bufs); }
 
-			bool connect() { return socket->connect(remote_host, remote_port); }
+			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
 
-			tcp::endpoint local_endpoint() { return socket->local_endpoint(); }
+			tcp::endpoint local_endpoint() { return tcp_socket->local_endpoint(); }
 
-			tcp::endpoint remote_endpoint() { return socket->remote_endpoint(); }
+			tcp::endpoint remote_endpoint() { return tcp_socket->remote_endpoint(); }
 
-			std::string get_remote_ip() { return socket->remote_endpoint().host; }
+			std::string get_remote_ip() { return tcp_socket->remote_endpoint().host; }
 
-			uint32_t get_remote_port() { return socket->remote_endpoint().port; }
+			uint32_t get_remote_port() { return tcp_socket->remote_endpoint().port; }
 
 			inline uint64_t get_cid() const { return cid; }
 
@@ -191,9 +191,9 @@ namespace knet
 
 			asio::io_context *get_context()
 			{
-				if (socket)
+				if (tcp_socket)
 				{
-					return &socket->context();
+					return &tcp_socket->context();
 				}
 				return nullptr;
 			}
@@ -294,7 +294,7 @@ namespace knet
 
 			std::set<uint64_t> timers;
 			FactoryPtr factory = nullptr;
-			SocketPtr socket = nullptr;
+			SocketPtr tcp_socket = nullptr;
 			NetEventHandler event_handler;
 			NetDataHandler data_handler;
 			std::string remote_host;
