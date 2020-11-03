@@ -246,12 +246,12 @@ public:
 		int32_t pkgLen = this->connection->handle_package(m.read_buffer, read_buffer_pos);
 		dlog("process data  pkg size is {}", pkgLen);
 		if (pkgLen < 0 || pkgLen > kReadBufferSize) {
-			elog("single package size ({}) error, close connection", pkgLen);
+			elog("single packet size ({}) error, close connection", pkgLen);
 			connection->close();
 			return;
 		}
 		while (pkgLen > 0) {
-			dlog("read package length {}", pkgLen);
+			dlog("read packet length {}", pkgLen);
 			if (readPos + pkgLen <= read_buffer_pos) {
 				char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 				char endChar = *pkgEnd;
@@ -344,7 +344,8 @@ public:
 					this->close();
 					return;
 				}
-				if (pkgLen == 0) { // no enough data 
+
+				if (pkgLen <= 0) { // no enough data 
 
 					if (read_buffer_pos > readPos && readPos > 0) {
 						memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
@@ -358,7 +359,8 @@ public:
 						//read_buffer_pos -= readLen;
 						read_buffer_pos = 0; 
 						return;
-					} else { // buffer hold one or more package
+					} else {
+						 // buffer contain one or more packets
 						dlog("process just one message {}", pkgLen);
 						readPos += pkgLen;
 					}
