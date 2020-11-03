@@ -353,7 +353,7 @@ public:
 					return;
 				} else {
 
-					if ( pkgLen > readLen) { // exceed buffer size, but user has eat the buffer data
+					if ( pkgLen > readLen) { // exceed buffer size, but user has consume the buffer data
 						need_package_length = pkgLen - readLen;
 						//read_buffer_pos -= readLen;
 						read_buffer_pos = 0; 
