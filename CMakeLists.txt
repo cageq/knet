@@ -4,7 +4,7 @@ project (knet)
 set(CMAKE_CXX_STANDARD 17)
 
 include_directories("include")
-include_directories("klog")
+include_directories("opt/klog/include")
 include_directories("include/tcp")
 include_directories("include/udp")
 include_directories("include/pipe")
@@ -107,7 +107,4 @@ target_link_libraries(pipeserver fmt)
 
 add_executable(pipeclient samples/pipe_client.cpp  )
 target_link_libraries(pipeclient fmt)
-
-add_executable(logger samples/logger.cpp  )
-target_link_libraries(logger fmt)
 
