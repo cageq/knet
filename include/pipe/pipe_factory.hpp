@@ -63,7 +63,7 @@ namespace knet{
 
 					if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
 						std::string pipeId = std::string(msg->data, msg->head.length);
-						dlog("get handshake response , shakehand success, pipeid is {}", pipeId);
+						dlog("get handshake ,  pipeid is {}", pipeId);
 
 						auto itr = pipes.find(pipeId);
 						if (itr != pipes.end()) {
@@ -71,7 +71,6 @@ namespace knet{
 							session->bind(conn);
 							conn->session = session;
 							dlog("bind session success");
-
 							if (conn->passive()) {
 								PipeMessage<64> shakeMsg;
 								shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
@@ -85,6 +84,8 @@ namespace knet{
 							conn->close();
 						}
 						return sizeof(PipeMsgHead) + msg->head.length;
+					} else {
+						wlog("message type {}", msg->head.type); 
 					}
 
 					if (conn->session) {

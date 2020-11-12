@@ -25,11 +25,14 @@ class MyChannel : public PipeSession{
 
 
 int main(int argc, char * argv[]){ 
+
+	kLogIns.add_console(); 
 	auto mySession = std::make_shared<MyChannel>("1" ); 
 
 	KPipe<>  spipe(PipeMode::PIPE_SERVER_MODE);  
 	spipe.attach(mySession);  
 
+	dlog("start server at {} ", 9999); 
 	spipe.start("127.0.0.1",9999);  
 
 	while(1){
