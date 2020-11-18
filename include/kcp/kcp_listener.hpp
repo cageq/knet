@@ -21,8 +21,10 @@ public:
 	using WorkerPtr  = std::shared_ptr<Worker>; 
 	KcpListener(WorkerPtr w  = nullptr ) {
 		if (!w ) {
-			worker =  std::make_shared<Worker>(); 
+			worker = std::make_shared<Worker>(); 
 			worker->start(); 
+		}else {
+			worker = w; 
 		}
 	}
 
@@ -88,8 +90,7 @@ private:
 
 				auto timeNow = std::chrono::system_clock::now();
 					conn->last_msg_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-						timeNow.time_since_epoch());
-
+						timeNow.time_since_epoch()); 
 
 					if (!conn->check_control_message((const char*)recv_buffer, bytes_recvd)) {
 						conn->handle_receive((const char*)recv_buffer, bytes_recvd); 

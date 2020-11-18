@@ -79,7 +79,7 @@ public:
 							auto timeNow = std::chrono::system_clock::now();
 							auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
 								timeNow.time_since_epoch());
-
+ 
 							ikcp_update(kcp, duration.count());
 						}
 					},
@@ -97,11 +97,11 @@ public:
 
 	int32_t do_sync_send(const char* data, std::size_t len)
 	{
-		if (sock) {
+		if (kcp_sock) {
 				asio::error_code ec;
 				dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
 				remote_point.port());
-				int32_t ret = sock->send_to(asio::const_buffer(data, len), remote_point,0, ec); 
+				int32_t ret = kcp_sock->send_to(asio::const_buffer(data, len), remote_point,0, ec); 
  
 				if (!ec) {
 					return ret;
@@ -111,17 +111,16 @@ public:
 	}
 
 	int32_t do_send(const char* data, std::size_t length) {
-		if (sock) {
+		if (kcp_sock) {
 			dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
-				remote_point.port());
-
-			//std::string msg(data,length); 
+				remote_point.port()); 
+	
 			auto buffer = std::make_shared<std::string>(data, length);
-			sock->async_send_to(asio::buffer(*buffer), remote_point,
+			kcp_sock->async_send_to(asio::buffer(*buffer), remote_point,
 				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
 						if (event_handler) {
-							event_handler(this->shared_from_this(), EVT_SEND, {nullptr,len});
+							event_handler(this->shared_from_this(), EVT_SEND,  "");
 						}
 					} else {
 						dlog("sent message , error code {}, {}", ec.value(), ec.message());
@@ -135,7 +134,7 @@ public:
 	}
 
 	int32_t send(const std::string& msg) {
-		dlog("start to send user message on status {}", status);
+		dlog("send user message on status {}", status);
 		if (status == CONN_KCP_READY) {
 			if (kcp) {
 				return ikcp_send(kcp, msg.c_str(), msg.length());
@@ -154,7 +153,7 @@ public:
 	}
 	int32_t disconnect() {
 
-		if (sock && status < CONN_CLOSING) {
+		if (kcp_sock && status < CONN_CLOSING) {
 			status = CONN_CLOSING;
 			disconnect_message_.conv = cid;
 			auto self = this->shared_from_this(); 
@@ -164,7 +163,7 @@ public:
 				kcp_timerid = 0; 
 			}
 
-			sock->async_send_to(
+			kcp_sock->async_send_to(
 				asio::buffer((const char*)&disconnect_message_, sizeof(KcpShakeHandMsg)),
 				remote_point, [=](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (ec) {						
@@ -200,9 +199,9 @@ public:
 			timer.stop_timer(heartbeat_timerid);
 			timer.stop_timer(kcp_timerid);
 
-			if (sock && !passive) {
-				sock->close();
-				sock = nullptr;
+			if (kcp_sock && !passive) {
+				kcp_sock->close();
+				kcp_sock = nullptr;
 			}
 
 			if (kcp) {
@@ -213,10 +212,10 @@ public:
 	}
 
 	void listen(KcpSocketPtr s) {
-		sock = s;
+		kcp_sock = s;
 		status = CONN_OPEN;
 		passive = true;
-		if (sock) {
+		if (kcp_sock) {
 			auto self = this->shared_from_this(); 
 			heartbeat_timerid = timer.start_timer(
 				[=]() {
@@ -229,7 +228,9 @@ public:
 
 						if (event_handler) {
 							event_handler(self->shared_from_this(), EVT_DISCONNECT, {});
-						} 
+						}  
+
+						self->release();
 						
 					} else {
 						self->send_heartbeat();
@@ -245,8 +246,8 @@ public:
 		remote_point = pt;
 		passive = false;
 		reconnect = reconn;
-		this->sock = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), 0));
-		if (sock) {
+		this->kcp_sock = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), 0));
+		if (kcp_sock) {
 			auto self = this->shared_from_this(); 
 			heartbeat_timerid = timer.start_timer(
 				[=]() {
@@ -279,10 +280,10 @@ public:
 
 	void shakehand_request(uint32_t id = 0) {
 
-		if (sock) {
+		if (kcp_sock) {
 			shakehand_request_.conv = id == 0 ? this->cid : id;
 			dlog("send shakehand request to client {}", shakehand_request_.conv);
-			sock->async_send_to(
+			kcp_sock->async_send_to(
 				asio::buffer((const char*)&shakehand_request_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
@@ -296,16 +297,19 @@ public:
 		}
 	}
 
+ 
+
 	void shakehand_response(uint32_t id = 0) {
 
-		if (sock) {
+		if (kcp_sock) {
 
 			shakehand_response_.conv = id == 0 ? this->cid : id;
-			sock->async_send_to(
+			kcp_sock->async_send_to(
 				asio::buffer((const char*)&shakehand_response_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-						dlog("send shakehand response successful {}", shakehand_response_.conv);
+					dlog("send to remote point {}", remote_point); 
+						dlog("send shakehand response successful  {}", shakehand_response_.conv);
 					} else {
 						dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
@@ -313,9 +317,9 @@ public:
 		}
 	}
 	void send_heartbeat() {
-		if (sock) {
+		if (kcp_sock) {
 			heartbeat_message_.conv = this->cid;
-			sock->async_send_to(
+			kcp_sock->async_send_to(
 				asio::buffer((const char*)&heartbeat_message_, sizeof(KcpHeartbeat)), remote_point,
 				[this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
@@ -381,7 +385,7 @@ public:
 			switch (head->cmd) {
 			case KCP_SHAKEHAND_REQUEST: {
 				KcpShakeHandMsg* shakeMsg = (KcpShakeHandMsg*)pData;
-				wlog("get shakehand request  , cid is {} ", shakeMsg->conv);
+				wlog("get shakehand request when kcp ready, cid is {} ", shakeMsg->conv);
 				if (shakeMsg->conv == 0) {
 					wlog("request shakehand cid is 0 ,using my cid {}", this->cid);
 				} else {
@@ -403,7 +407,7 @@ public:
 			} break;
 
 			case KCP_HEARTBEAT: {
-				dlog("receive heartbeat , ignore it on ready");
+				dlog("receive heartbeat, ignore it on ready");
 			} break;
 			default:;
 			}
@@ -413,7 +417,8 @@ public:
 	}
 
 	void do_receive() {
-		sock->async_receive_from(asio::buffer(recv_buffer, kMaxMessageLength), sender_point,
+ 
+		kcp_sock->async_receive_from(asio::buffer(recv_buffer, kMaxMessageLength), sender_point,
 			[this](std::error_code ec, std::size_t bytes_recvd) {
 				if (!ec && bytes_recvd > 0) {
 					dlog("receive message length {}", bytes_recvd);
@@ -423,7 +428,8 @@ public:
 					last_msg_time = std::chrono::duration_cast<std::chrono::milliseconds>(
 						timeNow.time_since_epoch());
 
-					if (!check_control_message((const char*)recv_buffer, bytes_recvd)) {
+					bool ctrlMsg = check_control_message((const char*)recv_buffer, bytes_recvd); 
+					if (!ctrlMsg) {
 						handle_receive((const char*)recv_buffer, bytes_recvd);
 					}
 					do_receive();
@@ -446,12 +452,13 @@ public:
 			}
 			uint32_t recvLen = 0; 
 
-			while (recvLen < dataLen)
+			//while (recvLen < dataLen)
+			while(true) //consume all fragments? 
 			{
 				char kcpBuf[kMaxMessageLength] = "";
 				int32_t kcp_recvd_bytes = ikcp_recv(kcp, kcpBuf, sizeof(kcpBuf));
 				if (kcp_recvd_bytes <= 0) {
-					elog(" kcp received bytes error {}", kcp_recvd_bytes);
+					wlog("no more  kcp fragments {}", kcp_recvd_bytes);
 					// ikcp_log(kcp,"kcp input error"); 						
 					break; 
 				} else {
@@ -467,7 +474,7 @@ public:
 		}
 	}
 
-	KcpSocketPtr sock;
+	KcpSocketPtr kcp_sock;
  
 	enum { kMaxMessageLength = 4096 };
 	char recv_buffer[kMaxMessageLength];

@@ -16,7 +16,7 @@ class MyConnection : public KcpConnection<MyConnection> {
 	}
 	virtual ~MyConnection(){}
     virtual PackageType on_message(const char* data, uint32_t len) { 
-		ilog("on recv udp message {} , lenght is {} ,cid is ", data, len,cid); 
+		ilog("on recv udp message {} , lenght is {} ,cid is {}", data, len,cid); 
 		this->send("response from server"); 
 		return PACKAGE_USER;
 	}

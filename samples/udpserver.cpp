@@ -4,6 +4,7 @@
  
 
 #include "udp/udp_listener.hpp"
+#include "console_sink.hpp"
 
 using namespace knet::udp;
 bool running = true; 
@@ -48,6 +49,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 };
 int main(int argc, char* argv[]) {
 
+	kLogIns.add_sink<klog::ConsoleSink>(); 
 	UdpListener<MyConnection> udpListener;
 	udpListener.start([](MyConnection::TPtr conn, knet::NetEvent evt, const std::string &dv) {
 		dlog("received connection event {}", evt);

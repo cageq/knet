@@ -336,7 +336,10 @@ int ikcp_recv(ikcpcb *kcp, char *buffer, int len)
 	assert(kcp);
 
 	if (iqueue_is_empty(&kcp->rcv_queue))
+	{		 
 		return -1;
+	}
+		
 
 	if (len < 0) len = -len;
 

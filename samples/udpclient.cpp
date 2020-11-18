@@ -2,6 +2,7 @@
 
 #include "udp_connector.hpp"
 #include <chrono>
+#include "console_sink.hpp"
 
 using namespace knet::udp; 
 
@@ -19,6 +20,7 @@ class MyConnection : public UdpConnection<MyConnection >
 int main(int argc , char * argv[])
 {   
 
+	kLogIns.add_sink<klog::ConsoleSink>(); 
     UdpConnector<MyConnection> connector; 
     connector.start(); 
 
@@ -28,7 +30,7 @@ int main(int argc , char * argv[])
 	while(1){
 		conn->send("hello world",11);  
 //		dlog("udp client log "); 
-//		std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
+		std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
     }
 
     return 0; 

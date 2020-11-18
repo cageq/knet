@@ -15,7 +15,7 @@ public:
 		}
 	virtual ~MyConnection(){}
 	virtual PackageType on_message(const char* data, uint32_t len) {
-		wlog("on recv udp message {} , lenght is {}", data, len);
+		wlog("on recv udp message\n{} , lenght is {}", data, len);
 		return PACKAGE_USER;
 	}
 

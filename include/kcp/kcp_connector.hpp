@@ -20,7 +20,14 @@ public:
 	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
 	using WorkerPtr = std::shared_ptr<Worker>; 
 
-	KcpConnector(WorkerPtr w = std::make_shared<Worker>() ):worker(w)  {}
+	KcpConnector(WorkerPtr w = nullptr )  {
+		if (!w ){
+			worker = std::make_shared<Worker>(); 
+			worker->start(); 
+		}else {
+			worker = w; 
+		}
+	}
 	bool start(EventHandler evtHandler = nullptr) {
 		event_handler = evtHandler;
 		return true;
@@ -61,8 +68,7 @@ public:
 
 	void stop() {  }
 
-	void wait() {
-	}
+ 
 
 private:
 	WorkerPtr worker; 
