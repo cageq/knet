@@ -2,6 +2,7 @@
 
 #include "kcp/kcp_connector.hpp"
 #include <chrono>
+#include "console_sink.hpp"
 
 using namespace knet::kcp;
 
@@ -9,7 +10,9 @@ class MyConnection : public KcpConnection<MyConnection> {
 
 public:
 	MyConnection(asio::io_context& ctx)
-		: KcpConnection<MyConnection>(ctx) {}
+		: KcpConnection<MyConnection>(ctx) {
+			cid = 8888; 	
+		}
 	virtual ~MyConnection(){}
 	virtual PackageType on_message(const char* data, uint32_t len) {
 		wlog("on recv udp message {} , lenght is {}", data, len);
@@ -19,10 +22,14 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+
+
+
+	kLogIns.add_sink<klog::ConsoleSink>(); 
 	KcpConnector<MyConnection> connector;
 	connector.start();
 
-	auto conn = connector.connect("127.0.0.1", 8700);
+	auto conn = connector.connect("127.0.0.1", 8700, 8888);
 
 	while (1) {
 

@@ -46,7 +46,6 @@ public:
 		shakehand_response_.cmd = KCP_SHAKEHAND_RESPONSE;
 		disconnect_message_.cmd = KCP_GOODBYE;
 		heartbeat_message_.cmd = KCP_HEARTBEAT;
-
 		status = CONN_IDLE;
 	}
 
@@ -98,8 +97,7 @@ public:
 
 	int32_t do_sync_send(const char* data, std::size_t len)
 	{
-		if (sock)
-		{
+		if (sock) {
 				asio::error_code ec;
 				dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
 				remote_point.port());
@@ -370,14 +368,12 @@ public:
 				}
 			} break;
 			case KCP_HEARTBEAT: {
-
 				dlog("receive heartbeat , ignore it ");
 			} break;
 
 			default:
 				wlog("on open state, need shakehand, send shakehand request ");
 				this->shakehand_request(); // lost cid ,request cid again
-
 				return true; // ignore message on open state , treat it as control message
 			}
 

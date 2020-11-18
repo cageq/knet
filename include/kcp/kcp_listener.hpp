@@ -19,7 +19,12 @@ public:
 	using TPtr = std::shared_ptr<T>;
 	using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string & )>;
 	using WorkerPtr  = std::shared_ptr<Worker>; 
-	KcpListener(WorkerPtr w = std::make_shared<Worker>() ):worker(w) {}
+	KcpListener(WorkerPtr w  = nullptr ) {
+		if (!w ) {
+			worker =  std::make_shared<Worker>(); 
+			worker->start(); 
+		}
+	}
 
 	bool start(uint32_t port, EventHandler evtHandler = nullptr) {
 		listen_port = port;
