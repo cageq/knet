@@ -11,7 +11,6 @@ class MyConnection : public KcpConnection<MyConnection> {
 
 	public:
 	MyConnection(asio::io_context &ctx):KcpConnection<MyConnection>(ctx){ 
-		cid = 8888; 
 
 	}
 	virtual ~MyConnection(){}
