@@ -452,23 +452,24 @@ public:
 			}
 			uint32_t recvLen = 0; 
 
-			//while (recvLen < dataLen)
-			while(true) //consume all fragments? 
+			while (recvLen < dataLen)
 			{
+				int32_t msgLen = ikcp_peeksize(kcp);
+				if (msgLen <= 0 ) {
+					break; 
+				}
+
 				char kcpBuf[kMaxMessageLength] = "";
 				int32_t kcp_recvd_bytes = ikcp_recv(kcp, kcpBuf, sizeof(kcpBuf));
-				if (kcp_recvd_bytes <= 0) {
-					wlog("no more  kcp fragments {}", kcp_recvd_bytes);
-					// ikcp_log(kcp,"kcp input error"); 						
-					break; 
-				} else {
-					recvLen += kcp_recvd_bytes; 
+				if (kcp_recvd_bytes >  0) {
+					recvLen += msgLen ; 
 					dlog("received kcp message length {}", kcp_recvd_bytes);
 					this->on_message(kcpBuf, kcp_recvd_bytes);
-
 					if (event_handler) {
 						event_handler(this->shared_from_this(), EVT_RECV, {data, dataLen});
 					}
+				} else {
+					break; 
 				}
 			}; 
 		}
