@@ -42,7 +42,7 @@ namespace knet
 
 		void start(WorkStarter starter = nullptr)
 		{
-			wlog("start event work here {}", std::this_thread::get_id());
+			wlog("start event work {}", std::this_thread::get_id());
 			work_starter = starter;
 			if (self_context != nullptr)
 			{
@@ -55,7 +55,6 @@ namespace knet
 				//it's outer context, user should start it in other place 
 			}
 
-			wlog("post starter to work thread");
 			if (work_starter)
 			{
 				asio::dispatch(*io_context, work_starter);
@@ -63,14 +62,11 @@ namespace knet
 		}
 		void stop()
 		{
-			if (work_thread.joinable())
-			{
-				if (self_context)
-				{
+			if (work_thread.joinable()) 	{
+				if (self_context) {
 					self_context->stop();
 					work_thread.join();
-				} 
-				
+				}  
 			}
 		}
 
@@ -97,7 +93,7 @@ namespace knet
 		}
 		void stop_timer(uint64_t timerId) { event_timer->stop_timer(timerId); } 
 		
-		void * get_user_data(){ return user_data; }
+		inline void * get_user_data(){ return user_data; }
 
 	 
 
@@ -110,7 +106,7 @@ namespace knet
 			this->init();
 			io_context->run();
 			deinit();
-			dlog("quitting context run");
+			dlog("exit event worker");
 		}
 		void *user_data = nullptr; 
 		WorkStarter work_starter = nullptr;
