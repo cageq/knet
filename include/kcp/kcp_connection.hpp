@@ -47,8 +47,7 @@ public:
 		disconnect_message_.cmd = KCP_GOODBYE;
 		heartbeat_message_.cmd = KCP_HEARTBEAT;
 		status = CONN_IDLE;
-	}
-
+	} 
 
 	enum PackageType {
 		PACKAGE_PING,
@@ -95,40 +94,14 @@ public:
 
 	static TPtr create(asio::io_context& ctx) { return std::make_shared<T>(ctx); }
 
-	int32_t do_sync_send(const char* data, std::size_t len)
-	{
-		if (kcp_sock) {
-				asio::error_code ec;
-				dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
-				remote_point.port());
-				int32_t ret = kcp_sock->send_to(asio::const_buffer(data, len), remote_point,0, ec); 
- 
-				if (!ec) {
-					return ret;
-				}
-		}
-		return -1; 
-	}
-
-	int32_t do_send(const char* data, std::size_t length) {
-		if (kcp_sock) {
-			dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
-				remote_point.port()); 
-	
-			auto buffer = std::make_shared<std::string>(data, length);
-			kcp_sock->async_send_to(asio::buffer(*buffer), remote_point,
-				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
-					if (!ec) {
-						if (event_handler) {
-							event_handler(this->shared_from_this(), EVT_SEND,  "");
-						}
-					} else {
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
-					}
-				 
-				});
-
-			return 0;
+	int32_t send(const char * data ,uint32_t len){
+		dlog("send user message on status {}", status);
+		if (status == CONN_KCP_READY) {
+			if (kcp) {
+				return ikcp_send(kcp, data, len);
+			}
+		} else {
+			this->shakehand_request();
 		}
 		return -1;
 	}
@@ -184,13 +157,50 @@ public:
 	uint32_t cid = 0;
 	std::chrono::milliseconds last_msg_time;
 
-//private:
-	//template <class>
-	//friend class KcpListener;
-	//template <class>
-	//friend class KcpConnector;
+private:
+	template <class,class>
+	friend class KcpListener;
+	template <class,class>
+	friend class KcpConnector;
+ 
+	int32_t do_sync_send(const char* data, std::size_t len)
+	{
+		if (kcp_sock) {
+				asio::error_code ec;
+				dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
+				remote_point.port());
+				int32_t ret = kcp_sock->send_to(asio::const_buffer(data, len), remote_point,0, ec); 
+ 
+				if (!ec) {
+					return ret;
+				}
+		}
+		return -1; 
+	}
 
-	bool passive = false; 
+	int32_t do_send(const char* data, std::size_t length) {
+		if (kcp_sock) {
+			dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
+				remote_point.port()); 
+	
+			auto buffer = std::make_shared<std::string>(data, length);
+			kcp_sock->async_send_to(asio::buffer(*buffer), remote_point,
+				[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
+					if (!ec) {
+						if (event_handler) {
+							event_handler(this->shared_from_this(), EVT_SEND,  "");
+						}
+					} else {
+						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+					}
+				 
+				});
+
+			return 0;
+		}
+		return -1;
+	}
+ 
 	void release() {
 
 		if (status != CONN_CLOSED) {
@@ -301,8 +311,7 @@ public:
 
 	void shakehand_response(uint32_t id = 0) {
 
-		if (kcp_sock) {
-
+		if (kcp_sock) { 
 			shakehand_response_.conv = id == 0 ? this->cid : id;
 			kcp_sock->async_send_to(
 				asio::buffer((const char*)&shakehand_response_, sizeof(KcpShakeHandMsg)),
@@ -331,8 +340,7 @@ public:
 		}
 	}
 	bool check_control_message(const char* pData, uint32_t len) {
-		static uint32_t server_conv_index = 0x1000;
-
+		static uint32_t server_conv_index = 0x1000; 
 		KcpMsgHead* head = (KcpMsgHead*)pData;
 
 		dlog("check shakehand status is {}, type is {}", status, head->cmd);
@@ -492,7 +500,7 @@ public:
 	KcpShakeHandMsg shakehand_response_;
 	KcpShakeHandMsg disconnect_message_;
 	KcpHeartbeat heartbeat_message_;
- 
+ 	bool passive = false; 
 
 	asio::io_context& io_context;
 	Timer timer;
