@@ -10,9 +10,7 @@ using namespace knet::kcp;
 class MyConnection : public KcpConnection<MyConnection> {
 
 	public:
-	MyConnection(asio::io_context &ctx):KcpConnection<MyConnection>(ctx){ 
-
-	}
+ 
 	virtual ~MyConnection(){}
     virtual PackageType on_message(const char* data, uint32_t len) { 
 		ilog("on recv udp message {} , lenght is {} ,cid is {}", data, len,cid); 
@@ -27,6 +25,9 @@ int main(int argc, char* argv[]) {
 	kLogIns.add_sink<klog::ConsoleSink>(); 
 	dlog("start kcp server"); 
 	KcpListener<MyConnection> kcpLis;
+	//knet::EventWorkerPtr worker = std::make_shared<knet::EventWorker>(); 
+	//worker->start(); 
+	//kcpLis.add_worker(worker); 
 	kcpLis.start(8700, [](MyConnection::TPtr, knet::NetEvent evt, const std::string & dv) {
 		wlog("received connection event {} , {}", evt,event_string(evt));
 		return nullptr;

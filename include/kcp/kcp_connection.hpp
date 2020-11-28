@@ -36,64 +36,25 @@ class KcpConnection : public std::enable_shared_from_this<T> {
 public:
 	enum ConnectionStatus { CONN_IDLE, CONN_OPEN, CONN_KCP_READY, CONN_CLOSING, CONN_CLOSED };
 	using TPtr = std::shared_ptr<T>;
-	using EventHandler = std::function<TPtr(TPtr, NetEvent, const  std::string&)>;
+	using EventHandler = std::function<TPtr(TPtr, NetEvent, const  std::string&)>; 
 
-	
-	KcpConnection(asio::io_context& ctx)
-		: io_context(ctx)
-		, timer(ctx) {
-		shakehand_request_.cmd = KCP_SHAKEHAND_REQUEST;
-		shakehand_response_.cmd = KCP_SHAKEHAND_RESPONSE;
-		disconnect_message_.cmd = KCP_GOODBYE;
-		heartbeat_message_.cmd = KCP_HEARTBEAT;
-		status = CONN_IDLE;
-	} 
-
+	KcpConnection(){}
+	 
 	enum PackageType {
 		PACKAGE_PING,
 		PACKAGE_PONG,
 		PACKAGE_USER,
 	};
 
-	void init_kcp() { 
-		dlog("create kcp cid is {}", cid);
-		if (kcp != nullptr) {
-			ikcp_release(kcp);
-			kcp = nullptr;
-		}
-
-		if (kcp == nullptr) {
-			kcp = ikcp_create(cid, this);
-			kcp->output = [](const char* buf, int len, ikcpcb* kcp, void* user) {
-				auto self = static_cast<KcpConnection<T>*>(user);
-				self->do_send(buf, len);
-				return 0;
-			};
-			ikcp_nodelay(kcp, 1, 10, 1, 1);
-			// ikcp_nodelay(kcp, 0, 40, 0, 0);
-			if (kcp_timerid == 0) {
-				kcp_timerid = timer.start_timer(
-					[this]() {
-						if (status == CONN_KCP_READY && kcp) {
-							auto timeNow = std::chrono::system_clock::now();
-							auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-								timeNow.time_since_epoch());
- 
-							ikcp_update(kcp, duration.count());
-						}
-					},
-					100);
-			}
-		}
-
-		status = CONN_KCP_READY;
-		dlog("init kcp success , change status  to ready {}", status);
+	void init(EventWorkerPtr w){
+		event_worker = w;  
+		shakehand_request_.cmd = KCP_SHAKEHAND_REQUEST;
+		shakehand_response_.cmd = KCP_SHAKEHAND_RESPONSE;
+		disconnect_message_.cmd = KCP_GOODBYE;
+		heartbeat_message_.cmd = KCP_HEARTBEAT;
+		status = CONN_IDLE;
 	}
-
-
-
-	static TPtr create(asio::io_context& ctx) { return std::make_shared<T>(ctx); }
-
+ 
 	int32_t send(const char * data ,uint32_t len){
 		dlog("send user message on status {}", status);
 		if (status == CONN_KCP_READY) {
@@ -132,7 +93,7 @@ public:
 			auto self = this->shared_from_this(); 
 
 			if (kcp_timerid != 0 ) {
-				timer.stop_timer(kcp_timerid);
+				event_worker->stop_timer(kcp_timerid);
 				kcp_timerid = 0; 
 			}
 
@@ -158,11 +119,49 @@ public:
 	std::chrono::milliseconds last_msg_time;
 
 private:
-	template <class,class>
+	template <class,class , class ...>
 	friend class KcpListener;
-	template <class,class>
+	template <class,class, class ...>
 	friend class KcpConnector;
  
+
+ 
+	void init_kcp() { 
+		dlog("create kcp cid is {}", cid);
+		if (kcp != nullptr) {
+			ikcp_release(kcp);
+			kcp = nullptr;
+		}
+
+		if (kcp == nullptr) {
+			kcp = ikcp_create(cid, this);
+			kcp->output = [](const char* buf, int len, ikcpcb* kcp, void* user) {
+				auto self = static_cast<KcpConnection<T>*>(user);
+				self->do_send(buf, len);
+				return 0;
+			};
+			ikcp_nodelay(kcp, 1, 10, 1, 1);
+			// ikcp_nodelay(kcp, 0, 40, 0, 0);
+			if (kcp_timerid == 0) {
+				kcp_timerid = event_worker->start_timer(
+					[this]() {
+						if (status == CONN_KCP_READY && kcp) {
+							auto timeNow = std::chrono::system_clock::now();
+							auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+								timeNow.time_since_epoch());
+ 
+							ikcp_update(kcp, duration.count());
+						}
+					},
+					100);
+			}
+		}
+
+		status = CONN_KCP_READY;
+		dlog("init kcp success , change status  to ready {}", status);
+	}
+
+
 	int32_t do_sync_send(const char* data, std::size_t len)
 	{
 		if (kcp_sock) {
@@ -206,8 +205,8 @@ private:
 		if (status != CONN_CLOSED) {
 			status = CONN_CLOSED;
 			dlog("release all resources {}", this->cid);
-			timer.stop_timer(heartbeat_timerid);
-			timer.stop_timer(kcp_timerid);
+			event_worker->stop_timer(heartbeat_timerid);
+			event_worker->stop_timer(kcp_timerid);
 
 			if (kcp_sock && !passive) {
 				kcp_sock->close();
@@ -227,7 +226,7 @@ private:
 		passive = true;
 		if (kcp_sock) {
 			auto self = this->shared_from_this(); 
-			heartbeat_timerid = timer.start_timer(
+			heartbeat_timerid = event_worker->start_timer(
 				[=]() {
 					auto timeNow = std::chrono::system_clock::now();
 					auto elapseTime = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -252,14 +251,14 @@ private:
 		}
 	}
 
-	void connect(asio::io_context& ctx, udp::endpoint pt, bool reconn = true) {
+	void connect( udp::endpoint pt, bool reconn = true) {
 		remote_point = pt;
 		passive = false;
 		reconnect = reconn;
-		this->kcp_sock = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), 0));
+		this->kcp_sock = std::make_shared<udp::socket>(event_worker->context(), udp::endpoint(udp::v4(), 0));
 		if (kcp_sock) {
 			auto self = this->shared_from_this(); 
-			heartbeat_timerid = timer.start_timer(
+			heartbeat_timerid = event_worker->start_timer(
 				[=]() {
 					auto timeNow = std::chrono::system_clock::now();
 					auto elapseTime = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -502,8 +501,10 @@ private:
 	KcpHeartbeat heartbeat_message_;
  	bool passive = false; 
 
-	asio::io_context& io_context;
-	Timer timer;
+	EventWorkerPtr event_worker; 
+
+	 
+	std::set<uint64_t> conn_timers;
 	ikcpcb* kcp = nullptr;
 	uint64_t kcp_timerid = 0;
 	uint64_t heartbeat_timerid = 0;

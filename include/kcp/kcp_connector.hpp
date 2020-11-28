@@ -12,7 +12,7 @@ using asio::ip::udp;
 
 namespace knet {
 namespace kcp {
-template <typename T, typename Worker = EventWorker>
+template <typename T, typename Worker = EventWorker, class ... Args>
 class KcpConnector {
 
 public:
@@ -20,7 +20,7 @@ public:
 	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
 	using WorkerPtr = std::shared_ptr<Worker>; 
 
-	KcpConnector(WorkerPtr w = nullptr )  {
+	KcpConnector(WorkerPtr w = nullptr, Args ... args ):conn_args(args...)  {
 		if (!w ){
 			worker = std::make_shared<Worker>(); 
 			worker->start(); 
@@ -33,15 +33,16 @@ public:
 		return true;
 	}
 
-	TPtr connect(const std::string& host, uint32_t port , uint64_t id =0) {
+	TPtr connect(const std::string& host, uint16_t port , uint64_t id =0) {
 
 		TPtr conn = nullptr;
 		if (event_handler) {
 			conn = event_handler(nullptr, EVT_CREATE, {});
 		}
 
-		if (!conn) {
-			conn = T::create(worker->context());
+		if (!conn) {  
+			conn =  std::apply(&KcpConnector<T,  Worker, Args...>::create_helper,  conn_args); 
+			conn->init(worker); 
 		}
 		conn->cid = id;  
 		connections[id] = conn;
@@ -52,7 +53,7 @@ public:
 			resolver.resolve(udp::v4(), host, std::to_string(port));
 
 		if (!endpoints.empty()) {
-			conn->connect(worker->context(), *endpoints.begin());
+			conn->connect( *endpoints.begin());
 		}
 		return conn;
 	}
@@ -66,14 +67,27 @@ public:
 		return false;
 	}
 
-	void stop() {  }
+	void stop() { 
+
+		for(auto & conn :connections){
+			conn->disconnect(); 
+		}
+		connections.clear(); 
+	 }
 
  
 
 private:
+
+	static TPtr create_helper(  Args... args)
+	{ 
+		return  std::make_shared<T>(args...); 
+	}
+		 
 	WorkerPtr worker; 
 	std::unordered_map<uint64_t , TPtr>  connections; 
-	EventHandler event_handler = nullptr;
+	EventHandler event_handler = nullptr; 
+	std::tuple<Args...> conn_args;
 };
 
 } // namespace udp
