@@ -5,11 +5,7 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 
 
 ## Build 
-It uses  some apis like std::string_view for http parser, so we need c++17 to compile it. 
-
-the library contains a simple colorful log library to print debug log and it need  fmtlib ( https://fmt.dev/ )  library to accelerate the log output.
-
-You can use scripts "setup.sh" to install dependence libs into deps directory in this library root directory, no root permissions  needed. 
+need c++11 to compile it. 
 
 It is a headonly library, basically you can copy all files to you project and use it. (except fmt lib, you can alse set LOG_LEVEL to 0 in klog.hpp to get rid of the dependence ) 
 
