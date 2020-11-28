@@ -20,13 +20,13 @@ namespace knet {
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string&)>;
 			using WorkerPtr = std::shared_ptr<Worker>;
 			KcpListener(WorkerPtr w = nullptr, Args ... args) :conn_args(args...) {
-				auto worker = w ; 
+				auto worker = w;
 				if (worker == nullptr) {
 					m.default_worker = std::make_shared<Worker>();
-					m.default_worker->start(); 
-					worker = m.default_worker; 
-				}  
-				m.user_workers.emplace_back(worker); 
+					m.default_worker->start();
+					worker = m.default_worker;
+				}
+				m.user_workers.emplace_back(worker);
 			}
 
 			bool start(uint32_t port, EventHandler evtHandler = nullptr) {
@@ -35,11 +35,11 @@ namespace knet {
 				run();
 				return true;
 			}
-			void add_worker(WorkerPtr w  ){
+			void add_worker(WorkerPtr w) {
 				if (w != nullptr)
 				{
-					m.user_workers.emplace_back(w); 
-				} 
+					m.user_workers.emplace_back(w);
+				}
 			}
 
 			TPtr find_connection(udp::endpoint pt) {
@@ -56,7 +56,7 @@ namespace knet {
 					conn = event_handler(nullptr, EVT_CREATE, {});
 				}
 				if (!conn) {
-					auto worker = this->get_worker(); 
+					auto worker = this->get_worker();
 					conn = std::apply(&KcpListener<T, Worker, Args...>::create_helper, conn_args);
 					conn->init(worker);
 				}
@@ -80,7 +80,7 @@ namespace knet {
 				{
 					server_socket->close();
 				}
-				m.user_workers.clear(); 
+				m.user_workers.clear();
 			}
 
 
@@ -120,15 +120,14 @@ namespace knet {
 
 
 			void run() {
-				for(auto worker  :  m.user_workers){
+				for (auto worker : m.user_workers) {
 
-					worker->post([this,worker]() {
-					dlog("start kcp server @ {}", listen_port);
+					worker->post([this, worker]() {
+						dlog("start kcp server @ {}", listen_port);
 						server_socket = std::make_shared<udp::socket>(worker->context(), udp::endpoint(udp::v4(), listen_port));
 						do_receive();
-					});
+						});
 				}
-		
 			}
 
 
@@ -148,22 +147,22 @@ namespace knet {
 
 			enum { max_length = 4096 };
 			char recv_buffer[max_length];
-		 
+
 			uint32_t listen_port;
 			udp::endpoint remote_point;
 
 			std::shared_ptr<udp::socket> server_socket;
 			std::unordered_map<std::string, TPtr> connections;
 			EventHandler event_handler;
-			std::tuple<Args...> conn_args; 
+			std::tuple<Args...> conn_args;
 
 			struct
 			{
-				WorkerPtr default_worker; 
+				WorkerPtr default_worker;
 				uint32_t worker_index = 0;
 				std::vector<WorkerPtr> user_workers;
-			}m; 
- 
+			}m;
+
 		};
 
 	} // namespace udp
