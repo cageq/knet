@@ -89,7 +89,7 @@ namespace knet{
 					}
 
 					if (conn->session) {
-						conn->session->handle_message(fmt::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length) );
+						conn->session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length) );
 					} else {
 						elog("connection has no session");
 					}

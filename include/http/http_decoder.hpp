@@ -14,8 +14,8 @@ public:
 
 
 	struct Header {
-		fmt::string_view key;
-		fmt::string_view value;
+		std::string_view key;
+		std::string_view value;
 	};
 	
 	HttpDecoder(T & msg):http_message(msg) {}
@@ -65,7 +65,7 @@ public:
 
 	static int parse_status(http_parser* parser, const char* pos, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)parser->data;
-		self->http_status = fmt::string_view(pos, len);
+		self->http_status = std::string_view(pos, len);
 		self->status_code = parser->status_code;
 		return 0;
 	}
@@ -84,7 +84,7 @@ public:
 
 	static int parse_field(http_parser* hp, const char* at, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)hp->data;
-		self->parse_header.key = fmt::string_view(at, len);
+		self->parse_header.key = std::string_view(at, len);
 		dlog("parse field {}", self->parse_header.key);
 
 		return 0;
@@ -92,7 +92,7 @@ public:
 
 	static int parse_value(http_parser* hp, const char* at, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)hp->data;
-		self->parse_header.value = fmt::string_view(at, len);
+		self->parse_header.value = std::string_view(at, len);
 		self->headers.emplace_back(self->parse_header);
 		dlog("parse field {}", self->parse_header.value);
 		return 0;
@@ -100,7 +100,7 @@ public:
 
 	static int parse_body(http_parser* hp, const char* pos, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)hp->data;
-		self->http_body = fmt::string_view(pos, len);
+		self->http_body = std::string_view(pos, len);
 		return 0;
 	}
 
@@ -121,11 +121,11 @@ public:
 		// }
 
 		// self->http_path =
-		// 	fmt::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
+		// 	std::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
 		// 		urlInfo.field_data[UF_PATH].len);
 		// if (urlInfo.field_set & (1 << UF_QUERY)) {
 		// 	self->http_query =
-		// 		fmt::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
+		// 		std::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
 		// 			urlInfo.field_data[UF_QUERY].len);
 		// }
 
@@ -152,7 +152,7 @@ public:
 	bool is_websocket(){ 
 		return parser_.upgrade; 
 	} 
-	fmt::string_view get_header(const std::string &  key){
+	std::string_view get_header(const std::string &  key){
 		for(auto & item :headers)
 		{
 			if (item.key == key)
@@ -161,16 +161,16 @@ public:
 			}
 
 		}
-		return fmt::string_view(); 
+		return std::string_view(); 
 	}
 
 	std::string request_url;
 
 	uint32_t status_code = 200;
-	fmt::string_view http_status;
-	fmt::string_view http_body;
-	fmt::string_view http_path;
-	fmt::string_view http_query;
+	std::string_view http_status;
+	std::string_view http_body;
+	std::string_view http_path;
+	std::string_view http_query;
 	std::vector<Header> headers;
 
 	T  & http_message; 

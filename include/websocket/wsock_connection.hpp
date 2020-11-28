@@ -217,7 +217,7 @@ public:
 
 	bool upgrade_websocket(HttpRequestPtr req) {
 
-		fmt::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
+		std::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
 
 		if (secWebSocketKey.size() == 24) {
 
@@ -269,7 +269,7 @@ public:
 	}
 
 
-	void read_message(const fmt::string_view& msg , MessageStatus status)
+	void read_message(const std::string_view& msg , MessageStatus status)
 	{
 
 		if (wsock_handler.message)

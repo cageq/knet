@@ -52,9 +52,10 @@ namespace knet
 	struct NetOptions
 	{
 		bool sync = false;
-		std::string host = "0.0.0.0";
-		uint32_t port = 9999;
 		bool reuse = true;
+		uint16_t port = 9999;
+		std::string host = "0.0.0.0"; 
+	
 		uint32_t backlogs = 512;								// listening queue size
 		uint32_t threads = std::thread::hardware_concurrency(); // iocp/epoll worker threads number
 		uint32_t send_buffer_size = 16 * 1024;

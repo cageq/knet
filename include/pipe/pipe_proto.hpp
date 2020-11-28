@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <fmt/format.h>
 
 
 namespace knet{ 
@@ -37,7 +36,7 @@ namespace knet{
 				}
 
 			void fill(PipeMsgType type, const std::string& buf) { fill(type, buf.c_str(), buf.length()); }
-			void fill(PipeMsgType type, const fmt::string_view& buf) {
+			void fill(PipeMsgType type, const std::string_view& buf) {
 				fill(type, buf.data(), buf.size());
 			}
 
@@ -78,8 +77,8 @@ namespace knet{
 				return true;
 			}
 
-			fmt::string_view to_string_view() const {
-				return fmt::string_view((const char*)head, buffer.size());
+			std::string_view to_string_view() const {
+				return std::string_view((const char*)head, buffer.size());
 			}
 
 			std::string to_string() const { return std::string((const char*)head, buffer.size()); }

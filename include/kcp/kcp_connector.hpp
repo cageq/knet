@@ -17,7 +17,7 @@ class KcpConnector {
 
 public:
 	using TPtr = std::shared_ptr<T>;
-	using EventHandler = std::function<TPtr(TPtr, NetEvent, fmt::string_view)>;
+	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
 	using WorkerPtr = std::shared_ptr<Worker>; 
 
 	KcpConnector(WorkerPtr w = nullptr )  {
