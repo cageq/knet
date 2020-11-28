@@ -25,7 +25,7 @@ namespace knet {
 					  }
 
 				virtual void handle_event(NetEvent evt) { dlog("handle net event {}", evt); }
-				virtual int32_t handle_message(const std::string_view & msg) {
+				virtual int32_t handle_message(const fmt::string_view & msg) {
 
 					dlog("handle pipe message : {}", msg);
 
@@ -44,7 +44,7 @@ namespace knet {
 						PipeMsgHead head(PIPE_MSG_DATA, len);
 						dlog("send head length {}, type is {}", head.length, head.type); 
 						return connection->msend(
-								std::string_view((const char*)&head, sizeof(PipeMsgHead)), std::string_view(pData, len));
+								std::string((const char*)&head, sizeof(PipeMsgHead)), std::string(pData, len));
 					} else {
 
 						wlog("pipe session has no connection {}", pipeid);

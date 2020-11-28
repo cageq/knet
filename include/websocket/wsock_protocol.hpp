@@ -7,7 +7,7 @@
 
 #pragma once
 #include "knet.hpp"
-#include <string_view>
+#include "klog.hpp"
 using namespace knet::tcp; 
 namespace knet {
 namespace websocket {
@@ -75,7 +75,7 @@ enum class WSockStatus { WSOCK_INIT, WSOCK_CONNECTING, WSOCK_OPEN, WSOCK_CLOSING
 	((1 == ntohl(1)) ? (x) : ((uint64_t)ntohl((x)&0xFFFFFFFF) << 32) | ntohl((x) >> 32))
 #endif
 
-using WSMessageHandler = std::function<void(std::string_view , MessageStatus )>;
+using WSMessageHandler = std::function<void(fmt::string_view , MessageStatus )>;
 struct WSMessageReader {
 
 	MinFrameHead head = {0};
@@ -128,10 +128,10 @@ struct WSMessageReader {
 						for(uint32_t i = 0; i < payload_length; i++) {	
 							payload[i] = pData[payloadPos+ i] ^ maskKey[i%4];  
 						}
-						handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+						handler(fmt::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
 					} else {
 
-						handler(std::string_view((const char*)(pData + headSize + maskSize), payload_length),  MessageStatus::MESSAGE_NONE);
+						handler(fmt::string_view((const char*)(pData + headSize + maskSize), payload_length),  MessageStatus::MESSAGE_NONE);
 					}
 			 
 					
@@ -167,9 +167,9 @@ struct WSMessageReader {
 								payload[i]= pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
 
-							handler(std::string_view(payload.data(), ploadLen),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(payload.data(), ploadLen),  MessageStatus::MESSAGE_NONE);
 						} else {
-							handler(std::string_view(pData + headSize+ maskSize, ploadLen),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(pData + headSize+ maskSize, ploadLen),  MessageStatus::MESSAGE_NONE);
 						}
 						
 					}
@@ -187,9 +187,9 @@ struct WSMessageReader {
 							for(uint32_t i = 0; i < payload_length; i++) {	
 								payload[i] = pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
-							handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
 						} else {
-							handler(std::string_view(pData + headSize + maskSize, payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(pData + headSize + maskSize, payload_length),  MessageStatus::MESSAGE_NONE);
 						}
 
 
@@ -215,7 +215,7 @@ struct WSMessageReader {
 					left_length = payload_length + headSize + maskSize - buffer_size;
 
 					if (handler) {
-						handler(std::string_view(pData + headSize, buffer_size - headSize),  MessageStatus::MESSAGE_NONE);
+						handler(fmt::string_view(pData + headSize, buffer_size - headSize),  MessageStatus::MESSAGE_NONE);
 					}
 					this->status = MessageStatus::MESSAGE_CHUNK;
 					return dataLen;
@@ -231,10 +231,10 @@ struct WSMessageReader {
 							for(uint32_t i = 0; i < payload_length; i++) {	
 								payload[i]	=  pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
-							handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
 						} 
 						else {
-							handler(std::string_view(pData + headSize, payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(fmt::string_view(pData + headSize, payload_length),  MessageStatus::MESSAGE_NONE);
 						}
 
 						
@@ -247,14 +247,14 @@ struct WSMessageReader {
 		} else if (status == MessageStatus::MESSAGE_CHUNK) {
 
 			if (left_length < dataLen) {				
-				handler(std::string_view(pData, left_length),   MessageStatus::MESSAGE_END);
+				handler(fmt::string_view(pData, left_length),   MessageStatus::MESSAGE_END);
 				auto leftLen = left_length;
 				left_length = 0;
 				status = MessageStatus::MESSAGE_NONE;
 				payload_length = 0;
 				return leftLen;
 			} else {
-				handler(std::string_view(pData, dataLen), MessageStatus::MESSAGE_CHUNK);
+				handler(fmt::string_view(pData, dataLen), MessageStatus::MESSAGE_CHUNK);
 				left_length -= dataLen;
 				status = MessageStatus::MESSAGE_CHUNK;
 				return dataLen;

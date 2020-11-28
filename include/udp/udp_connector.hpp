@@ -20,10 +20,11 @@ namespace knet
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			UdpConnector(WorkerPtr w = nullptr)
-				: m{w,nullptr} {}
+			UdpConnector(WorkerPtr w = nullptr)  {
+					m.worker = w; 
+			}
 
-			using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
+			using EventHandler = std::function<TPtr(TPtr, NetEvent, fmt::string_view)>;
 			bool start(EventHandler evtHandler = nullptr)
 			{
 				m.event_handler = evtHandler;

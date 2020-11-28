@@ -19,11 +19,18 @@ namespace knet
 	namespace tcp
 	{
 		struct ConnectionInfo {
+			ConnectionInfo(const std::string & sAddr, uint16_t sPort, const std::string & dAddr = "127.0.0.1", uint16_t dPort =0){
+					server_addr = sAddr; 
+					server_port = sPort; 
+					local_addr = dAddr; 
+					local_port = dPort; 
+			}
+ 
 			std::string server_addr; 
-			uint32_t server_port; 
+			uint16_t server_port; 
 			std::string local_addr; 
-			uint32_t local_port; 
-			bool reuse =true; 
+			uint16_t local_port; 
+			bool reuse =true;  
 		}; 
 
 
@@ -249,7 +256,7 @@ namespace knet
 				}
 			}
 
-			virtual void handle_event(NetEvent evt)
+			virtual void handle_event(NetEvent evt) 
 			{
 				dlog("handle event in connection {}", evt);
 				if (event_handler)

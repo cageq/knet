@@ -42,8 +42,15 @@ public:
 		HttpUrl urlInfo(url);
 
 		std::cout << urlInfo << std::endl;
+		 
 
-		auto conn = connector.add_connection({urlInfo.host(), urlInfo.port()});
+		//auto conn = connector.add_connection({urlInfo.host(), urlInfo.port()});
+
+
+ 
+ 
+
+		auto conn = connector.add_connection(ConnectionInfo(urlInfo.host(), urlInfo.port()));
 
 		conn->first_request = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
 

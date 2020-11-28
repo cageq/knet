@@ -4,15 +4,14 @@
 //	author:		wkui
 //***************************************************************
 #pragma once
-#include <string_view>
-
-
+ #include <fmt/format.h>
+ 
 #include "http/http_parser.hpp"
 #include "http/http_request.hpp"
 #include "http/http_connection.hpp"
-#include "wsock_shakehand.hpp"
-
+#include "wsock_shakehand.hpp" 
 #include "wsock_protocol.hpp"
+
 
 using namespace knet::tcp;
 using namespace knet::http;
@@ -218,9 +217,9 @@ public:
 
 	bool upgrade_websocket(HttpRequestPtr req) {
 
-		std::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
+		fmt::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
 
-		if (secWebSocketKey.length() == 24) {
+		if (secWebSocketKey.size() == 24) {
 
 			char secWebSocketAccept[29] = {};
 			WSockHandshake::generate(secWebSocketKey.data(), secWebSocketAccept);
@@ -270,7 +269,7 @@ public:
 	}
 
 
-	void read_message(const std::string_view& msg , MessageStatus status)
+	void read_message(const fmt::string_view& msg , MessageStatus status)
 	{
 
 		if (wsock_handler.message)

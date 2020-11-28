@@ -62,6 +62,7 @@ namespace knet {
 								pipe->port = port;
 
 								if (is_started) {
+									
 									auto conn = connector->add_connection({pipe->host, pipe->port}, pipe->pipeid);
 									conn->enable_reconnect();
 								}
@@ -89,6 +90,8 @@ namespace knet {
 								auto& pipe = item.second;
 								if (pipe && pipe->port != 0 && !pipe->host.empty()) {
 									dlog("start connect pipe to {}:{}", pipe->host, pipe->port);
+
+
 									auto conn = connector->add_connection({pipe->host, pipe->port}, pipe->pipeid);
 									conn->enable_reconnect();
 								}
