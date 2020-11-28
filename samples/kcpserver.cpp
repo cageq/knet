@@ -24,10 +24,10 @@ int main(int argc, char* argv[]) {
 
 	kLogIns.add_sink<klog::ConsoleSink>(); 
 	dlog("start kcp server"); 
-	KcpListener<MyConnection> kcpLis;
-	//knet::EventWorkerPtr worker = std::make_shared<knet::EventWorker>(); 
-	//worker->start(); 
-	//kcpLis.add_worker(worker); 
+	knet::EventWorkerPtr worker = std::make_shared<knet::EventWorker>(); 
+	worker->start(nullptr, 4); //4 threads 
+
+	KcpListener<MyConnection> kcpLis(worker);
 	kcpLis.start(8700, [](MyConnection::TPtr, knet::NetEvent evt, const std::string & dv) {
 		wlog("received connection event {} , {}", evt,event_string(evt));
 		return nullptr;

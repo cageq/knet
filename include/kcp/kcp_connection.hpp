@@ -448,10 +448,10 @@ private:
 
 	void handle_receive(const char* data, std::size_t dataLen) {
 
-		dlog("handle receive data {}", dataLen);
+ 
 		if (kcp) {
 			int32_t cmd = ikcp_input(kcp, data, dataLen);
-			dlog("kcp input command  {}", cmd);
+			// dlog("kcp input command  {}", cmd);
 
 			if (cmd == IKCP_CMD_ACK) {
 				//ilog("it's ack command ,ignore it");
@@ -470,7 +470,7 @@ private:
 				int32_t kcp_recvd_bytes = ikcp_recv(kcp, kcpBuf, sizeof(kcpBuf));
 				if (kcp_recvd_bytes >  0) {
 					recvLen += msgLen ; 
-					dlog("received kcp message length {}", kcp_recvd_bytes);
+			//		dlog("received kcp message length {}", kcp_recvd_bytes);
 					this->on_message(kcpBuf, kcp_recvd_bytes);
 					if (event_handler) {
 						event_handler(this->shared_from_this(), EVT_RECV, {data, dataLen});

@@ -20,13 +20,12 @@ namespace knet {
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string&)>;
 			using WorkerPtr = std::shared_ptr<Worker>;
 			KcpListener(WorkerPtr w = nullptr, Args ... args) :conn_args(args...) {
-				auto worker = w;
-				if (worker == nullptr) {
-					m.default_worker = std::make_shared<Worker>();
-					m.default_worker->start();
-					worker = m.default_worker;
+				default_worker = w;
+				if (default_worker == nullptr) {
+					default_worker = std::make_shared<Worker>();
+					default_worker->start();
 				}
-				m.user_workers.emplace_back(worker);
+
 			}
 
 			bool start(uint32_t port, EventHandler evtHandler = nullptr) {
@@ -35,12 +34,12 @@ namespace knet {
 				run();
 				return true;
 			}
-			void add_worker(WorkerPtr w) {
-				if (w != nullptr)
-				{
-					m.user_workers.emplace_back(w);
-				}
-			}
+			// void add_worker(WorkerPtr w) {
+			// 	if (w != nullptr)
+			// 	{
+			// 		user_workers.emplace_back(w);
+			// 	}
+			// }
 
 			TPtr find_connection(udp::endpoint pt) {
 				auto itr = connections.find(addrstr(pt));
@@ -80,7 +79,7 @@ namespace knet {
 				{
 					server_socket->close();
 				}
-				m.user_workers.clear();
+
 			}
 
 
@@ -120,29 +119,31 @@ namespace knet {
 
 
 			void run() {
-				for (auto worker : m.user_workers) {
 
-					worker->post([this, worker]() {
-						dlog("start kcp server @ {}", listen_port);
-						server_socket = std::make_shared<udp::socket>(worker->context(), udp::endpoint(udp::v4(), listen_port));
-						do_receive();
-						});
-				}
+
+				default_worker->post([this]() {
+					dlog("start kcp server @ {}", listen_port);
+					server_socket = std::make_shared<udp::socket>(default_worker->context(), udp::endpoint(udp::v4(), listen_port));
+					do_receive();
+					});
+
 			}
 
 
 			WorkerPtr get_worker()
 			{
-				if (!m.user_workers.empty())
-				{
-					dlog("dispatch to worker {}", m.worker_index);
-					return m.user_workers[m.worker_index++ % m.user_workers.size()];
-				}
-				else
-				{
-					dlog("dispatch work  to listen worker {}", std::this_thread::get_id());
-					return m.default_worker;
-				}
+				// if (!user_workers.empty())
+				// {
+				// 	dlog("dispatch to worker {}", worker_index);
+				// 	return user_workers[worker_index++ % user_workers.size()];
+				// }
+				// else
+				// {
+				// 	dlog("dispatch work  to listen worker {}", std::this_thread::get_id());
+				// 	return default_worker;
+				// }
+
+				return default_worker;
 			}
 
 			enum { max_length = 4096 };
@@ -155,13 +156,7 @@ namespace knet {
 			std::unordered_map<std::string, TPtr> connections;
 			EventHandler event_handler;
 			std::tuple<Args...> conn_args;
-
-			struct
-			{
-				WorkerPtr default_worker;
-				uint32_t worker_index = 0;
-				std::vector<WorkerPtr> user_workers;
-			}m;
+			WorkerPtr default_worker; 
 
 		};
 

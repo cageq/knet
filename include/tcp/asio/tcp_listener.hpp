@@ -115,8 +115,7 @@ namespace knet
 				m.ssl_context = sslCtx;
 				if (!m.is_running)
 				{
-					m.is_running = true;
-
+					m.is_running = true; 
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(opt.host), opt.port);
 
 					// this->tcp_acceptor.open(asio::ip::tcp::v4());
