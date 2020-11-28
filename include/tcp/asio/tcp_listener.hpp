@@ -259,14 +259,13 @@ namespace knet
 
 			TPtr create_connection(SocketPtr sock ,WorkerPtr worker)
 			{
-
-				// auto conn = std::apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
-				// 					   std::tuple_cat(std::make_tuple(m.factory), conn_args));
-
-
+#ifdef __cpp_lib_apply 
+				auto conn = std::apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
+									   std::tuple_cat(std::make_tuple(m.factory), conn_args));
+#else 
 				auto conn = c11apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
 									   std::tuple_cat(std::make_tuple(m.factory), conn_args)); 
-
+#endif 
 				conn->init(m.factory, sock, worker);
 				return conn;
 			}

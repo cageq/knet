@@ -86,7 +86,7 @@ namespace knet {
 
 				std::string pipeid;
 				std::string host;
-				uint32_t port;
+				uint16_t port;
 
 			private:
 				PipeConnectionPtr connection;

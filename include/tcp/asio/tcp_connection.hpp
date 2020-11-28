@@ -54,7 +54,7 @@ namespace knet
 
 			TcpConnection() {} // for passive connection 
 
-			TcpConnection(const std::string &host, uint32_t port)
+			TcpConnection(const std::string &host, uint16_t port)
 			{
 				remote_host = host;
 				remote_port = port;
@@ -78,14 +78,13 @@ namespace knet
 				static uint64_t index = 1024;
 				event_worker = worker;
 				this->factory = fac;
-				cid = ++index;
-				//std::shared_ptr<T> self = this->shared_from_this();
+				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
 				handle_event(EVT_CREATE);
 			}
 
-			int send(const char *pData, uint32_t dataLen) { return msend(std::string(pData, dataLen)); }
+			int send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
 
 			int send(const std::string &msg) { return msend(msg); }
 
@@ -305,7 +304,7 @@ namespace knet
 			NetEventHandler event_handler;
 			NetDataHandler data_handler;
 			std::string remote_host;
-			uint32_t remote_port;
+			uint16_t remote_port;
 			EventWorkerPtr event_worker;
 		};
 

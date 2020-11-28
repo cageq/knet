@@ -35,7 +35,7 @@ namespace knet {
 							}
 						}
 
-					void start(const std::string& host = "0.0.0.0", uint32_t port = 9999) {
+					void start(const std::string& host = "0.0.0.0", uint16_t port = 9999) {
 
 						if ((pipe_mode & PIPE_SERVER_MODE) && port != 0) {
 							dlog("start pipe on server mode {}", port);
@@ -50,7 +50,7 @@ namespace knet {
 						is_started = true;
 					}
 
-					void attach(PipeSessionPtr pipe, const std::string& host = "", uint32_t port = 0) {
+					void attach(PipeSessionPtr pipe, const std::string& host = "", uint16_t port = 0) {
 						if (pipe) {
 							dlog("bind pipe host {} port {} pipe id {}", host, port, pipe->pipeid);
 							pipe_factory.pipes[pipe->pipeid] = pipe;
