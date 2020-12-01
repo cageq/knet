@@ -73,8 +73,11 @@ namespace std{
         {
             return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
         }
-
+#ifndef __APPLE__
+#if    __cpp_lib_string_view  < 201606L
         using string_view = fmt::string_view; 
+#endif 
+#endif 
     
 }
 
