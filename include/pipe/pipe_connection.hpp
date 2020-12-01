@@ -19,9 +19,7 @@ namespace knet{
 				std::string pipeid;
 		};
 
-		using PipeConnectionPtr = std::shared_ptr<PipeConnection>;
-
-
+		using PipeConnectionPtr = std::shared_ptr<PipeConnection>; 
 	}
 
 }

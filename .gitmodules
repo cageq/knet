@@ -6,4 +6,4 @@
 	url = https://github.com/fmtlib/fmt.git
 [submodule "opt/klog"]
 	path = opt/klog
-	url = https://github.com/cageq/klog.git
+	url = https://github.com/cageq/klog

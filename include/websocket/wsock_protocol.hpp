@@ -7,7 +7,7 @@
 
 #pragma once
 #include "knet.hpp"
-#include <string_view>
+ 
 using namespace knet::tcp; 
 namespace knet {
 namespace websocket {
@@ -98,10 +98,10 @@ struct WSMessageReader {
 		if (status == MessageStatus::MESSAGE_NONE) {
 
 			uint8_t* vals = (uint8_t*)pData;
-			std::cout << "fin is " << ((vals[0] & 0x80) == 0x80) << std::endl;
-			std::cout << "opcode is " << (vals[0] & 0x0f) << std::endl;
-			std::cout << "length is " << (vals[1] & 0x7F) << std::endl;
-			std::cout << "mask is " << ((vals[1] & 0x80) == 0x80) << std::endl;
+			dout << "fin is " << ((vals[0] & 0x80) == 0x80)  ;
+			dout << "opcode is " << (vals[0] & 0x0f)  ;
+			dout << "length is " << (vals[1] & 0x7F)  ;
+			dout << "mask is " << ((vals[1] & 0x80) == 0x80)  ;
 
 			head.fin = ((vals[0] & 0x80) == 0x80);
 			head.opcode = (vals[0] & 0x0f);

@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "knet.hpp"
 #include <iostream>
+
+#include "console_sink.hpp"
+
 // #include "co/coevent_worker.hpp"
 using namespace knet::tcp;
 
@@ -29,6 +32,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 
 int main(int argc, char **argv)
 {
+	kLogIns.add_sink<klog::ConsoleSink>(); 
  
     // dout << "test tcp server with cout format " << std::endl; 
     // iout << "test tcp server with cout format " << std::endl; 

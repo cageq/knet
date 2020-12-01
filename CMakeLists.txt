@@ -1,13 +1,14 @@
 cmake_minimum_required (VERSION 3.1.0)
 project (knet)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 
 include_directories("include")
 include_directories("opt/klog/include")
 include_directories("include/tcp")
 include_directories("include/udp")
 include_directories("include/pipe")
+include_directories("include/utils")
 include_directories("opt/asio/asio/include")
  
 include_directories("kcp")

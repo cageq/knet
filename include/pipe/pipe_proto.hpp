@@ -37,7 +37,7 @@ namespace knet{
 
 			void fill(PipeMsgType type, const std::string& buf) { fill(type, buf.c_str(), buf.length()); }
 			void fill(PipeMsgType type, const std::string_view& buf) {
-				fill(type, buf.data(), buf.length());
+				fill(type, buf.data(), buf.size());
 			}
 
 			bool fill(PipeMsgType type, const char* buf, uint32_t len) {

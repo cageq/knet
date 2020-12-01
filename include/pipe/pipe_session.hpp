@@ -44,7 +44,7 @@ namespace knet {
 						PipeMsgHead head(PIPE_MSG_DATA, len);
 						dlog("send head length {}, type is {}", head.length, head.type); 
 						return connection->msend(
-								std::string_view((const char*)&head, sizeof(PipeMsgHead)), std::string_view(pData, len));
+								std::string((const char*)&head, sizeof(PipeMsgHead)), std::string(pData, len));
 					} else {
 
 						wlog("pipe session has no connection {}", pipeid);
@@ -86,7 +86,7 @@ namespace knet {
 
 				std::string pipeid;
 				std::string host;
-				uint32_t port;
+				uint16_t port;
 
 			private:
 				PipeConnectionPtr connection;

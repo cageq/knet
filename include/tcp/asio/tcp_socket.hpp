@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 #include <chrono>
-#include <string_view> 
+ 
  
 
 #define WITH_PACKAGE_HANDLER 0
@@ -131,7 +131,7 @@ public:
 			return send_inloop(msg.data(), msg.length());
 		}
 
-		return msend(std::string_view(msg.data(), msg.length()));
+		return msend(std::string(msg.data(), msg.length()));
 	}
 
 	template <class P, class... Args>
@@ -155,12 +155,12 @@ public:
 		mpush(rest...);
 	}
 
-	template <class... Args>
-	void mpush(const std::string_view& first, Args... rest) {
-		std::ostream outbuf (&m.send_buffer); 
-		outbuf << first; 
-		mpush(rest...);
-	}
+	// template <class... Args>
+	// void mpush(const std::string_view& first, Args... rest) {
+	// 	std::ostream outbuf (&m.send_buffer); 
+	// 	outbuf << first; 
+	// 	mpush(rest...);
+	// }
 
 	void mpush() {
 		auto self = this->shared_from_this();
@@ -354,7 +354,8 @@ public:
 					return;
 				} else {
 
-					if ( pkgLen > readLen) { // exceed buffer size, but user has consume the buffer data
+					if ( pkgLen > (int32_t)readLen) { 
+						// exceed buffer size, but user has consume the buffer data
 						need_package_length = pkgLen - readLen;
 						//read_buffer_pos -= readLen;
 						read_buffer_pos = 0; 

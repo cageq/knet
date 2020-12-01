@@ -89,8 +89,7 @@ namespace knet
 						std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
 					conn->init(factory, sock, worker);
 					conn->destroyer =
-						std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
-		 
+						std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1); 
 
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
 
@@ -205,16 +204,9 @@ namespace knet
 				{
 					elog("not worker, please create worker");
 					return nullptr;
-					// auto dftWorker = std::make_shared<Worker>();
-					// user_workers.push_back(dftWorker);
-					// return dftWorker;
 				}
 			}
 
-			// void reconnect(TPtr pConn) {
-			// 	dlog("reconnect connection {}", pConn->cid);
-			// 	pConn->connect();
-			// }
 
 		private:
 			uint32_t worker_index = 0;

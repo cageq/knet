@@ -19,11 +19,18 @@ namespace knet
 	namespace tcp
 	{
 		struct ConnectionInfo {
+			ConnectionInfo(const std::string & sAddr, uint16_t sPort, const std::string & dAddr = "127.0.0.1", uint16_t dPort =0){
+					server_addr = sAddr; 
+					server_port = sPort; 
+					local_addr = dAddr; 
+					local_port = dPort; 
+			}
+ 
 			std::string server_addr; 
-			uint32_t server_port; 
+			uint16_t server_port; 
 			std::string local_addr; 
-			uint32_t local_port; 
-			bool reuse =true; 
+			uint16_t local_port; 
+			bool reuse =true;  
 		}; 
 
 
@@ -47,7 +54,7 @@ namespace knet
 
 			TcpConnection() {} // for passive connection 
 
-			TcpConnection(const std::string &host, uint32_t port)
+			TcpConnection(const std::string &host, uint16_t port)
 			{
 				remote_host = host;
 				remote_port = port;
@@ -55,14 +62,14 @@ namespace knet
 
 			virtual ~TcpConnection()
 			{
-				//clear all timers to keep safety
+				//clear all conn_timers to keep safety
 				if (event_worker)
 				{
-					for (auto &tid : timers)
+					for (auto &tid : conn_timers)
 					{
 						event_worker->stop_timer(tid);
 					}
-					timers.clear();
+					conn_timers.clear();
 				}
 			}
 
@@ -71,14 +78,13 @@ namespace knet
 				static uint64_t index = 1024;
 				event_worker = worker;
 				this->factory = fac;
-				cid = ++index;
-				//std::shared_ptr<T> self = this->shared_from_this();
+				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
 				handle_event(EVT_CREATE);
 			}
 
-			int send(const char *pData, uint32_t dataLen) { return msend(std::string(pData, dataLen)); }
+			int send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
 
 			int send(const std::string &msg) { return msend(msg); }
 
@@ -91,7 +97,7 @@ namespace knet
 			void close()
 			{
 				reconn_flag = false;
-				if (tcp_socket)
+				if (tcp_socket)	
 				{
 					tcp_socket->close();
 				}
@@ -122,9 +128,6 @@ namespace knet
 				event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
 
-
-
-
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
 
 			bool connect(const ConnectionInfo & connInfo )
@@ -146,11 +149,11 @@ namespace knet
 
 			std::string get_remote_ip() { return tcp_socket->remote_endpoint().host; }
 
-			uint32_t get_remote_port() { return tcp_socket->remote_endpoint().port; }
+			uint16_t get_remote_port() { return tcp_socket->remote_endpoint().port; }
 
 			inline uint64_t get_cid() const { return cid; }
 
-			bool passive() { return is_passive; }
+			inline bool passive() const  { return is_passive; }
 
 			void enable_reconnect(uint32_t interval = 1000000)
 			{
@@ -159,7 +162,7 @@ namespace knet
 					reconn_flag = true;
 					dlog("start reconnect timer ");
 					auto self = this->shared_from_this();
-					this->timerid = this->start_timer(
+					this->reconn_timer = this->start_timer(
 						[=]() {
 							if (!is_connected())
 							{
@@ -174,10 +177,10 @@ namespace knet
 			void disable_reconnect()
 			{
 				reconn_flag = false;
-				if (this->timerid > 0)
+				if (this->reconn_timer > 0)
 				{
-					this->stop_timer(this->timerid);
-					this->timerid = 0;
+					this->stop_timer(this->reconn_timer);
+					this->reconn_timer = 0;
 				}
 			}
 
@@ -234,7 +237,7 @@ namespace knet
 				if (event_worker)
 				{
 					uint64_t tid = event_worker->start_timer(handler, interval, bLoop);
-					timers.insert(tid);
+					conn_timers.insert(tid);
 					return tid;
 				}
 				return 0;
@@ -245,11 +248,11 @@ namespace knet
 				if (event_worker)
 				{
 					event_worker->stop_timer(timerId);
-					timers.erase(timerId);
+					conn_timers.erase(timerId);
 				}
 			}
 
-			virtual void handle_event(NetEvent evt)
+			virtual void handle_event(NetEvent evt) 
 			{
 				dlog("handle event in connection {}", evt);
 				if (event_handler)
@@ -281,24 +284,23 @@ namespace knet
 			{
 				return remote_host;
 			}
-			inline uint32_t get_remote_port() const
+			inline uint16_t get_remote_port() const
 			{
 				return remote_port;
-			}
-
+			} 
 			bool reconn_flag = false;
-
 		private:
-			uint64_t timerid = 0;
+			
+			uint64_t reconn_timer = 0;
 			bool is_passive = true;
 
-			std::set<uint64_t> timers;
+			std::set<uint64_t> conn_timers;
 			FactoryPtr factory = nullptr;
 			SocketPtr tcp_socket = nullptr;
 			NetEventHandler event_handler;
 			NetDataHandler data_handler;
 			std::string remote_host;
-			uint32_t remote_port;
+			uint16_t remote_port;
 			EventWorkerPtr event_worker;
 		};
 

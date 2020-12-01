@@ -12,13 +12,13 @@ class MyChannel : public PipeSession{
 
 		virtual void handle_event(knet::NetEvent evt) { dlog("handle net event {}", evt); }
 		virtual int32_t handle_message(const std::string_view & msg) {
-			dlog("---------------{}----------------", msg.length()); 
+			dlog("---------------{}----------------", msg.size()); 
 			dlog("{}",msg); 
 			dlog("---------------------------------"); 
 
 			//			this->transfer(std::string(msg.data(), msg.length())); 
 			//
-			return msg.length(); 
+			return msg.size(); 
 		} 
 
 }; 

@@ -336,7 +336,10 @@ int ikcp_recv(ikcpcb *kcp, char *buffer, int len)
 	assert(kcp);
 
 	if (iqueue_is_empty(&kcp->rcv_queue))
+	{		 
 		return -1;
+	}
+		
 
 	if (len < 0) len = -len;
 
@@ -519,10 +522,13 @@ static void ikcp_update_ack(ikcpcb *kcp, IINT32 rtt)
 		kcp->rx_rttval = rtt / 2;
 	}	else {
 		long delta = rtt - kcp->rx_srtt;
-		if (delta < 0) delta = -delta;
+		if (delta < 0) 
+			delta = -delta;
+			
 		kcp->rx_rttval = (3 * kcp->rx_rttval + delta) / 4;
 		kcp->rx_srtt = (7 * kcp->rx_srtt + rtt) / 8;
-		if (kcp->rx_srtt < 1) kcp->rx_srtt = 1;
+		if (kcp->rx_srtt < 1) 
+			kcp->rx_srtt = 1;
 	}
 	rto = kcp->rx_srtt + _imax_(kcp->interval, 4 * kcp->rx_rttval);
 	kcp->rx_rto = _ibound_(kcp->rx_minrto, rto, IKCP_RTO_MAX);
