@@ -121,12 +121,14 @@ namespace knet {
 
 
 			void process_client_handshake(TPtr conn, PipeMessageS* msg) {
+
+				PipeSessionPtr session;
 				if (msg->head.length > 0) {
 					std::string pipeId = std::string(msg->data, msg->head.length);
 					dlog("get handshake from server,  pipeid is {}", pipeId);
 					auto itr = pipes.find(pipeId);
 					if (itr != pipes.end()) {
-						auto session = itr->second;
+						  session = itr->second;
 						session->bind(conn);
 						if (session->get_pipeid().empty()) {
 							//update local session pipeid 
@@ -138,9 +140,11 @@ namespace knet {
 					}
 					else {
 						dlog("try to find pipe by cid {} size is {}", conn->get_cid(), unbind_pipes.size());
-						auto connItr = unbind_pipes.find(conn->get_cid());
-						if (connItr != unbind_pipes.end()) {
-							auto session = connItr->second;
+
+						session = find_unbind_pipe(conn->get_cid());
+ 
+						if (session) {
+						 
 							session->bind(conn);
 							if (session->get_pipeid().empty()) {
 								//update unbind session pipeid 
@@ -150,11 +154,10 @@ namespace knet {
 							dlog("bind session success");
 							session->handle_event(NetEvent::EVT_CONNECT);
 							
-							{
-
+							{ 
 								std::lock_guard<std::mutex> guard(unbind_mutex);  
 								pipes[pipeId] = session;
-								unbind_pipes.erase(connItr); 
+								unbind_pipes.erase(conn->get_cid()); 
 							}
 						
 						}
@@ -168,6 +171,17 @@ namespace knet {
 					elog("handshake from server is empty");
 
 				}
+			}
+
+
+			PipeSessionPtr find_unbind_pipe(uint64_t cid ){
+				std::lock_guard<std::mutex> guard(unbind_mutex);  
+
+				auto itr = unbind_pipes.find(cid );
+				if (itr != unbind_pipes.end()){
+					return itr->second; 
+				} 
+				return nullptr;  
 			}
 
 
