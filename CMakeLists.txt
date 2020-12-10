@@ -109,3 +109,10 @@ target_link_libraries(pipeserver fmt)
 add_executable(pipeclient samples/pipe_client.cpp  )
 target_link_libraries(pipeclient fmt)
 
+
+add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  )
+target_link_libraries(unbindpipeclient fmt)
+
+
+add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  )
+target_link_libraries(unbindpipeserver fmt)

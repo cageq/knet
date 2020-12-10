@@ -201,7 +201,7 @@ namespace knet
 				return nullptr;
 			}
 			void *user_data = nullptr;
-			uint64_t cid = 0;
+		
 
 			void destroy()
 			{
@@ -290,7 +290,7 @@ namespace knet
 			} 
 			bool reconn_flag = false;
 		private:
-			
+			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
 			bool is_passive = true;
 

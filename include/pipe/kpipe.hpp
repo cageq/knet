@@ -1,8 +1,8 @@
 #pragma once
 #include <unordered_map>
 #include <memory>
-#include "knet.hpp"
 
+#include "knet.hpp"
 #include "pipe_connection.hpp"
 #include "pipe_session.hpp"
 #include "pipe_factory.hpp"
@@ -52,25 +52,44 @@ namespace knet {
 
 					void attach(PipeSessionPtr pipe, const std::string& host = "", uint16_t port = 0) {
 						if (pipe) {
-							dlog("bind pipe host {} port {} pipe id {}", host, port, pipe->pipeid);
-							pipe_factory.pipes[pipe->pipeid] = pipe;
+							dlog("bind pipe host {} port {} pipe id {}", host, port, pipe->get_pipeid());
+							pipe_factory.register_pipe(pipe);
 
 							if (!host.empty()) {
-								pipe->host = host;
+								pipe->set_host(host);  
 							}
-							if (port != 0) {
-								pipe->port = port;
-
-								if (is_started) {
-									
-									auto conn = connector->add_connection({pipe->host, pipe->port}, pipe->pipeid);
+							if (port != 0) { 
+								pipe->set_port(port);  
+								if (is_started) { 
+									auto conn = connector->add_connection({pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
 									conn->enable_reconnect();
 								}
 							}
 						}
 					}
 
-					void stop() {}
+					PipeSessionPtr attach(const std::string& host = "", uint16_t port = 0) { 
+						auto pipe = std::make_shared<PipeSession>(); 
+						auto conn = connector->add_connection({host, port});
+						conn->enable_reconnect(); 
+						dlog("register unbind pipe {}",conn->get_cid()); 
+						pipe_factory.register_pipe(pipe,conn->get_cid());
+						return pipe; 
+					}
+
+					void stop() {
+					
+						if (pipe_worker) {
+							pipe_worker->stop(); 
+						}
+
+						if (listener ) {
+							listener->stop(); 
+						}
+						if (connector) {
+							connector->stop(); 
+						}
+					}
 
 					PipeSessionPtr find(const std::string& pid) { return pipe_factory.find(pid); }
 
@@ -84,18 +103,14 @@ namespace knet {
 
 				private:
 					void connect() {
-						dlog("start pipe client connection {}", pipe_factory.pipes.size()); 
+						dlog("start pipe client connection " ); 
 						if (pipe_mode & PIPE_CLIENT_MODE) {
-							for (auto& item : pipe_factory.pipes) {
-								auto& pipe = item.second;
-								if (pipe && pipe->port != 0 && !pipe->host.empty()) {
-									dlog("start connect pipe to {}:{}", pipe->host, pipe->port);
 
-
-									auto conn = connector->add_connection({pipe->host, pipe->port}, pipe->pipeid);
-									conn->enable_reconnect();
-								}
-							}
+							pipe_factory.start_clients([this](PipeSessionPtr pipe){ 
+								auto conn = connector->add_connection({pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
+								conn->enable_reconnect();
+							});  
+				 
 						}
 					}
 

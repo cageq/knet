@@ -30,7 +30,7 @@ public:
 			conn->send(conn->first_request->encode());
 			break;
 		case NetEvent::EVT_DISCONNECT:
-			connections.erase(conn->cid);
+			connections.erase(conn->get_cid());
 			break;
 
 		default:;
@@ -51,7 +51,7 @@ public:
 
 		conn->first_request = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
 
-		connections[conn->cid] = conn;
+		connections[conn->get_cid()] = conn;
 		return true;
 	}
 

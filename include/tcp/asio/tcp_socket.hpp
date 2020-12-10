@@ -49,8 +49,7 @@ public:
 		dlog("connect to server {}:{}", host.c_str(), port);
 		auto self = this->shared_from_this();
 		if (localPort > 0) {
-			asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
-
+			asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort); 
 			tcp_sock.bind(laddr); 
 		}
 
@@ -299,7 +298,7 @@ public:
 		do {
 
 			uint32_t readLen = read_buffer_pos - readPos;
-			dlog("need more data :{}", need_package_length);
+		//	dlog("need more data :{}", need_package_length);
 
 			if (need_package_length > 0) {
 
@@ -310,7 +309,7 @@ public:
 						connection->close(); 
 						return ; 
 					}
-					dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
+					//dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
 					readPos += need_package_length;
 					// if (readPos >= read_buffer_pos) {
 					// 	read_buffer_pos = 0;
@@ -327,8 +326,7 @@ public:
 						connection->close(); 
 						return ; 
 					}
-					dlog(" need length {} package len {} , data len is {} chunk",
-						need_package_length, pkgLen, readLen);
+					//dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
 					read_buffer_pos = 0;
 					need_package_length -= readLen;
 					return;
@@ -337,8 +335,7 @@ public:
 			} else {
 				pkgLen = this->connection->handle_data(
 					std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_NONE);
-				dlog(" need length {} package len {} , data len is {}", need_package_length, pkgLen,
-					readLen);
+				//dlog(" need length {} package len {} , data len is {}", need_package_length, pkgLen, readLen);
 				if (pkgLen > kMaxPackageLimit) {
 					elog("max package limit error {}", pkgLen);
 					this->close();
@@ -362,7 +359,7 @@ public:
 						return;
 					} else {
 						 // buffer contain one or more packets
-						dlog("process just one message {}", pkgLen);
+						//dlog("process just one message {}", pkgLen);
 						readPos += pkgLen;
 					}
 				}

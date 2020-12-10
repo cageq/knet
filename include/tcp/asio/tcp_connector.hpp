@@ -27,6 +27,7 @@ namespace knet
 				if (worker)
 				{
 					user_workers.emplace_back(worker);
+					// worker->start(); 
 				}
 				else
 				{
@@ -94,7 +95,7 @@ namespace knet
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
 
 					conn->connect(connInfo);
-					connections[conn->cid] = conn;
+					connections[conn->get_cid()] = conn;
 					return true;
 				}
 				return false;
@@ -121,7 +122,7 @@ namespace knet
 					std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
 			 
 				conn->connect(connInfo);
-				connections[conn->cid] = conn;
+				connections[conn->get_cid()] = conn;
 				return conn;
 			}
 
@@ -175,7 +176,7 @@ namespace knet
 
 			void destroy(std::shared_ptr<T> conn)
 			{
-				dlog("destroy connection {}", conn->cid);
+				dlog("destroy connection {}", conn->get_cid());
 				asio::post(*conn->get_context(), [this, conn]() {
 			 
 					conn->disable_reconnect(); 
