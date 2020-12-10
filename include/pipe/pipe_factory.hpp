@@ -150,8 +150,13 @@ namespace knet {
 							dlog("bind session success");
 							session->handle_event(NetEvent::EVT_CONNECT);
 							
-							// pipes[pipeId] = session;
-							// unbind_pipes.erase(connItr); 
+							{
+
+								std::lock_guard<std::mutex> guard(unbind_mutex);  
+								pipes[pipeId] = session;
+								unbind_pipes.erase(connItr); 
+							}
+						
 						}
 						else {
 							wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
@@ -215,11 +220,11 @@ namespace knet {
 					}
 				}
 
-				for (auto& item : unbind_pipes) {
-					if (item.second) {
-						item.second->transfer(pData, len);
-					}
-				}
+				// for (auto& item : unbind_pipes) {
+				// 	if (item.second) {
+				// 		item.second->transfer(pData, len);
+				// 	}
+				// }
 			}
 			void register_pipe(PipeSessionPtr pipe, uint64_t cid = 0) {
 				if (pipe) {
