@@ -31,11 +31,18 @@ namespace knet {
 						conn->session->handle_event(NetEvent::EVT_DISCONNECT);
 						conn->session->unbind();
 					}
-					auto itr = unbind_pipes.find(conn->get_cid());
-					if (itr != unbind_pipes.end()) {
-						dlog("erase pipe {} ", conn->get_cid()); 
-						unbind_pipes.erase(itr);
+
+					{
+
+						std::lock_guard<std::mutex> guard(unbind_mutex); 	
+						auto itr = unbind_pipes.find(conn->get_cid());
+						if (itr != unbind_pipes.end()) {
+							dlog("erase pipe {} ", conn->get_cid()); 
+							unbind_pipes.erase(itr);
+						}
+
 					}
+				
 				}
 
 				break;
@@ -136,12 +143,15 @@ namespace knet {
 							auto session = connItr->second;
 							session->bind(conn);
 							if (session->get_pipeid().empty()) {
-								//update local session pipeid 
+								//update unbind session pipeid 
 								session->set_pipeid(pipeId);
 							}
 							conn->session = session;
 							dlog("bind session success");
 							session->handle_event(NetEvent::EVT_CONNECT);
+							
+							// pipes[pipeId] = session;
+							// unbind_pipes.erase(connItr); 
 						}
 						else {
 							wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
@@ -166,8 +176,7 @@ namespace knet {
 
 				if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
 					dlog("handle pipe shake hande message ");
-					if (conn->passive()) { //server side 
-
+					if (conn->passive()) { //server side  
 						process_server_handshake(conn, msg);
 					}
 					else {
@@ -191,10 +200,11 @@ namespace knet {
 
 			void send_shakehand(TPtr conn, const std::string& pipeId) {
 				dlog("shakehande request pipe id {}", pipeId);
-				PipeMessage<64> shakeMsg;
+				PipeMessage<64> shakeMsg ;
 				shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
 				// if (!pipeId.empty()) {
 				conn->send(shakeMsg.begin(), shakeMsg.length());
+		 
 				// }
 			}
 
@@ -217,6 +227,7 @@ namespace knet {
 					{
 						if (cid != 0) {
 							dlog("add unbind pipe {}", cid);
+							std::lock_guard<std::mutex> guard(unbind_mutex); 				
 							unbind_pipes[cid] = pipe;
 						}
 
@@ -263,6 +274,8 @@ namespace knet {
 
 		private:
 			std::unordered_map<std::string, PipeSessionPtr> pipes;
+
+			std::mutex  unbind_mutex; 
 			std::unordered_map<uint64_t, PipeSessionPtr> unbind_pipes;
 			PipeMode pipe_mode;
 		};

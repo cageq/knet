@@ -23,6 +23,7 @@ namespace knet {
 				m.pipeid = pid;
 			}
 
+			virtual ~PipeSession(){}
 			virtual void handle_event(NetEvent evt) { dlog("handle net event {}", evt); }
 			virtual int32_t handle_message(const std::string_view& msg) {
 

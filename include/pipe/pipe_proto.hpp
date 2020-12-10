@@ -93,7 +93,7 @@ namespace knet{
 
 		template <uint32_t size>
 			struct PipeMessage {
-				PipeMsgHead head;
+				PipeMsgHead head = {0}; 
 				char data[size];
 				void fill(uint32_t type, const std::string& buf) {
 					head.type = type;
@@ -107,8 +107,11 @@ namespace knet{
 				}
 
 				void fill(const char* buf, uint32_t len) {
-					head.length = len > size ? size : len;
-					memcpy(data, buf, len > size ? size : len);
+					if (len > 0) { 
+						head.length = len > size ? size : len;
+						memcpy(data, buf, len > size ? size : len);
+					}
+
 				}
 
 				uint32_t length() const { return sizeof(PipeMsgHead) + head.length; }
