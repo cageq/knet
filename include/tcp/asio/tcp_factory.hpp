@@ -5,43 +5,35 @@
 
 #pragma once 
 #include <functional>
+#include "c11patch.hpp"
 
 namespace knet {
-	namespace tcp{
+	namespace tcp {
 
-		template <class T> 
-			class ConnectionFactory{ 
-				public:
-				using TPtr = std::shared_ptr<T> ; 
+		template <class T, class ... Params >
+		class TcpFactory {
+		public:
+			using TPtr = std::shared_ptr<T>;
+			TcpFactory(Params ... params) :init_params(params ...) {
+			}
 
-				using ConnInitor = std::function<void(T & )>  ; 
 
-				// using FactoryEventHandler = std::function<void (TPtr, NetEvent)>; 
-				// using FactoryDataHandler =  std::function<int (TPtr , const std::string_view &)>;  
+			TPtr create() {
+				return std::apply(&TcpFactory<T, Params...>::create_helper, init_params);
+			}
 
-				
-				template <class ... Args>
-				TPtr create(Args ... args ) {
-					dlog("connection factory create connection"); 
-					return  std::make_shared<T> (args...); 							
-				}
 
-				virtual void destroy(TPtr conn) {
-					//dlog("connection factory destroy connection"); 
-				}	
+			void release(TPtr sess) {} 
 
-				virtual void handle_event(TPtr conn, NetEvent evt) {
-					ilog("handle event in connection factory {}", evt); 
-				}
+			static TPtr create_helper(Params ... params)
+			{
+				return std::make_shared<T> (std::forward<Params>(params)...);				 
+			}
 
-		
-				virtual uint32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) { 
+		private:
+			std::tuple<Params ...> init_params;
 
-					//ilog("handle data in connection factory {}",len); 
-					return msg.length() ;
-				}; 
-	
-			}; 
+		};
 
 
 	}

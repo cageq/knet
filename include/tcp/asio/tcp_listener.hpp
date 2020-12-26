@@ -9,18 +9,19 @@
 
 #include "tcp_connection.hpp"
 #include "c11patch.hpp"
+#include "tcp_factory.hpp"
+
 namespace knet
 {
 	namespace tcp
 	{
 		using asio::ip::tcp;
-		template <class T, class F = ConnectionFactory<T>, class Worker = EventWorker, class... Args>
-		class TcpListener final
+		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
+		class TcpListener : public NetEventHandler<T>  
 		{
 		public:
-			using TPtr = std::shared_ptr<T>;
-			using Factory = F;
-			using FactoryPtr = F *;
+			using TPtr = std::shared_ptr<T>;		 
+			using FactoryPtr = Factory *;
 			using WorkerPtr = std::shared_ptr<Worker>;
 			using SocketPtr = std::shared_ptr<typename T::ConnSock>;
 
@@ -65,8 +66,8 @@ namespace knet
 			// }
 
 			TcpListener(
-				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>(), Args... args)
-				: listen_worker(lisWorker), conn_args(args...)
+				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
+				: listen_worker(lisWorker) 
 			{
 				m.factory = fac;
 				if (listen_worker)
@@ -80,8 +81,8 @@ namespace knet
 				}
 			}
 
-			TcpListener(WorkerPtr lisWorker, Args... args)
-				: listen_worker(lisWorker), conn_args(args...)
+			TcpListener(WorkerPtr lisWorker)
+				: listen_worker(lisWorker)
 			{
 				dlog("create listener without factory");
 				m.factory = nullptr;
@@ -184,6 +185,15 @@ namespace knet
 				});
 			}
 
+
+		virtual void handle_data(TPtr, const std::string& msg) {
+
+		}
+        virtual void handle_event(TPtr, NetEvent) {
+
+		}
+
+
 		private:
 			void do_accept()
 			{
@@ -233,8 +243,8 @@ namespace knet
 					asio::dispatch(worker->context(), [=]() {
 						auto conn = create_connection(socket, worker); 
 					 
-						conn->destroyer = std::bind(
-							&TcpListener<T, F, Worker, Args...>::destroy, this, std::placeholders::_1);
+						// conn->destroyer = std::bind(
+						// 	&TcpListener<T, F, Worker >::destroy, this, std::placeholders::_1);
 
 						conn->handle_event(EVT_CONNECT);
 						socket->do_read();
@@ -242,27 +252,28 @@ namespace knet
 				}
 			}
 
-			static TPtr factory_create_helper(FactoryPtr fac, Args... args)
-			{
-				if (fac)
-				{
-					wlog("create connection by factory");
-					return fac->create(std::forward<Args>(args)... );
-				}
-				else
-				{
-					wlog("create connection by default");
-					return std::make_shared<T>( std::forward<Args>(args)... );
-				}
-			}
+			// static TPtr factory_create_helper(FactoryPtr fac)
+			// {
+			// 	if (fac)
+			// 	{
+			// 		wlog("create connection by factory");
+			// 		return fac->create(std::forward<Args>(args)... );
+			// 	}
+			// 	else
+			// 	{
+			// 		wlog("create connection by default");
+			// 		return std::make_shared<T>( std::forward<Args>(args)... );
+			// 	}
+			// }
 
 			TPtr create_connection(SocketPtr sock ,WorkerPtr worker)
 			{
  
-				auto conn = std::apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
-									   std::tuple_cat(std::make_tuple(m.factory), conn_args));
+				// auto conn = std::apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
+				// 					   std::tuple_cat(std::make_tuple(m.factory)));
  
-				conn->init(m.factory, sock, worker);
+				auto conn = m.factory->create(); 
+				conn->init(  sock, worker);
 				return conn;
 			}
 
@@ -278,11 +289,11 @@ namespace knet
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
 			WorkerPtr listen_worker;
-			std::tuple<Args...> conn_args;
+
 		};
 
-		template <typename T, typename ... Args >
-		    using DefaultTcpListener = TcpListener<T, ConnectionFactory<T>, EventWorker, Args...>;
+		template <typename T >
+		    using DefaultTcpListener = TcpListener<T, TcpFactory<T>, EventWorker >;
 
 	} // namespace tcp
 

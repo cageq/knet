@@ -9,9 +9,8 @@
 #include <unordered_map>
 
 #include "tcp_socket.hpp"
-#include "tcp_factory.hpp"
 #include "event_worker.hpp"
-
+ #include "event_handler.hpp"
 using asio::ip::tcp;
 
 namespace knet
@@ -38,21 +37,24 @@ namespace knet
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
-			template <class, class, class, class...>
+			template <class, class, class>
 			friend class Listener;
 			template <class, class, class>
 			friend class Connector;
 
 			using ConnSock = Sock; 
-			using NetEventHandler = std::function<void(std::shared_ptr<T>, NetEvent)>;
-			using SelfNetEventHandler = void (T::*)(std::shared_ptr<T>, NetEvent);
-			using NetDataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
-			using SelfNetDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
+			using EventHandler = std::function<void(std::shared_ptr<T>, NetEvent)>;
+			using SelfEventHandler = void (T::*)(std::shared_ptr<T>, NetEvent);
+			using DataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
+			using SelfDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
 			using SocketPtr = std::shared_ptr<Sock>;
-			using ConnFactory = ConnectionFactory<T>;
-			using FactoryPtr = ConnFactory *;
+ 
 
-			TcpConnection() {} // for passive connection 
+			// for passive connection 
+			template <class ... Args>
+			TcpConnection(Args ... args){ 
+			}
+		
 
 			TcpConnection(const std::string &host, uint16_t port)
 			{
@@ -73,14 +75,15 @@ namespace knet
 				}
 			}
 
-			void init(FactoryPtr fac = nullptr, SocketPtr sock = nullptr, EventWorkerPtr worker = nullptr)
+			void init(  SocketPtr sock = nullptr, EventWorkerPtr worker = nullptr, NetEventHandler<T> * evtHandler = nullptr)
 			{
 				static uint64_t index = 1024;
 				event_worker = worker;
-				this->factory = fac;
+			 
 				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
+				event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
 			}
 
@@ -114,15 +117,15 @@ namespace knet
 				}
 			}
 
-			inline void bind_data_handler(NetDataHandler handler) { data_handler = handler; }
-			void bind_data_handler(SelfNetDataHandler handler)
+			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
+			void bind_data_handler(SelfDataHandler handler)
 			{
 				T *child = static_cast<T *>(this);
 				data_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
 
-			inline void bind_event_handler(NetEventHandler handler) { event_handler = handler; }
-			void bind_event_handler(SelfNetEventHandler handler)
+			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
+			void bind_event_handler(SelfEventHandler handler)
 			{
 				T *child = static_cast<T *>(this);
 				event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
@@ -184,11 +187,7 @@ namespace knet
 				}
 			}
 
-			template <class FPtr>
-			FPtr get_factory()
-			{
-				return std::static_pointer_cast<FPtr>(factory);
-			}
+		 
 
 			inline EventWorkerPtr get_worker() { return event_worker; }
 
@@ -224,11 +223,7 @@ namespace knet
 				{
 					return data_handler(msg, status);
 				}
-
-				if (factory)
-				{
-					return factory->handle_data(this->shared_from_this(), msg, status);
-				}
+		 
 				return msg.length();
 			}
 
@@ -257,29 +252,20 @@ namespace knet
 				dlog("handle event in connection {}", evt);
 				if (event_handler)
 				{
-					event_handler(this->shared_from_this(), evt);
+					event_handler->handle_event(this->shared_from_this(), evt);
 				}
 
-				if (factory)
-				{
-					factory->handle_event(this->shared_from_this(), evt);
-				}
+		 
 			}
-
-			//friend class ConnectionFactory<T>;
-
-			// static std::shared_ptr<T> create(SocketPtr sock)
-			// {
-			// 	auto self = std::make_shared<T>();
-			// 	self->init(self->factory, sock);
-			// 	return self;
-			// }
+ 
+ 
 
 			void set_remote_addr(const std::string &host, uint32_t port)
 			{
 				remote_host = host;
 				remote_port = port;
 			}
+
 			inline std::string get_remote_host() const
 			{
 				return remote_host;
@@ -295,13 +281,15 @@ namespace knet
 			bool is_passive = true;
 
 			std::set<uint64_t> conn_timers;
-			FactoryPtr factory = nullptr;
+ 
 			SocketPtr tcp_socket = nullptr;
-			NetEventHandler event_handler;
-			NetDataHandler data_handler;
+			EventHandler event_handler;
+			DataHandler data_handler;
 			std::string remote_host;
 			uint16_t remote_port;
 			EventWorkerPtr event_worker;
+
+			NetEventHandler<T>* event_handler = nullptr;
 		};
 
 	} // namespace tcp

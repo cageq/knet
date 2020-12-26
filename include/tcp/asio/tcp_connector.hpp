@@ -6,13 +6,14 @@
 #pragma once
 #include <unordered_map>
 #include "tcp_connection.hpp"
+#include "tcp_factory.hpp"
 #include "event_worker.hpp"
 namespace knet
 {
 	namespace tcp
 	{
 
-		template <class T, class Factory = ConnectionFactory<T>, class Worker = EventWorker>
+		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
 		class TcpConnector final
 		{
 		public:

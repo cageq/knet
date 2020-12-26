@@ -10,13 +10,13 @@ using namespace knet::tcp;
 class TcpSession : public TcpConnection<TcpSession>{
 	public: 
 		typedef std::shared_ptr<TcpSession> TcpSessionPtr; 
-		TcpSession(int32_t val) { 
-			ilog("session create with {}", val);
-			bind_data_handler(&TcpSession::on_recv ); 
-			bind_event_handler([](   TcpSessionPtr, knet::NetEvent evt  ){ 
-					ilog("on recv event", evt);
-					return 0; 
-					} ); 
+		TcpSession() { 
+			//ilog("session create with {}", val);
+			// bind_data_handler(&TcpSession::on_recv ); 
+			//bind_event_handler([](   TcpSessionPtr, knet::NetEvent evt  ){ 
+			//		ilog("on recv event", evt);
+			//		return 0; 
+			//		} ); 
 		}
 		virtual ~TcpSession() {
 			dlog("destroy tcp session");
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
 	std::shared_ptr<knet::EventWorker> myworker = std::make_shared<knet::EventWorker>();
 	//TcpListener<TcpSession, ConnectionFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
-	DefaultTcpListener<TcpSession,  int32_t> listener(myworker,222); 
+	DefaultTcpListener<TcpSession> listener(myworker); 
 	int port = 8855;
 	listener.start( port); 
 
