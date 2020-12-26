@@ -17,7 +17,7 @@ namespace knet {
 namespace websocket {
 
 template <class T = WSockConnection>
-class WSockFactory : public ConnectionFactory<T> {
+class WSockFactory : public TcpFactory<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;

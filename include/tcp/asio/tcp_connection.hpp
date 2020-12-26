@@ -83,7 +83,7 @@ namespace knet
 				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
-				event_handler = evtHandler; 
+				net_event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
 			}
 
@@ -199,16 +199,8 @@ namespace knet
 				}
 				return nullptr;
 			}
-			void *user_data = nullptr;
-		
-
-			void destroy()
-			{
-				if (destroyer)
-				{
-					destroyer(this->shared_from_this());
-				}
-			}
+			void *user_data = nullptr; 
+	
 
 #if WITH_PACKAGE_HANDLER
 			virtual uint32_t handle_package(const char * data, uint32_t len ){
@@ -216,7 +208,7 @@ namespace knet
 			}
 #endif 
 
-			std::function<void(std::shared_ptr<T>)> destroyer;
+	
 			virtual uint32_t handle_data(const std::string &msg, MessageStatus status)
 			{
 				if (data_handler)
@@ -250,15 +242,15 @@ namespace knet
 			virtual void handle_event(NetEvent evt) 
 			{
 				dlog("handle event in connection {}", evt);
-				if (event_handler)
+				if (net_event_handler)
 				{
-					event_handler->handle_event(this->shared_from_this(), evt);
-				}
-
-		 
+					net_event_handler->handle_event(this->shared_from_this(), evt);
+				}		 
 			}
- 
- 
+
+			void release(){
+				handle_event(EVT_RELEASE); 
+			} 
 
 			void set_remote_addr(const std::string &host, uint32_t port)
 			{
@@ -289,7 +281,7 @@ namespace knet
 			uint16_t remote_port;
 			EventWorkerPtr event_worker;
 
-			NetEventHandler<T>* event_handler = nullptr;
+			NetEventHandler<T>* net_event_handler = nullptr;
 		};
 
 	} // namespace tcp

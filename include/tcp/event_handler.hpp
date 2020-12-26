@@ -22,6 +22,7 @@ namespace knet
         EVT_USER2,
         EVT_END
     };
+
 	static const char *kEventMessage[] = {
 		"Net Event: thread init",
 		"Net Event: thread exit",
@@ -41,12 +42,18 @@ namespace knet
 		return kEventMessage[evt];
 	}
 
+    enum class MessageStatus : uint32_t
+	{
+		MESSAGE_NONE = 0,
+		MESSAGE_CHUNK = 1,
+		MESSAGE_END = 2,
+	};
 
     template <class T>
     class NetEventHandler {
     public:
 
-        virtual void handle_data(std::shared_ptr<T>, const std::string& msg) = 0;
+        virtual int32_t handle_data(std::shared_ptr<T>, const std::string& msg, MessageStatus status) = 0;
         virtual void handle_event(std::shared_ptr<T>, NetEvent) = 0;
 
     };

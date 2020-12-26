@@ -409,7 +409,7 @@ public:
 					if (self->socket().is_open()) {
 						self->socket().close();
 					}
-					self->connection->destroy();
+					self->connection->release();
 					self->connection.reset();
 				}
 

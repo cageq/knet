@@ -17,7 +17,7 @@ class TcpSession : public TcpConnection<TcpSession>
 };
 
 
-class MyFactory: public ConnectionFactory<TcpSession> { 
+class MyFactory: public TcpFactory<TcpSession> { 
 
 	public:
 

@@ -9,7 +9,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 template <class T = HttpConnection>
-class HttpFactory : public ConnectionFactory<T> {
+class HttpFactory : public TcpFactory<T> , public NetEventHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
@@ -45,7 +45,7 @@ public:
 		}
 	}
 
-	virtual uint32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) {
+	virtual int32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) {
 
 		auto req = std::make_shared<HttpRequest>();
 		auto msgLen = req->parse_request(msg.data(), msg.length());

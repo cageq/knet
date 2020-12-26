@@ -14,12 +14,12 @@ namespace knet
 	{
 
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpConnector final
+		class TcpConnector : public NetEventHandler<T>
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			using FactoryPtr = Factory *;
+			using FactoryPtr = Factory*;
 
 			TcpConnector(FactoryPtr fac = nullptr, WorkerPtr worker = nullptr)
 			{
@@ -63,12 +63,12 @@ namespace knet
 			}
 
 			void stop() {
-				for(auto & elem :connections){
-					elem.second->close(); 
+				for (auto& elem : connections) {
+					elem.second->close();
 				}
 			}
 
-	 
+
 
 			bool remove_connection(uint64_t cid)
 			{
@@ -82,19 +82,15 @@ namespace knet
 			}
 
 
-			bool add_connection(TPtr conn, const ConnectionInfo & connInfo)
+			bool add_connection(TPtr conn, const ConnectionInfo& connInfo)
 			{
 				if (conn)
 				{
 					auto worker = this->get_worker();
 					auto sock =
 						std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
-					conn->init(factory, sock, worker);
-					conn->destroyer =
-						std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1); 
-
+					conn->init( sock, worker, this );			 
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
-
 					conn->connect(connInfo);
 					connections[conn->get_cid()] = conn;
 					return true;
@@ -103,7 +99,7 @@ namespace knet
 			}
 
 			template <class... Args>
-			TPtr add_connection(const ConnectionInfo & connInfo, Args... args)
+			TPtr add_connection(const ConnectionInfo& connInfo, Args... args)
 			{
 				auto worker = this->get_worker();
 				auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
@@ -117,75 +113,69 @@ namespace knet
 					conn = std::make_shared<T>(args...);
 				}
 
-				conn->init(factory, sock, worker);
-
-				conn->destroyer =
-					std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
-			 
+				conn->init(sock, worker, this);
 				conn->connect(connInfo);
 				connections[conn->get_cid()] = conn;
 				return conn;
 			}
 
-			template <class... Args>
-			TPtr add_ssl_connection(
-				const std::string &host, uint16_t port, const std::string &caFile, Args... args)
-			{
-				auto worker = this->get_worker();
-				auto sock =
-					std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context(), caFile);
-				TPtr conn = nullptr;
-				if (factory)
-				{
-					conn = factory->create(args...);
-				}
-				else
-				{
-					conn = std::make_shared<T>(args...);
-				}
+			// template <class... Args>
+			// TPtr add_ssl_connection(
+			// 	const std::string& host, uint16_t port, const std::string& caFile, Args... args)
+			// {
+			// 	auto worker = this->get_worker();
+			// 	auto sock =
+			// 		std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context(), caFile);
+			// 	TPtr conn = nullptr;
+			// 	if (factory)
+			// 	{
+			// 		conn = factory->create(args...);
+			// 	}
+			// 	else
+			// 	{
+			// 		conn = std::make_shared<T>(args...);
+			// 	}
 
-				conn->init(factory, sock, worker);
-				conn->destroyer =
-					std::bind(&TcpConnector<T, Factory, Worker>::destroy, this, std::placeholders::_1);
-			
-				conn->connect(host, port);
-				connections[conn->cid] = conn;
+			// 	conn->init( sock, worker, this );
+		 
+			// 	conn->connect(host, port);
+			// 	connections[conn->cid] = conn;
 
-				return conn;
-			}
+			// 	return conn;
+			// }
 
-		template <class... Args>
-			TPtr add_wsconnection(const std::string &host, uint16_t port,    Args... args)
-			{
-				auto worker = get_worker();
-				auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
-				TPtr conn = nullptr;
-				if (factory)
-				{
-					conn = factory->create(args...);
-				}
-				else
-				{
-					conn = std::make_shared<T>(args...);
-				}
-				conn->init(factory, sock, worker);
-				conn->connect(host, port);
-				connections[conn->cid] = conn;
-				return conn;
-			}
+			// template <class... Args>
+			// TPtr add_wsconnection(const std::string& host, uint16_t port, Args... args)
+			// {
+			// 	auto worker = get_worker();
+			// 	auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
+			// 	TPtr conn = nullptr;
+			// 	if (factory)
+			// 	{
+			// 		conn = factory->create(args...);
+			// 	}
+			// 	else
+			// 	{
+			// 		conn = std::make_shared<T>(args...);
+			// 	}
+			// 	conn->init( sock, worker, this );
+			// 	conn->connect(host, port);
+			// 	connections[conn->cid] = conn;
+			// 	return conn;
+			// }
 
 
 			void destroy(std::shared_ptr<T> conn)
 			{
 				dlog("destroy connection {}", conn->get_cid());
 				asio::post(*conn->get_context(), [this, conn]() {
-			 
-					conn->disable_reconnect(); 
+
+					conn->disable_reconnect();
 					if (factory)
 					{
 						factory->destroy(conn);
 					}
-				});
+					});
 			}
 
 			WorkerPtr get_worker(int32_t idx = 0)
@@ -209,11 +199,38 @@ namespace knet
 				}
 			}
 
+			virtual int32_t handle_data(std::shared_ptr<T>, const std::string& msg , MessageStatus status) {
+
+				return msg.length(); 
+			}
+			virtual void handle_event(std::shared_ptr<T> conn , NetEvent evt ) {
+				switch (evt) {
+				case EVT_RELEASE:
+				{
+
+					asio::post(*conn->get_context(), [this, conn]() {
+
+						conn->disable_reconnect();
+						if (factory)
+						{
+							factory->release(conn);
+						}
+						});
+
+				}
+				break;
+				default:
+
+					;
+
+				}
+			}
+
 
 		private:
 			uint32_t worker_index = 0;
-			FactoryPtr factory = nullptr; 
-			std::vector<WorkerPtr> user_workers; 
+			FactoryPtr factory = nullptr;
+			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
 		};
 

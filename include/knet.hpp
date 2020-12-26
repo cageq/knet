@@ -30,12 +30,7 @@ namespace knet
 		std::string dh_file = "cert/dh2048.pem";
 	};
 
-	enum class MessageStatus : uint32_t
-	{
-		MESSAGE_NONE = 0,
-		MESSAGE_CHUNK = 1,
-		MESSAGE_END = 2,
-	};
+
 } // namespace knet
 
 #define USING_LOOP_BUFFER 0

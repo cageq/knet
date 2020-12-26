@@ -175,22 +175,39 @@ namespace knet
 				}
 			}
 
-			void destroy(std::shared_ptr<T> conn)
-			{
-				asio::post(listen_worker->context(), [this, conn]() {
+			// void destroy(std::shared_ptr<T> conn)
+			// {
+			// 	asio::post(listen_worker->context(), [this, conn]() {
+			// 		if (m.factory)
+			// 		{
+			// 			m.factory->destroy(conn);
+			// 		}
+			// 	});
+			// }
+
+
+		virtual int32_t  handle_data(TPtr, const std::string& msg , MessageStatus status) {
+
+
+			return msg.length(); 
+		}
+        virtual void handle_event(TPtr conn, NetEvent evt ) {
+			switch(evt){
+				case EVT_RELEASE:
+				{
+					asio::post(listen_worker->context(), [this, conn]() {
 					if (m.factory)
 					{
-						m.factory->destroy(conn);
+						m.factory->release(conn);
 					}
 				});
+				}
+				break; 
+				default: 
+				
+				; 
+
 			}
-
-
-		virtual void handle_data(TPtr, const std::string& msg) {
-
-		}
-        virtual void handle_event(TPtr, NetEvent) {
-
 		}
 
 
@@ -243,9 +260,6 @@ namespace knet
 					asio::dispatch(worker->context(), [=]() {
 						auto conn = create_connection(socket, worker); 
 					 
-						// conn->destroyer = std::bind(
-						// 	&TcpListener<T, F, Worker >::destroy, this, std::placeholders::_1);
-
 						conn->handle_event(EVT_CONNECT);
 						socket->do_read();
 					});
@@ -269,11 +283,8 @@ namespace knet
 			TPtr create_connection(SocketPtr sock ,WorkerPtr worker)
 			{
  
-				// auto conn = std::apply(&TcpListener<T, F, Worker, Args...>::factory_create_helper,
-				// 					   std::tuple_cat(std::make_tuple(m.factory)));
- 
 				auto conn = m.factory->create(); 
-				conn->init(  sock, worker);
+				conn->init(  sock, worker , this );
 				return conn;
 			}
 

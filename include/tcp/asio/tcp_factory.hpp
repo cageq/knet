@@ -17,22 +17,22 @@ namespace knet {
 			TcpFactory(Params ... params) :init_params(params ...) {
 			}
 
+			template <class ... Args> 
+			TPtr create(Args ... args ) {
+				return std::make_shared<T> (std::forward<Args>(args)...);			
+			} 
 
 			TPtr create() {
 				return std::apply(&TcpFactory<T, Params...>::create_helper, init_params);
-			}
-
-
+			} 
 			void release(TPtr sess) {} 
 
 			static TPtr create_helper(Params ... params)
 			{
 				return std::make_shared<T> (std::forward<Params>(params)...);				 
 			}
-
 		private:
-			std::tuple<Params ...> init_params;
-
+			std::tuple<Params ...> init_params; 
 		};
 
 

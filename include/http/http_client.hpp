@@ -13,7 +13,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 
-class HttpClient : public ConnectionFactory<HttpConnection> {
+class HttpClient : public TcpFactory<HttpConnection> {
 
 public:
 	using HttpConnector = TcpConnector<HttpConnection, HttpClient>;

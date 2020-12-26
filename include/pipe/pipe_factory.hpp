@@ -7,7 +7,7 @@ namespace knet {
 	namespace pipe {
 
 		enum PipeMode { PIPE_SERVER_MODE = 1, PIPE_CLIENT_MODE = 2, PIPE_DUET_MODE = 3 };
-		class PipeFactory : public ConnectionFactory<PipeConnection> {
+		class PipeFactory : public TcpFactory<PipeConnection> {
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
