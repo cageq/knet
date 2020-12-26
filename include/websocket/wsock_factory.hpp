@@ -17,7 +17,7 @@ namespace knet {
 namespace websocket {
 
 template <class T = WSockConnection>
-class WSockFactory : public TcpFactory<T> {
+class WSockFactory : public TcpFactory<T>  , public NetEventHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
@@ -53,7 +53,7 @@ public:
 		}
 	}
 
-	virtual uint32_t handle_data(TPtr conn, const std::string& msg, MessageStatus status) {
+	virtual int32_t handle_data(TPtr conn, const std::string& msg, MessageStatus status) {
 		dlog("websocket handle data len is {}  websocket : {}", msg.length(), conn->is_websocket);
 
 		if (conn->is_websocket) {

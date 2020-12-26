@@ -7,7 +7,7 @@ namespace knet {
 	namespace pipe {
 
 		enum PipeMode { PIPE_SERVER_MODE = 1, PIPE_CLIENT_MODE = 2, PIPE_DUET_MODE = 3 };
-		class PipeFactory : public TcpFactory<PipeConnection> {
+		class PipeFactory : public TcpFactory<PipeConnection>  , public NetEventHandler<PipeConnection>{
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
@@ -185,7 +185,7 @@ namespace knet {
 			}
 
 
-			virtual uint32_t handle_data(TPtr conn, const std::string& buf, MessageStatus status) {
+			virtual int32_t handle_data(TPtr conn, const std::string& buf, MessageStatus status) {
 
 				PipeMessageS* msg = (PipeMessageS*)buf.data();
 				if (msg->head.length + sizeof(PipeMsgHead) > buf.length()) {
