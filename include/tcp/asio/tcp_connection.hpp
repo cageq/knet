@@ -10,7 +10,7 @@
 
 #include "tcp_socket.hpp"
 #include "event_worker.hpp"
- #include "event_handler.hpp"
+#include "event_handler.hpp"
 using asio::ip::tcp;
 
 namespace knet
@@ -43,8 +43,8 @@ namespace knet
 			friend class Connector;
 
 			using ConnSock = Sock; 
-			using EventHandler = std::function<bool(std::shared_ptr<T>, NetEvent)>;
-			using SelfEventHandler = bool (T::*)(std::shared_ptr<T>, NetEvent);
+			using EventHandler = std::function<bool( NetEvent)>;
+			using SelfEventHandler = bool (T::*)( NetEvent);
 			using DataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
 			using SelfDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
 			using SocketPtr = std::shared_ptr<Sock>;
@@ -125,7 +125,7 @@ namespace knet
 			void bind_event_handler(SelfEventHandler handler)
 			{
 				T *child = static_cast<T *>(this);
-				event_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
+				event_handler = std::bind(handler, child, std::placeholders::_1);
 			}
 
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }

@@ -12,11 +12,11 @@ class TcpSession : public TcpConnection<TcpSession >
 		TcpSession() 
 		{
 			bind_data_handler(&TcpSession::process_data); 
-			bind_event_handler([this](  TcpSessionPtr,knet::NetEvent ){
+			bind_event_handler([this](  knet::NetEvent ){
 
 			std::string msg("hello world"); 
 			this->send(msg.c_str(),msg.length()); 
-					return 0; 
+					return true; 
 					} ); 
 	
 		}

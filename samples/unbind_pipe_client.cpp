@@ -12,7 +12,7 @@ class MyChannel : public PipeSession{
 		}
 
 		virtual ~MyChannel(){}
-		virtual void handle_event(knet::NetEvent evt) { 
+		virtual bool handle_event(knet::NetEvent evt) { 
 			
 			dlog("handle net event {}", evt);
 			
@@ -21,6 +21,7 @@ class MyChannel : public PipeSession{
 				std::string testMsg = "hello world from client";
 				this->transfer(testMsg); 
 			}
+			return true; 
 			
 		 }
 		virtual int32_t handle_message(const std::string_view & msg) {

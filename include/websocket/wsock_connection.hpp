@@ -34,7 +34,7 @@ public:
 
 		// http_parser_init(&m_parser, HTTP_REQUEST);
 
-		bind_event_handler([this](WsConnectionPtr conn, NetEvent evt) {
+		bind_event_handler([this]( NetEvent evt) {
 			switch (evt) {
 			case NetEvent::EVT_CONNECT:
 				dlog("on connected event ");
@@ -50,7 +50,7 @@ public:
 			default:;
 			}
 
-			return 0;
+			return true;
 		});
 		// bind_data_handler(&WSockConnection::handle_data);
 
