@@ -6,7 +6,7 @@
 #pragma once
 #include <tuple>
 #include <memory>
-
+#include <vector>
 #include "tcp_connection.hpp"
 #include "c11patch.hpp"
 #include "tcp_factory.hpp"
@@ -17,7 +17,7 @@ namespace knet
 	{
 		using asio::ip::tcp;
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpListener : public NetEventHandler<T>  
+		class TcpListener final: public UserEventHandler<T>    
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;		 
@@ -174,44 +174,56 @@ namespace knet
 					tcp_acceptor->close();
 				}
 			}
+ 
 
-			// void destroy(std::shared_ptr<T> conn)
-			// {
-			// 	asio::post(listen_worker->context(), [this, conn]() {
-			// 		if (m.factory)
-			// 		{
-			// 			m.factory->destroy(conn);
-			// 		}
-			// 	});
-			// }
+			virtual int32_t  handle_data(TPtr conn, const std::string& msg , MessageStatus status) { 
+				return invoke_data_chain(conn, msg , status ); 		
+			}
 
+			virtual bool handle_event(TPtr conn, NetEvent evt ) {
+				
+				invoke_event_chain(conn,evt); 
 
-		virtual int32_t  handle_data(TPtr, const std::string& msg , MessageStatus status) {
+				if (evt == EVT_RELEASE){
+					this->release(conn); 				
+				}
 
+				return true; 
+			}
+		private:
+ 
 
-			return msg.length(); 
-		}
-        virtual void handle_event(TPtr conn, NetEvent evt ) {
-			switch(evt){
-				case EVT_RELEASE:
-				{
-					asio::post(listen_worker->context(), [this, conn]() {
+			int32_t  invoke_data_chain(TPtr conn, const std::string& msg , MessageStatus status){
+				int32_t ret = msg.length(); 
+				for(auto handler : m.event_handler_chain){
+					if (handler ){
+						ret = handler->handle_data(conn, msg, status); 
+					}
+				}
+				return ret; 
+			}
+
+			void invoke_event_chain(TPtr conn, NetEvent evt){
+				for(auto handler : m.event_handler_chain){
+					if (handler ){
+						bool ret = handler->handle_event(conn, evt); 
+						if (!ret)
+						{
+							break; 
+						}
+					}
+				}
+			}
+
+			void release(TPtr conn)
+			{
+				asio::post(listen_worker->context(), [this, conn]() {
 					if (m.factory)
 					{
 						m.factory->release(conn);
 					}
 				});
-				}
-				break; 
-				default: 
-				
-				; 
-
 			}
-		}
-
-
-		private:
 			void do_accept()
 			{
 				// dlog("accept new connection ");
@@ -296,6 +308,7 @@ namespace knet
 				bool is_running = false;
 				void *ssl_context = nullptr;
 				FactoryPtr factory = nullptr;
+				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
 			} m;
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;

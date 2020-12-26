@@ -18,10 +18,10 @@ class TcpSession : public TcpConnection<TcpSession> {
 		TcpSession() {
 			bind_data_handler(&TcpSession::on_recv ); 
 
-			//			bind_event_handler([this](  TcpSessionPtr,NetEvent evt){
-			//					
-			//					return 0; 
-			//					} ); 
+			bind_event_handler([this](  TcpSessionPtr,NetEvent evt){
+					
+					return 0; 
+					} ); 
 		}
 
 		virtual ~TcpSession() {

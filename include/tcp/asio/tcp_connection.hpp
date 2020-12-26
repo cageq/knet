@@ -29,7 +29,7 @@ namespace knet
 			uint16_t server_port; 
 			std::string local_addr; 
 			uint16_t local_port; 
-			bool reuse =true;  
+			bool reuse = true;  
 		}; 
 
 
@@ -43,8 +43,8 @@ namespace knet
 			friend class Connector;
 
 			using ConnSock = Sock; 
-			using EventHandler = std::function<void(std::shared_ptr<T>, NetEvent)>;
-			using SelfEventHandler = void (T::*)(std::shared_ptr<T>, NetEvent);
+			using EventHandler = std::function<bool(std::shared_ptr<T>, NetEvent)>;
+			using SelfEventHandler = bool (T::*)(std::shared_ptr<T>, NetEvent);
 			using DataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
 			using SelfDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
 			using SocketPtr = std::shared_ptr<Sock>;
@@ -52,10 +52,8 @@ namespace knet
 
 			// for passive connection 
 			template <class ... Args>
-			TcpConnection(Args ... args){ 
-			}
+			TcpConnection(Args ... args){ }
 		
-
 			TcpConnection(const std::string &host, uint16_t port)
 			{
 				remote_host = host;
@@ -75,11 +73,10 @@ namespace knet
 				}
 			}
 
-			void init(  SocketPtr sock = nullptr, EventWorkerPtr worker = nullptr, NetEventHandler<T> * evtHandler = nullptr)
+			void init( SocketPtr sock = nullptr, EventWorkerPtr worker = nullptr, UserEventHandler<T> * evtHandler = nullptr)
 			{
 				static uint64_t index = 1024;
-				event_worker = worker;
-			 
+				event_worker = worker;			 
 				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
@@ -87,12 +84,12 @@ namespace knet
 				handle_event(EVT_CREATE);
 			}
 
-			int send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
+			int32_t send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
 
-			int send(const std::string &msg) { return msend(msg); }
+			int32_t send(const std::string &msg) { return msend(msg); }
 
 			template <class P, class... Args>
-			int msend(const P &first, const Args &... rest)
+			int32_t msend(const P &first, const Args &... rest)
 			{
 				return tcp_socket->msend(first, rest...);
 			}
@@ -138,7 +135,7 @@ namespace knet
 				dlog("start to connect {}:{}", connInfo.server_addr, connInfo.server_port);
 				this->remote_host = connInfo.server_addr;
 				this->remote_port = connInfo.server_port;
-				is_passive = false; 
+				passive_mode = false; 
 				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
 			}
 
@@ -146,17 +143,17 @@ namespace knet
 
 			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
 
-			tcp::endpoint local_endpoint() { return tcp_socket->local_endpoint(); }
+			tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
 
-			tcp::endpoint remote_endpoint() { return tcp_socket->remote_endpoint(); }
+			tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
 
-			std::string get_remote_ip() { return tcp_socket->remote_endpoint().host; }
+			// std::string get_remote_ip() const{ return tcp_socket->remote_endpoint().host; }
 
-			uint16_t get_remote_port() { return tcp_socket->remote_endpoint().port; }
+			// uint16_t get_remote_port() const{ return tcp_socket->remote_endpoint().port; }
 
 			inline uint64_t get_cid() const { return cid; }
 
-			inline bool passive() const  { return is_passive; }
+			inline bool is_passive() const  { return passive_mode; }
 
 			void enable_reconnect(uint32_t interval = 1000000)
 			{
@@ -185,9 +182,7 @@ namespace knet
 					this->stop_timer(this->reconn_timer);
 					this->reconn_timer = 0;
 				}
-			}
-
-		 
+			}		 
 
 			inline EventWorkerPtr get_worker() { return event_worker; }
 
@@ -199,24 +194,23 @@ namespace knet
 				}
 				return nullptr;
 			}
-			void *user_data = nullptr; 
-	
+			void *user_data = nullptr;  
 
 #if WITH_PACKAGE_HANDLER
 			virtual uint32_t handle_package(const char * data, uint32_t len ){
 				return len  ; 
 			}
 #endif 
+			virtual bool handle_event(NetEvent evt) 
+			{
+				dlog("handle event in connection {}", evt);
+				return true; 
+			}
 
 	
-			virtual uint32_t handle_data(const std::string &msg, MessageStatus status)
+			virtual int32_t handle_data(const std::string &msg, MessageStatus status)
 			{
-				if (data_handler)
-				{
-					return data_handler(msg, status);
-				}
-		 
-				return msg.length();
+				return msg.length(); 
 			}
 
 			uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
@@ -239,15 +233,7 @@ namespace knet
 				}
 			}
 
-			virtual void handle_event(NetEvent evt) 
-			{
-				dlog("handle event in connection {}", evt);
-				if (net_event_handler)
-				{
-					net_event_handler->handle_event(this->shared_from_this(), evt);
-				}		 
-			}
-
+	
 			void release(){
 				handle_event(EVT_RELEASE); 
 			} 
@@ -266,22 +252,49 @@ namespace knet
 			{
 				return remote_port;
 			} 
+			bool need_reconnect() const {
+				return reconn_flag; 
+			}
+		 
+			int32_t process_data(const std::string &msg, MessageStatus status){
+				if (data_handler)
+				{
+					return data_handler(msg, status);
+				}
+
+				if (net_event_handler)
+				{
+					return net_event_handler->handle_data(this->shared_from_this(), msg, status );
+				}		 
+		 		return handle_data(msg, status); 				
+			}
+
+			bool process_event(NetEvent evt){
+
+				if (event_handler)
+				{
+					return event_handler(evt);
+				}
+
+				if (net_event_handler)
+				{
+					return  net_event_handler->handle_event(this->shared_from_this(), evt);
+				}		
+				return handle_event(evt); 				
+			}
+	private:
 			bool reconn_flag = false;
-		private:
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
-			bool is_passive = true;
-
-			std::set<uint64_t> conn_timers;
- 
+			bool passive_mode = true;
+			std::set<uint64_t> conn_timers; 
 			SocketPtr tcp_socket = nullptr;
-			EventHandler event_handler;
-			DataHandler data_handler;
-			std::string remote_host;
+			EventHandler event_handler = nullptr;
+			DataHandler data_handler = nullptr;
+			std::string remote_host ;
 			uint16_t remote_port;
-			EventWorkerPtr event_worker;
-
-			NetEventHandler<T>* net_event_handler = nullptr;
+			EventWorkerPtr event_worker = nullptr;
+			UserEventHandler<T>* net_event_handler = nullptr;
 		};
 
 	} // namespace tcp

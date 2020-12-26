@@ -14,7 +14,7 @@ namespace knet
 	{
 
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpConnector : public NetEventHandler<T>
+		class TcpConnector : public UserEventHandler<T>
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;
@@ -203,7 +203,7 @@ namespace knet
 
 				return msg.length(); 
 			}
-			virtual void handle_event(std::shared_ptr<T> conn , NetEvent evt ) {
+			virtual bool handle_event(std::shared_ptr<T> conn , NetEvent evt ) {
 				switch (evt) {
 				case EVT_RELEASE:
 				{
@@ -224,6 +224,7 @@ namespace knet
 					;
 
 				}
+				return true; 
 			}
 
 

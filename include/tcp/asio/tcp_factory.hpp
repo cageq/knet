@@ -33,8 +33,7 @@ namespace knet {
 			}
 		private:
 			std::tuple<Params ...> init_params; 
-		};
-
+		}; 
 
 	}
 

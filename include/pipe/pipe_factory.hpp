@@ -7,12 +7,12 @@ namespace knet {
 	namespace pipe {
 
 		enum PipeMode { PIPE_SERVER_MODE = 1, PIPE_CLIENT_MODE = 2, PIPE_DUET_MODE = 3 };
-		class PipeFactory : public TcpFactory<PipeConnection>  , public NetEventHandler<PipeConnection>{
+		class PipeFactory : public TcpFactory<PipeConnection>  , public UserEventHandler<PipeConnection>{
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
 
-			virtual void handle_event(TPtr conn, NetEvent evt) {
+			virtual bool handle_event(TPtr conn, NetEvent evt) {
 
 				ilog("factory event {} {} {}",evt,  event_string(evt), std::this_thread::get_id());
 
@@ -20,7 +20,7 @@ namespace knet {
 				case EVT_CONNECT:
 				{
 
-					if (!conn->passive()) {
+					if (!conn->is_passive()) {
 						send_shakehand(conn, conn->pipeid);
 					}
 				}
@@ -53,6 +53,7 @@ namespace knet {
 					dlog("handle session event {}", evt);
 					conn->session->handle_event(evt);
 				}
+				return true; 
 			}
 			// virtual int32_t handle_package(TPtr conn, const char* data, uint32_t len) {
 
@@ -195,7 +196,7 @@ namespace knet {
 
 				if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
 					dlog("handle pipe shake hande message ");
-					if (conn->passive()) { //server side  
+					if (conn->is_passive()) { //server side  
 						process_server_handshake(conn, msg);
 					}
 					else {

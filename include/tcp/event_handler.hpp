@@ -50,12 +50,12 @@ namespace knet
 	};
 
     template <class T>
-    class NetEventHandler {
+    class UserEventHandler {
     public:
 
         virtual int32_t handle_data(std::shared_ptr<T>, const std::string& msg, MessageStatus status) = 0;
-        virtual void handle_event(std::shared_ptr<T>, NetEvent) = 0;
-
+        virtual bool handle_event(std::shared_ptr<T>, NetEvent) = 0;
+ 
     };
 
 

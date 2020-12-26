@@ -17,16 +17,15 @@ namespace knet {
 namespace websocket {
 
 template <class T = WSockConnection>
-class WSockFactory : public TcpFactory<T>  , public NetEventHandler<T> {
+class WSockFactory : public TcpFactory<T>  , public UserEventHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
 
 	WSockFactory() { dlog("init http factory"); }
+ 
 
-	virtual void destroy(TPtr conn) { dlog("connection factory destroy connection in factory "); }
-
-	virtual void handle_event(TPtr conn, NetEvent evt) {
+	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
 		ilog("handle event in http factory ", evt);
 
@@ -51,6 +50,7 @@ public:
 			break;
 		default:;
 		}
+		return true; 
 	}
 
 	virtual int32_t handle_data(TPtr conn, const std::string& msg, MessageStatus status) {

@@ -9,7 +9,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 template <class T = HttpConnection>
-class HttpFactory : public TcpFactory<T> , public NetEventHandler<T> {
+class HttpFactory : public TcpFactory<T> , public UserEventHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
@@ -18,10 +18,9 @@ public:
 
 	virtual void destroy(TPtr conn) { dlog("connection factory destroy connection in factory "); }
 
-	virtual void handle_event(TPtr conn, NetEvent evt) {
+	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
 		ilog("handle event in http factory ", evt);
-
 		switch (evt) {
 		case EVT_THREAD_INIT:
 			dlog("handle thread init event {}", std::this_thread::get_id());
@@ -43,6 +42,8 @@ public:
 			break;
 		default:;
 		}
+
+		return true; 
 	}
 
 	virtual int32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) {
