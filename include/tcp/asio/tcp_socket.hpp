@@ -178,7 +178,6 @@ public:
 					if (!ec && tcp_sock.is_open() && length > 0 ) {					
 						connection->process_event(EVT_SEND);
 						{
-							ilog("send out length {}",length); 
 							std::lock_guard<std::mutex>  guard(m.mutex); 
 							m.send_buffer.consume(length); 					 	
 							if (m.send_buffer.size() == 0){

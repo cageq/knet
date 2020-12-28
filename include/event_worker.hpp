@@ -107,8 +107,7 @@ namespace knet
 	protected:
 
 		void run()
-		{
-			dlog("start event worker {}", std::this_thread::get_id());
+		{			
 			auto ioWorker = asio::make_work_guard(*io_context);
 			std::call_once(init_flag, [&]() {
 				this->init();

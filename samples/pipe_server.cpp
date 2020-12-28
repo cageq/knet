@@ -36,7 +36,8 @@ int main(int argc, char * argv[]){
 	spipe.start("127.0.0.1",9999);  
 
 	while(1){
-		usleep(500000); 
+		std::this_thread::sleep_for(std::chrono::milliseconds(500000));
+ 
 		//const char * pMsg = "hello world"; 
 		//mySession->transfer(pMsg, strlen(pMsg)); 
 		spipe.broadcast("message from serever"); 

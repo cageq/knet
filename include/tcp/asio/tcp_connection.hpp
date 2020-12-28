@@ -280,20 +280,24 @@ namespace knet
 			}
 
 			bool process_data(const std::string &msg ){
+				bool ret = true; 
 				if (data_handler)
 				{
-					return data_handler(msg);
+					ret=  data_handler(msg);
 				}
 
-				if (user_event_handler)
+				if (ret && user_event_handler)
 				{
-					user_event_handler->handle_data(this->shared_from_this(), msg );
-				}		 
-		 		return handle_data(msg); 				
+					ret = user_event_handler->handle_data(this->shared_from_this(), msg );
+				}		
+				if (ret) {
+					ret = handle_data(msg);
+				}
+		 		return ret; 				
 			}
 
 			bool process_event(NetEvent evt){
-				bool ret = false; 
+				bool ret = true; 
 				if (event_handler)
 				{
 					ret =  event_handler(evt);
