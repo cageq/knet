@@ -31,26 +31,26 @@ namespace std{
         struct merge_and_renumber;
 
         template<size_t... I1, size_t... I2>
-        struct merge_and_renumber<index_sequence<I1...>, index_sequence<I2...>>
-            : index_sequence<I1..., (sizeof...(I1) + I2)...>
+        struct merge_and_renumber<apply_index_sequence<I1...>, apply_index_sequence<I2...>>
+            : apply_index_sequence<I1..., (sizeof...(I1) + I2)...>
         {};
 
         template<size_t N>
         struct apply_make_index_sequence
-            : merge_and_renumber<typename make_index_sequence<N / 2>::type,
-            typename make_index_sequence<N - N / 2>::type>
+            : merge_and_renumber<typename apply_make_index_sequence<N / 2>::type,
+            typename apply_make_index_sequence<N - N / 2>::type>
         {};
 
         template<>
-        struct apply_make_index_sequence<0> : index_sequence<>
+        struct apply_make_index_sequence<0> : apply_index_sequence<>
         {};
 
         template<>
-        struct apply_make_index_sequence<1> : index_sequence<0>
+        struct apply_make_index_sequence<1> : apply_index_sequence<0>
         {};
 
         template<typename Func, typename Tuple, std::size_t... index>
-        auto apply_helper(Func&& func, Tuple&& tuple, index_sequence<index...>) ->
+        auto apply_helper(Func&& func, Tuple&& tuple, apply_index_sequence<index...>) ->
             decltype(func(std::get<index>(std::forward<Tuple>(tuple))...))
         {
             return func(std::get<index>(std::forward<Tuple>(tuple))...);
@@ -60,11 +60,11 @@ namespace std{
         auto apply(Func&& func, Tuple&& tuple) ->
             decltype(apply_helper(std::forward<Func>(func),
                 std::forward<Tuple>(tuple),
-                make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{}))
+                apply_make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{}))
         {
             return apply_helper(std::forward<Func>(func),
                 std::forward<Tuple>(tuple),
-                make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{});
+                apply_make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{});
         }
  
 
