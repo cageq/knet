@@ -6,17 +6,19 @@
 #include <memory>
 #include <fmt/format.h>
 
+#if __cplusplus <= 201103L  
  
-
-#if __cplusplus <= 201103L
 
 namespace std{
 
+
+
 #ifndef __cpp_lib_apply 
+ 
 
   template<size_t... Ints>
-        struct index_sequence {
-            using type = index_sequence;
+        struct apply_index_sequence {
+            using type = apply_index_sequence;
             using value_type = size_t;
 
             static std::size_t size()
@@ -34,17 +36,17 @@ namespace std{
         {};
 
         template<size_t N>
-        struct make_index_sequence
+        struct apply_make_index_sequence
             : merge_and_renumber<typename make_index_sequence<N / 2>::type,
             typename make_index_sequence<N - N / 2>::type>
         {};
 
         template<>
-        struct make_index_sequence<0> : index_sequence<>
+        struct apply_make_index_sequence<0> : index_sequence<>
         {};
 
         template<>
-        struct make_index_sequence<1> : index_sequence<0>
+        struct apply_make_index_sequence<1> : index_sequence<0>
         {};
 
         template<typename Func, typename Tuple, std::size_t... index>
@@ -64,21 +66,35 @@ namespace std{
                 std::forward<Tuple>(tuple),
                 make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{});
         }
+ 
 
-#endif 
+#endif //__cpp_lib_apply
 
 
+   
+ 
+
+
+ 
+
+#if    __cpp_lib_string_view  < 201606L
+
+#ifdef __linux__
         template<typename T, typename ...Args>
         std::unique_ptr<T> make_unique(Args&& ...args)
         {
             return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
         }
-#ifndef __APPLE__
-#if    __cpp_lib_string_view  < 201606L
-        using string_view = fmt::string_view; 
-#endif 
-#endif 
-    
-}
 
 #endif 
+
+        using string_view = fmt::string_view; 
+#endif 
+ 
+
+
+
+} //namespace std
+
+
+#endif  //__cplusplus  <= 201103L
