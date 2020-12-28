@@ -45,10 +45,14 @@ namespace knet
 			using ConnSock = Sock; 
 			using EventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
+
+			using PackageHandler = std::function<int32_t(const char *  &, uint32_t len  )>;
+			using SelfPackageHandler = int32_t (T::*)(const char *  &, uint32_t len  );
+
 			using DataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
 			using SelfDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
-			using SocketPtr = std::shared_ptr<Sock>;
- 
+
+			using SocketPtr = std::shared_ptr<Sock>; 
 
 			// for passive connection 
 			template <class ... Args>
@@ -80,7 +84,7 @@ namespace knet
 				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->connection = this->shared_from_this();
-				net_event_handler = evtHandler; 
+				user_event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
 			}
 
@@ -113,6 +117,15 @@ namespace knet
 					elog("socket is invalid");
 				}
 			}
+
+			
+			inline void bind_package_handler(PackageHandler handler) { package_handler = handler; }
+			void bind_package_handler(SelfDataHandler handler)
+			{
+				T *child = static_cast<T *>(this);
+				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
+			}
+
 
 			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
 			void bind_data_handler(SelfDataHandler handler)
@@ -195,12 +208,11 @@ namespace knet
 				return nullptr;
 			}
 			void *user_data = nullptr;  
-
-#if WITH_PACKAGE_HANDLER
-			virtual uint32_t handle_package(const char * data, uint32_t len ){
+ 
+			virtual int32_t handle_package(const char * data, uint32_t len ){
 				return len  ; 
 			}
-#endif 
+ 
 			virtual bool handle_event(NetEvent evt) 
 			{
 				dlog("handle event in connection {}", evt);
@@ -256,31 +268,51 @@ namespace knet
 				return reconn_flag; 
 			}
 		 
+		 	/*
+			*   0  : user has not use data, but need more 
+			*   < 0 : user has used the data, but need more 
+			*  > 0 : user has used the data, and maybe some bytes left
+			*/
+		 	int32_t process_package(const char * data , uint32_t len){
+				 if (package_handler){
+					 return package_handler(data , len); 
+				 }
+
+				if (user_event_handler){
+					return user_event_handler->handle_package(this->shared_from_this(), data, len );
+				}		 
+				 return handle_package(data, len); 
+			}
+
 			int32_t process_data(const std::string &msg, MessageStatus status){
 				if (data_handler)
 				{
 					return data_handler(msg, status);
 				}
 
-				if (net_event_handler)
+				if (user_event_handler)
 				{
-					return net_event_handler->handle_data(this->shared_from_this(), msg, status );
+					user_event_handler->handle_data(this->shared_from_this(), msg, status );
 				}		 
 		 		return handle_data(msg, status); 				
 			}
 
 			bool process_event(NetEvent evt){
-
+				bool ret = false; 
 				if (event_handler)
 				{
-					return event_handler(evt);
+					ret =  event_handler(evt);
 				}
 
-				if (net_event_handler)
+				if (ret && user_event_handler)
 				{
-					return  net_event_handler->handle_event(this->shared_from_this(), evt);
-				}		
-				return handle_event(evt); 				
+					 ret = user_event_handler->handle_event(this->shared_from_this(), evt);
+				}	
+
+				if (ret){
+					return handle_event(evt); 				
+				}	
+				return ret; 				
 			}
 	private:
 			bool reconn_flag = false;
@@ -289,12 +321,16 @@ namespace knet
 			bool passive_mode = true;
 			std::set<uint64_t> conn_timers; 
 			SocketPtr tcp_socket = nullptr;
-			EventHandler event_handler = nullptr;
-			DataHandler data_handler = nullptr;
+
+			EventHandler   event_handler   = nullptr;
+			DataHandler    data_handler    = nullptr;
+			PackageHandler package_handler = nullptr; 
+
 			std::string remote_host ;
-			uint16_t remote_port;
+			uint16_t remote_port; 
+
 			EventWorkerPtr event_worker = nullptr;
-			UserEventHandler<T>* net_event_handler = nullptr;
+			UserEventHandler<T>* user_event_handler = nullptr;
 		};
 
 	} // namespace tcp

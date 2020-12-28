@@ -182,16 +182,19 @@ namespace knet
 
 			virtual bool handle_event(TPtr conn, NetEvent evt ) {
 				
-				invoke_event_chain(conn,evt); 
-
+				invoke_event_chain(conn,evt);  
 				if (evt == EVT_RELEASE){
 					this->release(conn); 				
 				}
 
 				return true; 
 			}
-		private:
- 
+			void add_event_handler(UserEventHandler<T> * handler){
+				if (handler){
+					m.event_handler_chain.push_back(handler); 
+				}
+			}
+		private: 
 
 			int32_t  invoke_data_chain(TPtr conn, const std::string& msg , MessageStatus status){
 				int32_t ret = msg.length(); 

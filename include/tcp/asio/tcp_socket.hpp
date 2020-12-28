@@ -12,7 +12,7 @@
  
  
 
-#define WITH_PACKAGE_HANDLER 0
+#define WITH_PACKAGE_HANDLER 1
 
 namespace knet {
 namespace tcp {
@@ -241,26 +241,27 @@ public:
 		//	this->m.read_buffer.resize(m.read_buffer.size() + nread);
 		read_buffer_pos += nread;
 		uint32_t readPos = 0;
-		int32_t pkgLen = this->connection->handle_package(m.read_buffer, read_buffer_pos);
+		int32_t pkgLen = this->connection->process_package(m.read_buffer, read_buffer_pos);
 		dlog("process data  pkg size is {}", pkgLen);
-		if (pkgLen < 0 || pkgLen > kReadBufferSize) {
+		if (pkgLen > kReadBufferSize) {
 			elog("single packet size ({}) error, close connection", pkgLen);
 			connection->close();
 			return;
 		}
+
 		while (pkgLen > 0) {
 			dlog("read packet length {}", pkgLen);
 			if (readPos + pkgLen <= read_buffer_pos) {
 				char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 				char endChar = *pkgEnd;
 				*pkgEnd = 0;
-				this->connection->process_data((char*)m.read_buffer + readPos, pkgLen);
+				this->connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen), MessageStatus::MESSAGE_NONE);
 				*pkgEnd = endChar;
 				readPos += pkgLen;
 			}
 
 			if (readPos < read_buffer_pos) {
-				pkgLen = this->connection->handle_package(
+				pkgLen = this->connection->process_package(
 					(char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 				if (pkgLen <= 0) {
 					elog("moving buffer to front {} ", read_buffer_pos - readPos);
@@ -296,8 +297,7 @@ public:
 
 		do {
 
-			uint32_t readLen = read_buffer_pos - readPos;
-		//	dlog("need more data :{}", need_package_length);
+			uint32_t readLen = read_buffer_pos - readPos; 
 
 			if (need_package_length > 0) {
 
@@ -439,6 +439,8 @@ public:
 
 	inline asio::io_context& context() { return io_context; }
 
+	static uint32_t max_package_size ; 
+
 private:
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 
@@ -457,6 +459,7 @@ private:
 	uint32_t read_buffer_pos = 0;
 	uint32_t need_package_length = 0;
 };
+ 
 
 } // namespace tcp
 
