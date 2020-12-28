@@ -55,6 +55,36 @@ namespace knet {
 				}
 				return true;
 			}
+			virtual bool handle_data(TPtr conn, const std::string& buf) {
+
+				PipeMessageS* msg = (PipeMessageS*)buf.data();
+				if (msg->head.length + sizeof(PipeMsgHead) > buf.length()) {
+					elog("data not enough, need length {}", msg->head.length + sizeof(PipeMsgHead));
+					return 0;
+				}
+
+				if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
+					dlog("handle pipe shake hande message ");
+					if (conn->is_passive()) { //server side  
+						process_server_handshake(conn, msg);
+					}
+					else {
+						process_client_handshake(conn, msg);
+					}
+
+					return sizeof(PipeMsgHead) + msg->head.length;
+				}
+				else {
+					wlog("message type {}", msg->head.type);
+				}
+				auto session = conn->get_session();
+				if (session) {
+					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length));
+				}else {
+					elog("connection has no session");
+				}
+				return true;
+			}
 
 			std::string generate_id() {
 				static 	uint64_t pid_index = 0;
@@ -164,36 +194,7 @@ namespace knet {
 			}
 
 
-			virtual bool handle_data(TPtr conn, const std::string& buf) {
-
-				PipeMessageS* msg = (PipeMessageS*)buf.data();
-				if (msg->head.length + sizeof(PipeMsgHead) > buf.length()) {
-					elog("data not enough, need length {}", msg->head.length + sizeof(PipeMsgHead));
-					return 0;
-				}
-
-				if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
-					dlog("handle pipe shake hande message ");
-					if (conn->is_passive()) { //server side  
-						process_server_handshake(conn, msg);
-					}
-					else {
-						process_client_handshake(conn, msg);
-					}
-
-					return sizeof(PipeMsgHead) + msg->head.length;
-				}
-				else {
-					wlog("message type {}", msg->head.type);
-				}
-				auto session = conn->get_session();
-				if (session) {
-					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length));
-				}else {
-					elog("connection has no session");
-				}
-				return true;
-			}
+			
 
 			void send_shakehand(TPtr conn, const std::string& pipeId) {
 				dlog("shakehande request pipe id {}", pipeId);

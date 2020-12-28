@@ -28,6 +28,7 @@ namespace knet {
 
 							if (pipe_mode & PIPE_SERVER_MODE) {
 								listener = std::make_shared<PipeListener>(&pipe_factory, worker);
+								listener->add_event_handler (&pipe_factory); 
 							}
 
 							if (pipe_mode & PIPE_CLIENT_MODE) {

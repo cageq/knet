@@ -23,47 +23,7 @@ namespace knet
 			using TPtr = std::shared_ptr<T>;		 
 			using FactoryPtr = Factory *;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			using SocketPtr = std::shared_ptr<typename T::ConnSock>;
-
-			// TcpListener(FactoryPtr fac, uint32_t num, WorkerPtr lisWorker = std::make_shared<Worker>())
-			// 	: listen_worker(lisWorker)
-			// {
-			// 	m.factory = fac;
-			// 	if (!listen_worker)
-			// 	{
-			// 		elog("can't live without listen worker, fail to start ");
-			// 		return;
-			// 	}
-			// 	listen_worker->start();
-
-			// 	tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
-			// 	for (uint32_t i = 0; i < num; i++)
-			// 	{
-			// 		m.user_workers.push_back(std::make_shared<Worker>());
-			// 	}
-			// }
-
-			// TcpListener(FactoryPtr fac, std::vector<WorkerPtr> workers,
-			// 			WorkerPtr lisWorker = std::make_shared<Worker>())
-			// 	: listen_worker(lisWorker)
-			// {
-
-			// 	m.factory = fac;
-			// 	if (!listen_worker)
-			// 	{
-			// 		elog("can't live without listen worker");
-			// 	}
-			// 	listen_worker->start();
-			// 	dlog("start listener in one worker");
-			// 	tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(lisWorker->context());
-			// 	if (!workers.empty())
-			// 	{
-			// 		for (auto worker : workers)
-			// 		{
-			// 			m.user_workers.push_back(worker);
-			// 		}
-			// 	}
-			// }
+			using SocketPtr = std::shared_ptr<typename T::ConnSock>; 
 
 			TcpListener(
 				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
@@ -79,6 +39,14 @@ namespace knet
 				{
 					elog("can't live without listen worker");
 				}
+
+			 	if (std::is_base_of<Factory, UserEventHandler<T> >::value){
+
+					 auto evtHandler = dynamic_cast<UserEventHandler<T> *>(fac); 
+					 if (evtHandler){
+						 add_event_handler(evtHandler); 
+					 }					 
+				 }
 			}
 
 			TcpListener(WorkerPtr lisWorker)
@@ -95,8 +63,10 @@ namespace knet
 				else
 				{
 					elog("can't live without listen worker");
-				}
+				}			 
+
 			}
+ 
 
 			void add_worker(WorkerPtr worker)
 			{

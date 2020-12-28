@@ -244,7 +244,6 @@ namespace knet
 					conn_timers.erase(timerId);
 				}
 			}
-
 	
 			void release(){
 				handle_event(EVT_RELEASE); 

@@ -198,7 +198,6 @@ public:
 		return true;
 	}
  
-
  
 	bool vsend(const std::vector<asio::const_buffer>& bufs) {
 		uint32_t totalSize = 0;
@@ -344,8 +343,7 @@ private:
 		SocketStatus status = SocketStatus::SOCKET_IDLE;
 		bool is_writing = false;
 	} m; 
- 
-	
+ 	
 	std::thread::id worker_tid;
 	uint32_t read_buffer_pos = 0;
 	uint32_t need_package_length = 0;
