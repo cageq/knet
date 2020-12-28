@@ -176,18 +176,16 @@ namespace knet
 			}
  
 
-			virtual int32_t  handle_data(TPtr conn, const std::string& msg , MessageStatus status) { 
-				return invoke_data_chain(conn, msg , status ); 		
+			virtual bool  handle_data(TPtr conn, const std::string& msg  ) { 
+				return invoke_data_chain(conn, msg  ); 		
 			}
 
-			virtual bool handle_event(TPtr conn, NetEvent evt ) {
-				
-				invoke_event_chain(conn,evt);  
+			virtual bool handle_event(TPtr conn, NetEvent evt ) { 
+				bool ret = invoke_event_chain(conn,evt);  
 				if (evt == EVT_RELEASE){
 					this->release(conn); 				
 				}
-
-				return true; 
+				return ret; 
 			}
 			void add_event_handler(UserEventHandler<T> * handler){
 				if (handler){
@@ -195,27 +193,31 @@ namespace knet
 				}
 			}
 		private: 
-
-			int32_t  invoke_data_chain(TPtr conn, const std::string& msg , MessageStatus status){
-				int32_t ret = msg.length(); 
+			bool  invoke_data_chain(TPtr conn, const std::string& msg  ){
+				bool ret = true; 
 				for(auto handler : m.event_handler_chain){
 					if (handler ){
-						ret = handler->handle_data(conn, msg, status); 
+						ret = handler->handle_data(conn, msg); 
+						if (!ret){
+							break; 
+						}
 					}
 				}
 				return ret; 
 			}
 
-			void invoke_event_chain(TPtr conn, NetEvent evt){
+			bool invoke_event_chain(TPtr conn, NetEvent evt){
+				bool ret = true; 
 				for(auto handler : m.event_handler_chain){
 					if (handler ){
-						bool ret = handler->handle_event(conn, evt); 
+						ret = handler->handle_event(conn, evt); 
 						if (!ret)
 						{
 							break; 
 						}
 					}
 				}
+				return ret; 
 			}
 
 			void release(TPtr conn)

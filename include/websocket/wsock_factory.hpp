@@ -53,7 +53,7 @@ public:
 		return true; 
 	}
 
-	virtual int32_t handle_data(TPtr conn, const std::string& msg, MessageStatus status) {
+	virtual bool handle_data(TPtr conn, const std::string& msg ) {
 		dlog("websocket handle data len is {}  websocket : {}", msg.length(), conn->is_websocket);
 
 		if (conn->is_websocket) {
@@ -131,7 +131,7 @@ public:
 			}
 		}
 
-		return msg.length();
+		return true;
 	}
 
 	// virtual int32_t handle_data(TPtr conn, const char* data, uint32_t len) {

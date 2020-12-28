@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
 	
 	WSockHandler<WSockConnection> wsHandler; 
-	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const  std::string & msg , knet::MessageStatus){
+	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const  std::string & msg  ){
 
 		wlog("on websocket message {}", msg); 
 	}; 

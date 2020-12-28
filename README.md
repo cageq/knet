@@ -94,7 +94,7 @@ class TcpSession : public TcpConnection<TcpSession >
 	
 		}
 
-		uint32_t process_data(const std::string & msg , knet::MessageStatus status)
+		bool process_data(const std::string & msg )
 		{
 			dlog("received data {} ",msg); 
 			this->send(msg.data(),msg.length());   
@@ -123,9 +123,9 @@ class MyFactory: public TcpFactory<TcpSession> {
 			ilog("handle event in connection my factory"); 
 		}
 
-		virtual int32_t handle_data(TPtr conn, char * data, uint32_t len) { 
+		virtual bool handle_data(TPtr conn, char * data, uint32_t len) { 
 			conn->send(data,len); 
-			return len ;
+			return true ;
 		}; 
 
 }; 

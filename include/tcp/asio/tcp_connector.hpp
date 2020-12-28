@@ -165,18 +165,18 @@ namespace knet
 			// }
 
 
-			void destroy(std::shared_ptr<T> conn)
-			{
-				dlog("destroy connection {}", conn->get_cid());
-				asio::post(*conn->get_context(), [this, conn]() {
+			// void destroy(std::shared_ptr<T> conn)
+			// {
+			// 	dlog("destroy connection {}", conn->get_cid());
+			// 	asio::post(*conn->get_context(), [this, conn]() {
 
-					conn->disable_reconnect();
-					if (factory)
-					{
-						factory->destroy(conn);
-					}
-					});
-			}
+			// 		conn->disable_reconnect();
+			// 		if (factory)
+			// 		{
+			// 			factory->destroy(conn);
+			// 		}
+			// 		});
+			// }
 
 			WorkerPtr get_worker(int32_t idx = 0)
 			{
@@ -199,7 +199,7 @@ namespace knet
 				}
 			}
 
-			virtual int32_t handle_data(std::shared_ptr<T>, const std::string& msg , MessageStatus status) {
+			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg ) {
 
 				return msg.length(); 
 			}

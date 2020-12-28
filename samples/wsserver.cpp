@@ -10,10 +10,11 @@ int main(int argc, char** argv)
 	WSockServer<> wsServer; 
 
 	WSockHandler<WSockConnection> wsHandler; 
-	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const std::string &  msg, knet::MessageStatus status){
+	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const std::string &  msg ){
 
 		wlog("on websocket message {}", msg); 
 		conn->send_text("hello client",OpCode::TEXT_FRAME,false); 
+		return true; 
 	}; 
 	wsServer.register_router("/echo", wsHandler); 
 

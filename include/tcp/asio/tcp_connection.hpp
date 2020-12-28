@@ -49,8 +49,8 @@ namespace knet
 			using PackageHandler = std::function<int32_t(const char *  &, uint32_t len  )>;
 			using SelfPackageHandler = int32_t (T::*)(const char *  &, uint32_t len  );
 
-			using DataHandler = std::function<int32_t(const std::string &, MessageStatus)>;
-			using SelfDataHandler = int32_t (T::*)(const std::string &, MessageStatus);
+			using DataHandler = std::function<bool(const std::string & )>;
+			using SelfDataHandler = bool (T::*)(const std::string & );
 
 			using SocketPtr = std::shared_ptr<Sock>; 
 
@@ -120,7 +120,7 @@ namespace knet
 
 			
 			inline void bind_package_handler(PackageHandler handler) { package_handler = handler; }
-			void bind_package_handler(SelfDataHandler handler)
+			void bind_package_handler(SelfPackageHandler handler)
 			{
 				T *child = static_cast<T *>(this);
 				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
@@ -131,7 +131,7 @@ namespace knet
 			void bind_data_handler(SelfDataHandler handler)
 			{
 				T *child = static_cast<T *>(this);
-				data_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
+				data_handler = std::bind(handler, child, std::placeholders::_1);
 			}
 
 			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
@@ -220,9 +220,9 @@ namespace knet
 			}
 
 	
-			virtual int32_t handle_data(const std::string &msg, MessageStatus status)
+			virtual bool handle_data(const std::string &msg )
 			{
-				return msg.length(); 
+				return true; 
 			}
 
 			uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
@@ -276,25 +276,21 @@ namespace knet
 		 	int32_t process_package(const char * data , uint32_t len){
 				 if (package_handler){
 					 return package_handler(data , len); 
-				 }
-
-				if (user_event_handler){
-					return user_event_handler->handle_package(this->shared_from_this(), data, len );
-				}		 
+				 } 			 	 
 				 return handle_package(data, len); 
 			}
 
-			int32_t process_data(const std::string &msg, MessageStatus status){
+			bool process_data(const std::string &msg ){
 				if (data_handler)
 				{
-					return data_handler(msg, status);
+					return data_handler(msg);
 				}
 
 				if (user_event_handler)
 				{
-					user_event_handler->handle_data(this->shared_from_this(), msg, status );
+					user_event_handler->handle_data(this->shared_from_this(), msg );
 				}		 
-		 		return handle_data(msg, status); 				
+		 		return handle_data(msg); 				
 			}
 
 			bool process_event(NetEvent evt){
@@ -328,7 +324,6 @@ namespace knet
 
 			std::string remote_host ;
 			uint16_t remote_port; 
-
 			EventWorkerPtr event_worker = nullptr;
 			UserEventHandler<T>* user_event_handler = nullptr;
 		};

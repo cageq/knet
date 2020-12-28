@@ -9,10 +9,6 @@
 #include <memory>
 #include <string>
 #include <chrono>
- 
- 
-
-#define WITH_PACKAGE_HANDLER 1
 
 namespace knet {
 namespace tcp {
@@ -230,8 +226,7 @@ public:
 		//		dlog("status is {}", static_cast<uint32_t>(m.status ));
 		return tcp_sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 	}
-
-#if WITH_PACKAGE_HANDLER
+ 
 	void process_data(uint32_t nread) {
 		if (!connection) {
 			return;
@@ -255,7 +250,7 @@ public:
 				char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 				char endChar = *pkgEnd;
 				*pkgEnd = 0;
-				this->connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen), MessageStatus::MESSAGE_NONE);
+				this->connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen) );
 				*pkgEnd = endChar;
 				readPos += pkgLen;
 			}
@@ -276,109 +271,7 @@ public:
 			}
 		}
 	}
-
-#else
-
-	/*----------------------------------------------------------------
-	enough     |  consume
-	not enough |  consume
-	not enough |  not consume
-	----------------------------------------------------------------*/
-	void process_data(uint32_t nread) {
-		if (!connection) {
-			return;
-		}
-		this->connection->process_event(EVT_RECV);
-
-		read_buffer_pos += nread;
-		dlog("read data {} total is {}", nread, read_buffer_pos);
-		uint32_t readPos = 0;
-		int32_t pkgLen = 0;
-
-		do {
-
-			uint32_t readLen = read_buffer_pos - readPos; 
-
-			if (need_package_length > 0) {
-
-				if (need_package_length <= readLen) {
-					pkgLen = this->connection->process_data(std::string((char*)m.read_buffer + readPos,
-						need_package_length), MessageStatus::MESSAGE_END);
-					if (pkgLen < 0) {
-						connection->close(); 
-						return ; 
-					}
-					//dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
-					readPos += need_package_length;
-					// if (readPos >= read_buffer_pos) {
-					// 	read_buffer_pos = 0;
-					// 	return;
-					// }
-
-					need_package_length = 0;
-
-				} else {
-
-					pkgLen = this->connection->process_data(
-						std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_CHUNK);
-					if (pkgLen < 0) {
-						connection->close(); 
-						return ; 
-					}
-					//dlog(" need length {} package len {} , data len is {} chunk", need_package_length, pkgLen, readLen);
-					read_buffer_pos = 0;
-					need_package_length -= readLen;
-					return;
-				}
-
-			} else {
-				pkgLen = this->connection->process_data(
-					std::string((char*)m.read_buffer + readPos, readLen), MessageStatus::MESSAGE_NONE);
-				//dlog(" need length {} package len {} , data len is {}", need_package_length, pkgLen, readLen);
-				if (pkgLen > kMaxPackageLimit) {
-					elog("max package limit error {}", pkgLen);
-					this->close();
-					return;
-				}
-
-				if (pkgLen <= 0) { // no enough data 
-
-					if (read_buffer_pos > readPos && readPos > 0) {
-						memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-					}
-					read_buffer_pos -= readPos;
-					return;
-				} else {
-
-					if ( pkgLen > (int32_t)readLen) { 
-						// exceed buffer size, but user has consume the buffer data
-						need_package_length = pkgLen - readLen;
-						//read_buffer_pos -= readLen;
-						read_buffer_pos = 0; 
-						return;
-					} else {
-						 // buffer contain one or more packets
-						//dlog("process just one message {}", pkgLen);
-						readPos += pkgLen;
-					}
-				}
-			}
-			dlog("current read pos is {}", readPos);
-
-		} while (read_buffer_pos > readPos);
-
-		if (read_buffer_pos > readPos && readPos > 0) {
-			memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-			read_buffer_pos -= readPos;
-		} else {
-			read_buffer_pos = 0;
-		}
-
-		dlog("last read buffer pos {}", read_buffer_pos);
-	}
-
-#endif
-
+ 
 	void close() { do_close(true); }
 	void do_close(bool force = false) {
 
@@ -437,9 +330,7 @@ public:
 	TPtr connection;
 	inline bool is_inloop() { return worker_tid == std::this_thread::get_id(); }
 
-	inline asio::io_context& context() { return io_context; }
-
-	static uint32_t max_package_size ; 
+	inline asio::io_context& context() { return io_context; } 
 
 private:
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };

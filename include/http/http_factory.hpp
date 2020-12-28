@@ -46,7 +46,7 @@ public:
 		return true; 
 	}
 
-	virtual int32_t handle_data(TPtr conn, const std::string & msg, MessageStatus status) {
+	virtual bool handle_data(TPtr conn, const std::string & msg ) {
 
 		auto req = std::make_shared<HttpRequest>();
 		auto msgLen = req->parse_request(msg.data(), msg.length());
@@ -93,7 +93,7 @@ public:
 			 }
 		}
 
-		return msgLen;
+		return true;
 	}
 
 	// virtual int32_t handle_data(TPtr conn, const char* data, uint32_t len) {

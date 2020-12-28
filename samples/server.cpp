@@ -39,9 +39,9 @@ class TcpSession : public TcpConnection<TcpSession> {
 		}
 
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
-		uint32_t on_recv(const std::string_view & msg , MessageStatus status) {
+		uint32_t on_recv(const std::string_view & msg  ) {
 			//		dlog(" connection id  on thread {}", m_id, std::this_thread::get_id());
-			if (status == MessageStatus::MESSAGE_NONE)
+			if (status == 1)
 			{
 				if (msg.length() < 4) 
 				{

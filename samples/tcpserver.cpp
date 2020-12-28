@@ -23,10 +23,10 @@ class TcpSession : public TcpConnection<TcpSession>{
 		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
-		virtual int32_t handle_data(const std::string &msg, knet::MessageStatus status) {
+		virtual bool handle_data(const std::string &msg ) {
 			//		dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
 			this->send(msg);
-			return msg.length(); 		
+			return true; 		
 		}
 };
 

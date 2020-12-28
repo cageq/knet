@@ -60,7 +60,7 @@ class MyFactory: public TcpFactory<TcpSession > {
 
 		virtual void handle_event(TPtr conn, NetEvent evt) ; 
 
-		virtual int32_t handle_data(TPtr conn, const char * data, uint32_t len) ;  
+		virtual bool handle_data(TPtr conn, const char * data, uint32_t len) ;  
 
 
 }; 

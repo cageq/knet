@@ -56,17 +56,11 @@ struct WsFrame {
 struct WSockHandler {
 
 	std::function<void(std::shared_ptr<WsConn>)> open = nullptr;
-	std::function<void(std::shared_ptr<WsConn>, const std::string & , MessageStatus)> message = nullptr;
+	std::function<void(std::shared_ptr<WsConn>, const std::string & )> message = nullptr;
 };
 enum class WSockStatus { WSOCK_INIT, WSOCK_CONNECTING, WSOCK_OPEN, WSOCK_CLOSING, WSOCK_CLOSED };
 
-// enum MessageStatus {
-// 	MESSAGE_NONE,
-// 	MESSAGE_FULL,
-// 	MESSAGE_BEGIN,
-// 	MESSAGE_CONT, // continue
-// 	MESSAGE_END,
-// };
+ 
 
 #ifndef ntohll
 #define htonll(x) \
@@ -75,7 +69,7 @@ enum class WSockStatus { WSOCK_INIT, WSOCK_CONNECTING, WSOCK_OPEN, WSOCK_CLOSING
 	((1 == ntohl(1)) ? (x) : ((uint64_t)ntohl((x)&0xFFFFFFFF) << 32) | ntohl((x) >> 32))
 #endif
 
-using WSMessageHandler = std::function<void(std::string_view , MessageStatus )>;
+using WSMessageHandler = std::function<void(std::string_view  )>;
 struct WSMessageReader {
 
 	MinFrameHead head = {0};
@@ -87,15 +81,16 @@ struct WSMessageReader {
 	uint64_t left_length = 0;
 
 	uint64_t payload_length = 0;
-	MessageStatus status = MessageStatus::MESSAGE_NONE;
+ 
 
 	uint32_t read( const char* pData, uint32_t dataLen, WSMessageHandler handler) {
+		int status = 0; 
 		dlog("reading websocket message {} status {}", dataLen, status);
 		if (dataLen < sizeof(uint16_t)) {
 			return 0;
 		}
 
-		if (status == MessageStatus::MESSAGE_NONE) {
+		if (status == 0) {
 
 			uint8_t* vals = (uint8_t*)pData;
 			dout << "fin is " << ((vals[0] & 0x80) == 0x80)  ;
@@ -128,15 +123,15 @@ struct WSMessageReader {
 						for(uint32_t i = 0; i < payload_length; i++) {	
 							payload[i] = pData[payloadPos+ i] ^ maskKey[i%4];  
 						}
-						handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+						handler(std::string_view(payload.data(), payload_length) );
 					} else {
 
-						handler(std::string_view((const char*)(pData + headSize + maskSize), payload_length),  MessageStatus::MESSAGE_NONE);
+						handler(std::string_view((const char*)(pData + headSize + maskSize), payload_length) );
 					}
 			 
 					
 				}
-				status = MessageStatus::MESSAGE_NONE;
+		 
 				return payload_length + headSize + maskSize;
 
 			} else if (payloadMark == 126) {
@@ -167,13 +162,13 @@ struct WSMessageReader {
 								payload[i]= pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
 
-							handler(std::string_view(payload.data(), ploadLen),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(payload.data(), ploadLen) );
 						} else {
-							handler(std::string_view(pData + headSize+ maskSize, ploadLen),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(pData + headSize+ maskSize, ploadLen) );
 						}
 						
 					}
-					this->status = MessageStatus::MESSAGE_CHUNK;
+					//this->status = MessageStatus::MESSAGE_CHUNK;
 					return dataLen;
 				} else {
 					if (handler) {
@@ -187,15 +182,15 @@ struct WSMessageReader {
 							for(uint32_t i = 0; i < payload_length; i++) {	
 								payload[i] = pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
-							handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(payload.data(), payload_length) );
 						} else {
-							handler(std::string_view(pData + headSize + maskSize, payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(pData + headSize + maskSize, payload_length) );
 						}
 
 
 						
 					}
-					status = MessageStatus::MESSAGE_NONE;
+					//status = MessageStatus::MESSAGE_NONE;
 
 					return payload_length + headSize + maskSize;
 				}
@@ -215,9 +210,9 @@ struct WSMessageReader {
 					left_length = payload_length + headSize + maskSize - buffer_size;
 
 					if (handler) {
-						handler(std::string_view(pData + headSize, buffer_size - headSize),  MessageStatus::MESSAGE_NONE);
+						handler(std::string_view(pData + headSize, buffer_size - headSize) );
 					}
-					this->status = MessageStatus::MESSAGE_CHUNK;
+				//	this->status = MessageStatus::MESSAGE_CHUNK;
 					return dataLen;
 				} else {
 					if (handler) {
@@ -231,32 +226,32 @@ struct WSMessageReader {
 							for(uint32_t i = 0; i < payload_length; i++) {	
 								payload[i]	=  pData[payloadPos+ i] ^ maskKey[i%4];  
 							}
-							handler(std::string_view(payload.data(), payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(payload.data(), payload_length) );
 						} 
 						else {
-							handler(std::string_view(pData + headSize, payload_length),  MessageStatus::MESSAGE_NONE);
+							handler(std::string_view(pData + headSize, payload_length) );
 						}
 
 						
 					}
-					status = MessageStatus::MESSAGE_NONE;
+				//	status = MessageStatus::MESSAGE_NONE;
 					return payload_length + headSize + maskSize;
 				}
 				// std::cout << "length is " << payloadLen << std::endl;
 			}
-		} else if (status == MessageStatus::MESSAGE_CHUNK) {
+		} else if (status == 1) {
 
 			if (left_length < dataLen) {				
-				handler(std::string_view(pData, left_length),   MessageStatus::MESSAGE_END);
+				handler(std::string_view(pData, left_length) );
 				auto leftLen = left_length;
 				left_length = 0;
-				status = MessageStatus::MESSAGE_NONE;
+			//	status = MessageStatus::MESSAGE_NONE;
 				payload_length = 0;
 				return leftLen;
 			} else {
-				handler(std::string_view(pData, dataLen), MessageStatus::MESSAGE_CHUNK);
+				handler(std::string_view(pData, dataLen) );
 				left_length -= dataLen;
-				status = MessageStatus::MESSAGE_CHUNK;
+			//	status = MessageStatus::MESSAGE_CHUNK;
 				return dataLen;
 			}
 		}

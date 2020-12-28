@@ -14,7 +14,7 @@ namespace knet {
 			PIPE_HEARTBEAT_RESPONSE
 		};
 
-		class PipeSession {
+		class PipeSession : public std::enable_shared_from_this<PipeSession> {
 		public:
 			PipeSession(const std::string& pid = "", const std::string& h = "", uint16_t p = 0)
 			{
@@ -79,10 +79,17 @@ namespace knet {
 			}
 
 			void bind(PipeConnectionPtr conn) {
-				connection = conn;
+				this->connection = conn;
 				conn->pipeid = m.pipeid;
+				conn->session = this->shared_from_this(); 
 			}
-			void unbind() { connection.reset(); }
+			void unbind() { 
+				connection.reset(); 
+				if (connection->session)
+				{
+					connection->session.reset(); 
+				}			
+			}
 
 			inline void set_host(const std::string& h) {
 				m.host = h;
@@ -93,6 +100,11 @@ namespace knet {
 			}
 			inline void set_pipeid(const std::string& pid) {
 				m.pipeid = pid;
+			}
+			inline void update_pipeid(const std::string &pid){
+				if (m.pipeid.empty()){
+					m.pipeid = pid; 
+				}
 			}
 
 			inline const  std::string& get_pipeid() const {

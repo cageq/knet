@@ -54,7 +54,7 @@ public:
 		});
 		// bind_data_handler(&WSockConnection::handle_data);
 
-		// bind_message_handler([this](const char* pMsg, uint32_t len, MessageStatus status) {
+		// bind_message_handler([this](const char* pMsg, uint32_t len ) {
 		// 	// dlog("handle message {}", std::string(pMsg, len));
 		// 	dlog("handle message {}", pMsg);
 		// 	dlog("message length {}", len);
@@ -212,7 +212,7 @@ public:
 
 	uint32_t read_websocket( const std::string & msg ) {
 
-		return wsock_reader.read(msg.data(),msg.length(), std::bind(&WSockConnection::read_message, this, std::placeholders::_1, std::placeholders::_2));
+		return wsock_reader.read(msg.data(),msg.length(), std::bind(&WSockConnection::read_message, this, std::placeholders::_1 ));
 	}
 
 	bool upgrade_websocket(HttpRequestPtr req) {
@@ -269,12 +269,12 @@ public:
 	}
 
 
-	void read_message(const std::string_view& msg , MessageStatus status)
+	void read_message(const std::string_view& msg  )
 	{
 
 		if (wsock_handler.message)
 		{
-			wsock_handler.message(this->shared_from_this() , std::string(msg.data(), msg.size()),status ); 
+			wsock_handler.message(this->shared_from_this() , std::string(msg.data(), msg.size()) ); 
 		}
 	}
 	
@@ -285,7 +285,7 @@ public:
 	WSockHandler<WSockConnection>  wsock_handler; 
 
 private:
-//	MessageStatus msg_status;
+ 
 	WSockStatus m_status = WSockStatus::WSOCK_INIT;
 
 //	WSMessageHandler message_handler;

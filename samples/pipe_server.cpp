@@ -37,7 +37,7 @@ int main(int argc, char * argv[]){
 
 	while(1){
 		usleep(500000); 
-		const char * pMsg = "hello world"; 
+		//const char * pMsg = "hello world"; 
 		//mySession->transfer(pMsg, strlen(pMsg)); 
 		spipe.broadcast("message from serever"); 
 	}; 

@@ -7,65 +7,54 @@ namespace knet {
 	namespace pipe {
 
 		enum PipeMode { PIPE_SERVER_MODE = 1, PIPE_CLIENT_MODE = 2, PIPE_DUET_MODE = 3 };
-		class PipeFactory : public TcpFactory<PipeConnection>  , public UserEventHandler<PipeConnection>{
+		class PipeFactory : public TcpFactory<PipeConnection>, public UserEventHandler<PipeConnection> {
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
 
 			virtual bool handle_event(TPtr conn, NetEvent evt) {
+				auto session = conn->get_session();
 
-				ilog("factory event {} {} {}",evt,  event_string(evt), std::this_thread::get_id());
+				ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
 
 				switch (evt) {
 				case EVT_CONNECT:
 				{
-
 					if (!conn->is_passive()) {
-						send_shakehand(conn, conn->pipeid);
+						send_shakehand(conn, conn->get_pipeid());
 					}
 				}
-				break; 
+				break;
 				case EVT_DISCONNECT:
 				{
-					if (conn->session) {
-						conn->session->handle_event(NetEvent::EVT_DISCONNECT);
-						conn->session->unbind();
+					if (session) {
+						session->handle_event(NetEvent::EVT_DISCONNECT);
+						session->unbind();
 					}
 
 					{
 
-						std::lock_guard<std::mutex> guard(unbind_mutex); 	
+						std::lock_guard<std::mutex> guard(unbind_mutex);
 						auto itr = unbind_pipes.find(conn->get_cid());
 						if (itr != unbind_pipes.end()) {
-							dlog("erase pipe {} ", conn->get_cid()); 
+							dlog("erase pipe {} ", conn->get_cid());
 							unbind_pipes.erase(itr);
 						}
 
 					}
-				
+
 				}
 
 				break;
 				default:;
 				}
 
-				if (conn->session) {
+				if (session) {
 					dlog("handle session event {}", evt);
-					conn->session->handle_event(evt);
+					session->handle_event(evt);
 				}
-				return true; 
+				return true;
 			}
-			// virtual int32_t handle_package(TPtr conn, const char* data, uint32_t len) {
-
-			// 	PipeMessageS* msg = (PipeMessageS*)data;
-			// 	if (msg->head.length + sizeof(PipeMsgHead) > len) {
-			// 		elog("received data {}", data); 
-			// 		elog("data {} not enough on package {} ", len , msg->head.length);
-			// 		return 0;
-			// 	}
-
-			// 	return sizeof(PipeMsgHead) + msg->head.length;
-			// }
 
 			std::string generate_id() {
 				static 	uint64_t pid_index = 0;
@@ -76,18 +65,17 @@ namespace knet {
 				if (msg->head.length > 0) {
 					std::string pipeId = std::string(msg->data, msg->head.length);
 					dlog("get handshake from client,  pipeid is {}", pipeId);
-					auto itr = pipes.find(pipeId);
-					if (itr != pipes.end()) {
+					auto itr = pipe_map.find(pipeId);
+					if (itr != pipe_map.end()) {
 						auto session = itr->second;
 						session->bind(conn);
-						conn->session = session;
+ 
 						dlog("bind session success");
 						PipeMessage<64> shakeMsg;
 						shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
 						conn->send(shakeMsg.begin(), shakeMsg.length());
 						session->handle_event(NetEvent::EVT_CONNECT);
-					}
-					else {
+					}else {
 						wlog("pipe id not found {}", pipeId);
 						conn->close();
 					}
@@ -98,17 +86,15 @@ namespace knet {
 					auto itr = unbind_pipes.find(conn->get_cid());
 					PipeSessionPtr session;
 					if (itr == unbind_pipes.end()) {
-						dlog("create and bind session success {}", pipeId );
+						dlog("create and bind session success {}", pipeId);
 						session = std::make_shared<PipeSession>();
 						session->bind(conn);
-						conn->session = session;
+			 
 						unbind_pipes[conn->get_cid()] = session;
 					}
 					else {
-						session = itr->second;
-						if (session->get_pipeid().empty()) {
-							session->set_pipeid(pipeId);
-						}
+						session = itr->second;				 
+						session->update_pipeid(pipeId);				 
 					}
 
 					if (session) {
@@ -127,40 +113,33 @@ namespace knet {
 				if (msg->head.length > 0) {
 					std::string pipeId = std::string(msg->data, msg->head.length);
 					dlog("get handshake from server,  pipeid is {}", pipeId);
-					auto itr = pipes.find(pipeId);
-					if (itr != pipes.end()) {
-						  session = itr->second;
+					auto itr = pipe_map.find(pipeId);
+					if (itr != pipe_map.end()) {
+						session = itr->second;
 						session->bind(conn);
-						if (session->get_pipeid().empty()) {
-							//update local session pipeid 
-							session->set_pipeid(pipeId);
-						}
-						conn->session = session;
+						session->update_pipeid(pipeId);	
+		 
 						dlog("bind session success");
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 					else {
 						dlog("try to find pipe by cid {} size is {}", conn->get_cid(), unbind_pipes.size());
-
 						session = find_unbind_pipe(conn->get_cid());
- 
+
 						if (session) {
-						 
+
 							session->bind(conn);
-							if (session->get_pipeid().empty()) {
-								//update unbind session pipeid 
-								session->set_pipeid(pipeId);
-							}
-							conn->session = session;
+							session->update_pipeid(pipeId);	
+			 
 							dlog("bind session success");
 							session->handle_event(NetEvent::EVT_CONNECT);
-							
-							{ 
-								std::lock_guard<std::mutex> guard(unbind_mutex);  
-								pipes[pipeId] = session;
-								unbind_pipes.erase(conn->get_cid()); 
+
+							{
+								std::lock_guard<std::mutex> guard(unbind_mutex);
+								pipe_map[pipeId] = session;
+								unbind_pipes.erase(conn->get_cid());
 							}
-						
+
 						}
 						else {
 							wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
@@ -175,18 +154,17 @@ namespace knet {
 			}
 
 
-			PipeSessionPtr find_unbind_pipe(uint64_t cid ){
-				std::lock_guard<std::mutex> guard(unbind_mutex);  
-
-				auto itr = unbind_pipes.find(cid );
-				if (itr != unbind_pipes.end()){
-					return itr->second; 
-				} 
-				return nullptr;  
+			PipeSessionPtr find_unbind_pipe(uint64_t cid) {
+				std::lock_guard<std::mutex> guard(unbind_mutex);
+				auto itr = unbind_pipes.find(cid);
+				if (itr != unbind_pipes.end()) {
+					return itr->second;
+				}
+				return nullptr;
 			}
 
 
-			virtual int32_t handle_data(TPtr conn, const std::string& buf, MessageStatus status) {
+			virtual bool handle_data(TPtr conn, const std::string& buf) {
 
 				PipeMessageS* msg = (PipeMessageS*)buf.data();
 				if (msg->head.length + sizeof(PipeMsgHead) > buf.length()) {
@@ -208,28 +186,27 @@ namespace knet {
 				else {
 					wlog("message type {}", msg->head.type);
 				}
-
-				if (conn->session) {
-					conn->session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length));
-				}
-				else {
+				auto session = conn->get_session();
+				if (session) {
+					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length));
+				}else {
 					elog("connection has no session");
 				}
-				return sizeof(PipeMsgHead) + msg->head.length;
+				return true;
 			}
 
 			void send_shakehand(TPtr conn, const std::string& pipeId) {
 				dlog("shakehande request pipe id {}", pipeId);
-				PipeMessage<64> shakeMsg ;
+				PipeMessage<64> shakeMsg;
 				shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
 				// if (!pipeId.empty()) {
 				conn->send(shakeMsg.begin(), shakeMsg.length());
-		 
+
 				// }
 			}
 
 			void broadcast(const char* pData, uint32_t len) {
-				for (auto& item : pipes) {
+				for (auto& item : pipe_map) {
 					if (item.second) {
 						item.second->transfer(pData, len);
 					}
@@ -247,22 +224,21 @@ namespace knet {
 					{
 						if (cid != 0) {
 							dlog("add unbind pipe {}", cid);
-							std::lock_guard<std::mutex> guard(unbind_mutex); 				
+							std::lock_guard<std::mutex> guard(unbind_mutex);
 							unbind_pipes[cid] = pipe;
 						}
 
-					}					
+					}
 					else {
 						dlog("add normal pipe {}", pipe->get_pipeid());
-						pipes[pipe->get_pipeid()] = pipe;
+						pipe_map[pipe->get_pipeid()] = pipe;
 					}
-
 				}
 			}
 
 			PipeSessionPtr find(const std::string& pid) {
-				auto itr = this->pipes.find(pid);
-				if (itr != this->pipes.end()) {
+				auto itr = this->pipe_map.find(pid);
+				if (itr != this->pipe_map.end()) {
 					return itr->second;
 				}
 				return nullptr;
@@ -270,7 +246,7 @@ namespace knet {
 
 			void start_clients(std::function<void(PipeSessionPtr)> handler) {
 
-				for (auto& item : pipes) {
+				for (auto& item : pipe_map) {
 					auto& pipe = item.second;
 					if (pipe && pipe->get_port() != 0 && !pipe->get_host().empty()) {
 						dlog("start connect pipe to {}:{}", pipe->get_host(), pipe->get_port());
@@ -293,11 +269,10 @@ namespace knet {
 
 
 		private:
-			std::unordered_map<std::string, PipeSessionPtr> pipes;
-
-			std::mutex  unbind_mutex; 
-			std::unordered_map<uint64_t, PipeSessionPtr> unbind_pipes;
 			PipeMode pipe_mode;
+			std::unordered_map<std::string, PipeSessionPtr> pipe_map;
+			std::mutex  unbind_mutex;
+			std::unordered_map<uint64_t, PipeSessionPtr> unbind_pipes;	
 		};
 
 		using PipeFactoryPtr = std::shared_ptr<PipeFactory>;

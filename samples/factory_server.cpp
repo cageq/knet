@@ -29,7 +29,7 @@ class MyFactory: public TcpFactory<TcpSession> {
 			ilog("handle event in connection my factory"); 
 		}
 
-		virtual uint32_t handle_data(TPtr conn, const std::string & msg, knet::MessageStatus status) { 
+		virtual bool handle_data(TPtr conn, const std::string & msg ) { 
 			conn->send(msg); 
 			return msg.length() ;
 		}; 

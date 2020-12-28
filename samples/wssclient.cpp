@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 
 	WSockHandler<WSockSslConnection> wsHandler; 
 
-	wsHandler.message = [](std::shared_ptr<WSockSslConnection> conn, const  std::string & msg , MessageStatus){
+	wsHandler.message = [](std::shared_ptr<WSockSslConnection> conn, const  std::string & msg  ){
 
 		wlog("on websocket message {}", msg); 
 	}; 

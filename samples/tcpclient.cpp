@@ -21,12 +21,12 @@ class TcpSession : public TcpConnection<TcpSession >
 	
 		}
 
-		int32_t process_data(const std::string & msg , knet::MessageStatus status)
+		virtual bool process_data(const std::string & msg )
 		{
 			//    trace;
 			dlog("received data {} ",msg); 
 			this->send(msg.data(),msg.length());   
-			return msg.length(); 
+			return true; 
 		}
 }; 
 
