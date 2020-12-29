@@ -23,8 +23,6 @@ public:
 	using TPtr = std::shared_ptr<T>;
 
 	WSockFactory() { dlog("init http factory"); }
- 
-
 	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
 		ilog("handle event in http factory ", evt);
