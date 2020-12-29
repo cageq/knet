@@ -85,10 +85,10 @@ namespace knet {
 			}
 			void unbind() { 
 				connection.reset(); 
-				if (connection->session)
-				{
-					connection->session.reset(); 
-				}			
+				// if (connection->session)
+				// {
+				// 	connection->session.reset(); 
+				// }			
 			}
 
 			inline void set_host(const std::string& h) {

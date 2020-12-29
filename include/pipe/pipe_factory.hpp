@@ -44,7 +44,6 @@ namespace knet {
 					}
 
 				}
-
 				break;
 				default:;
 				}
@@ -57,13 +56,13 @@ namespace knet {
 			}
 			virtual bool handle_data(TPtr conn, const std::string& buf) {
 
-				PipeMessageS* msg = (PipeMessageS*)buf.data();
-				if (msg->head.length + sizeof(PipeMsgHead) > buf.length()) {
-					elog("data not enough, need length {}", msg->head.length + sizeof(PipeMsgHead));
+				PipeMsgHead* msg = (PipeMsgHead*)buf.data();
+				if (msg->length + sizeof(PipeMsgHead) > buf.length()) {
+					elog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
 
-				if (msg->head.type == PIPE_MSG_SHAKE_HAND) {
+				if (msg->type == PIPE_MSG_SHAKE_HAND) {
 					dlog("handle pipe shake hande message ");
 					if (conn->is_passive()) { //server side  
 						process_server_handshake(conn, msg);
@@ -72,14 +71,14 @@ namespace knet {
 						process_client_handshake(conn, msg);
 					}
 
-					return sizeof(PipeMsgHead) + msg->head.length;
+					return sizeof(PipeMsgHead) + msg->length;
 				}
 				else {
-					wlog("message type {}", msg->head.type);
+					wlog("message type {}", msg->type );
 				}
 				auto session = conn->get_session();
 				if (session) {
-					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->head.length));
+					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->length ));
 				}else {
 					elog("connection has no session");
 				}
@@ -91,9 +90,9 @@ namespace knet {
 				return  fmt::format("pid{}", pid_index++);
 			}
 
-			void process_server_handshake(TPtr conn, PipeMessageS* msg) {
-				if (msg->head.length > 0) {
-					std::string pipeId = std::string(msg->data, msg->head.length);
+			void process_server_handshake(TPtr conn, PipeMsgHead* msg) {
+				if (msg->length > 0) {
+					std::string pipeId = std::string((const char * ) msg + sizeof(PipeMsgHead) , msg->length );
 					dlog("get handshake from client,  pipeid is {}", pipeId);
 					auto itr = pipe_map.find(pipeId);
 					if (itr != pipe_map.end()) {
@@ -101,8 +100,8 @@ namespace knet {
 						session->bind(conn);
  
 						dlog("bind session success");
-						PipeMessage<64> shakeMsg;
-						shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
+						PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND);
+						shakeMsg.append(pipeId);
 						conn->send(shakeMsg.begin(), shakeMsg.length());
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}else {
@@ -128,8 +127,8 @@ namespace knet {
 					}
 
 					if (session) {
-						PipeMessage<64> shakeMsg;
-						shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
+						PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND);
+						shakeMsg.append(pipeId);
 						conn->send(shakeMsg.begin(), shakeMsg.length());
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
@@ -137,11 +136,11 @@ namespace knet {
 			}
 
 
-			void process_client_handshake(TPtr conn, PipeMessageS* msg) {
+			void process_client_handshake(TPtr conn, PipeMsgHead* msg) {
 
 				PipeSessionPtr session;
-				if (msg->head.length > 0) {
-					std::string pipeId = std::string(msg->data, msg->head.length);
+				if (msg->length > 0) {
+					std::string pipeId = std::string( (const char *) msg + sizeof(PipeMsgHead) , msg->length);
 					dlog("get handshake from server,  pipeid is {}", pipeId);
 					auto itr = pipe_map.find(pipeId);
 					if (itr != pipe_map.end()) {
@@ -192,17 +191,15 @@ namespace knet {
 				}
 				return nullptr;
 			}
-
-
-			
+ 
 
 			void send_shakehand(TPtr conn, const std::string& pipeId) {
-				dlog("shakehande request pipe id {}", pipeId);
-				PipeMessage<64> shakeMsg;
-				shakeMsg.fill(PIPE_MSG_SHAKE_HAND, pipeId);
+				
+				PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND)  ;
+				shakeMsg.append(pipeId);
 				// if (!pipeId.empty()) {
+				dlog("shakehande request pipe id {} , msg length {}", pipeId , shakeMsg.length());
 				conn->send(shakeMsg.begin(), shakeMsg.length());
-
 				// }
 			}
 

@@ -55,7 +55,6 @@ public:
 				if (!ec) {
 
 					if (self->connection) {
-						ilog("on connection connected");
 						self->connection->process_event(EVT_CONNECT);
 					} else {
 						wlog("no connection");
@@ -97,15 +96,16 @@ public:
 		}
 	}
 
-	int send_inloop(const char* pData, uint32_t dataLen) {
+	int32_t send_inloop(const char* pData, uint32_t dataLen) {
+		// std::string msg (pData, dataLen); 
 
-		asio::async_write(
-			tcp_sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
+		asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
 				if (!ec) {
 					if (length < dataLen) {
 						send_inloop(pData + length, dataLen - length);
 					}
 				} else {
+					dlog("send in loop error : {} , {}", ec ,ec.message()  ); 
 					this->do_close();
 				}
 			});
@@ -113,7 +113,7 @@ public:
 	}
   
 
-	int send(const char* pData, uint32_t dataLen) {
+	int32_t send(const char* pData, uint32_t dataLen) {
 
 		if (is_inloop()) {
 			return send_inloop(pData, dataLen);
@@ -121,7 +121,7 @@ public:
 		return msend(std::string(pData, dataLen));
 	}
 
-	int send(const std::string& msg) {
+	int32_t send(const std::string& msg) {
 
 		if (is_inloop()) {
 			return send_inloop(msg.data(), msg.length());
@@ -131,7 +131,7 @@ public:
 	}
 
 	template <class P, class... Args>
-	int msend(const P& first, const Args&... rest) {
+	int32_t msend(const P& first, const Args&... rest) {
 		if (tcp_sock.is_open()) {
 			if (!first.empty()) {
 				m.mutex.lock();
@@ -208,11 +208,11 @@ public:
 			tcp_sock, bufs, [this, self, totalSize](std::error_code ec, std::size_t length) {
 				if (!ec && (tcp_sock.is_open())) {
 					if (length < totalSize) {
-						wlog("send data not finished,  total {}, sent {} ", totalSize, length);
+						wlog("send data result , total {}, sent {} ", totalSize, length);
 						// self->batch_async_write();
-					} else {
-					}
+					}  
 				} else {
+					dlog("vsend out error"); 
 					self->do_close();
 				}
 			});
@@ -226,7 +226,8 @@ public:
 	}
  
 	void process_data(uint32_t nread) {
-		if (!connection) {
+		if (!connection || nread == 0 ) {
+
 			return;
 		}
 

@@ -15,9 +15,10 @@ namespace knet
 {
 	namespace tcp
 	{
+ 
 		using asio::ip::tcp;
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpListener final: public UserEventHandler<T>    
+		class TcpListener final : public UserEventHandler<T>    
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;		 
@@ -40,14 +41,39 @@ namespace knet
 					elog("can't live without listen worker");
 				}
 
-			 	if (std::is_base_of<Factory, UserEventHandler<T> >::value){
-
-					 auto evtHandler = dynamic_cast<UserEventHandler<T> *>(fac); 
-					 if (evtHandler){
-						 add_event_handler(evtHandler); 
-					 }					 
-				 }
+			//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac); 
+			add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
+ 
 			}
+			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){
+				
+					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+					if (evtHandler){
+						add_event_handler(evtHandler); 
+					}					
+			}
+
+			inline void add_factory_event_handler(std::false_type , FactoryPtr fac){
+				
+			}
+
+				// 		template<bool flag>
+			// using allow_if = typename std::enable_if<flag>::type; 
+			// template<bool S = true>
+			// 	allow_if<S> factory_event_helper(FactoryPtr fac){
+			// 		elog("add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
+			// 		auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+			// 		if (evtHandler){
+			// 			add_event_handler(evtHandler); 
+			// 		}					
+			// 	}
+
+			// template<bool S = true>
+			// allow_if<!S> factory_event_helper(FactoryPtr fac){
+			// 	elog("not add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory  >::value ); 
+				 
+			// }
+	
 
 			TcpListener(WorkerPtr lisWorker)
 				: listen_worker(lisWorker)

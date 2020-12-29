@@ -8,10 +8,15 @@
 #include "tcp_connection.hpp"
 #include "tcp_factory.hpp"
 #include "event_worker.hpp"
+#include  <type_traits>
+
 namespace knet
 {
 	namespace tcp
-	{
+	{ 
+
+
+
 
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
 		class TcpConnector : public UserEventHandler<T>
@@ -36,7 +41,44 @@ namespace knet
 					// user_workers.emplace_back(worker);
 					// worker->start();
 				}
+				//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory  >::value>( fac); 		  
+
+				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
 			}
+
+
+
+			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){
+				
+					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+					if (evtHandler){
+						add_event_handler(evtHandler); 
+					}					
+			}
+
+			inline void add_factory_event_handler(std::false_type , FactoryPtr fac){
+				
+			}
+
+
+		// template<bool flag>
+		// using allow_if = typename std::enable_if<flag>::type;
+		// 	template<bool S = true>
+		// 		allow_if<S> factory_event_helper(FactoryPtr fac){
+		// 			elog("add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
+		// 			auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+		// 			if (evtHandler){
+		// 				add_event_handler(evtHandler); 
+		// 			}					
+		// 		}
+
+		// 	template<bool S = true>
+		// 	allow_if<!S> factory_event_helper(FactoryPtr fac){
+		// 		elog("not add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
+				 
+		// 	}
+	
+
 			void add_worker(WorkerPtr worker)
 			{
 				if (worker)
@@ -164,19 +206,7 @@ namespace knet
 			// 	return conn;
 			// }
 
-
-			// void destroy(std::shared_ptr<T> conn)
-			// {
-			// 	dlog("destroy connection {}", conn->get_cid());
-			// 	asio::post(*conn->get_context(), [this, conn]() {
-
-			// 		conn->disable_reconnect();
-			// 		if (factory)
-			// 		{
-			// 			factory->destroy(conn);
-			// 		}
-			// 		});
-			// }
+ 
 
 			WorkerPtr get_worker(int32_t idx = 0)
 			{
@@ -199,14 +229,16 @@ namespace knet
 				}
 			}
 
-			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg ) {
+		private:
+			virtual bool handle_data(std::shared_ptr<T> conn, const std::string& msg ) {
 
-				return msg.length(); 
+					return invoke_data_chain(conn, msg  ); 		
 			}
 			virtual bool handle_event(std::shared_ptr<T> conn , NetEvent evt ) {
-				switch (evt) {
-				case EVT_RELEASE:
-				{
+
+				bool ret = invoke_event_chain(conn,evt);  
+
+					if (evt == EVT_RELEASE){
 
 					asio::post(*conn->get_context(), [this, conn]() {
 
@@ -216,23 +248,56 @@ namespace knet
 							factory->release(conn);
 						}
 						});
-
-				}
-				break;
-				default:
-
-					;
-
-				}
-				return true; 
+					}
+ 
+				return ret; 
 			}
 
 
-		private:
+	 
+			void add_event_handler(UserEventHandler<T> * handler){
+				if (handler){
+					m.event_handler_chain.push_back(handler); 
+				}
+			}
+
+			bool  invoke_data_chain(TPtr conn, const std::string& msg  ){
+				bool ret = true; 
+				for(auto handler : m.event_handler_chain){
+					if (handler ){
+						ret = handler->handle_data(conn, msg); 
+						if (!ret){
+							break; 
+						}
+					}
+				}
+				return ret; 
+			}
+
+			bool invoke_event_chain(TPtr conn, NetEvent evt){
+				bool ret = true; 
+				for(auto handler : m.event_handler_chain){
+					if (handler ){
+						ret = handler->handle_event(conn, evt); 
+						if (!ret)
+						{
+							break; 
+						}
+					}
+				}
+				return ret; 
+			}
+
+
 			uint32_t worker_index = 0;
 			FactoryPtr factory = nullptr;
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
+			struct {
+				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
+			} m; 
+
+			
 		};
 
 	} // namespace tcp

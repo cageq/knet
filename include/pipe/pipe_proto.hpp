@@ -93,35 +93,42 @@ namespace knet{
 
 		template <uint32_t size>
 			struct PipeMessage {
-				PipeMsgHead head = {0}; 
-				char data[size];
-				void fill(uint32_t type, const std::string& buf) {
-					head.type = type;
-					fill(buf);
-				}
-				void fill(const std::string& buf) { fill(buf.c_str(), buf.length()); }
+				char data[size] = {0};
+				
+				PipeMsgHead  * head = nullptr; 			 
 
-				void fill(uint32_t type, const char* buf, uint32_t len) {
-					head.type = type;
-					fill(buf, len);
+				PipeMessage(uint32_t type = 0  ){
+					head = (PipeMsgHead *) data; 
+					head->type = type; 
 				}
 
-				void fill(const char* buf, uint32_t len) {
-					if (len > 0) { 
-						head.length = len > size ? size : len;
-						memcpy(data, buf, len > size ? size : len);
-					}
-
+				void append( const std::string & msg ){
+					append(msg.data() , msg.length()); 
 				}
 
-				uint32_t length() const { return sizeof(PipeMsgHead) + head.length; }
-				const char* begin() const { return (const char*)&head; }
-				const char* end() const { return (const char*)&data + head.length; }
+				void append(const char * buf, uint32_t len ){
+					if (len > 0  && len <= size -  sizeof(PipeMsgHead)  )
+					{
+						memcpy((char *) &data[0] + ( sizeof(PipeMsgHead) +head->length )  , buf , len ); 
+						head->length += len; 
+					} 
+				}
+				void set_type(uint32_t type ){
+					head->type = type; 
+				}
+ 
+				uint32_t message_type()const {
+					return head->type; 
+				}
+				uint32_t payload_length() const {
+					return head->length; 
+				}
+
+				uint32_t length() const { return sizeof(PipeMsgHead) + head->length; }
+				const char* begin() const { return (const char*)data; }
+				const char* end() const { return (const char*)data + head->length; }
 			};
-
-		using PipeMessageS = PipeMessage<0>;
-
-
+ 
 	}
 
 }

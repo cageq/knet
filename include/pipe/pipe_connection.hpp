@@ -18,12 +18,12 @@ namespace knet{
 
 				virtual int32_t handle_package( const char* data, uint32_t len) {
 					dlog("demarcate  pipe package {}", len); 
-					PipeMessageS* msg = (PipeMessageS*)data;
-					if (msg->head.length + sizeof(PipeMsgHead) > len) {			 
-						elog("demarcate pipe message length {}  message head  {} ", len , msg->head.length);
+					PipeMsgHead* msg = (PipeMsgHead*)data;
+					if (msg->length + sizeof(PipeMsgHead) > len) {			 
+						elog("demarcate pipe message length {}  message head  {} ", len , msg->length);
 						return 0;
 					}
-					return sizeof(PipeMsgHead) + msg->head.length;
+					return sizeof(PipeMsgHead) + msg->length;
 				} 
 
 				inline std::shared_ptr<PipeSession> get_session(){
