@@ -97,8 +97,7 @@ public:
 	}
 
 	int32_t send_inloop(const char* pData, uint32_t dataLen) {
-		// std::string msg (pData, dataLen); 
-
+	 
 		asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
 				if (!ec) {
 					if (length < dataLen) {
