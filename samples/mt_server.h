@@ -28,10 +28,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 			dlog("destroy tcp session");
 		}
 
-		// connection events
-		void on_connect() {
-			dlog("on connected "); 
-		}
+
 		//read on buffer for one package
 		//return one package length ,if not enough return -1
 		int read_packet(const char *pData, uint32_t dataLen) {

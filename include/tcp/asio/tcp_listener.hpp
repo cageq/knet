@@ -28,8 +28,7 @@ namespace knet
 
 			TcpListener(
 				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
-				: listen_worker(lisWorker) 
-			{
+				: listen_worker(lisWorker) 	{
 				m.factory = fac;
 				if (listen_worker)
 				{
@@ -40,13 +39,14 @@ namespace knet
 				{
 					elog("can't live without listen worker");
 				}
-
-			//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac); 
-			add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
+				if (fac != nullptr){
+					//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac); 
+					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
+				} 
  
 			}
-			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){
-				
+
+			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){				
 					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
 					if (evtHandler){
 						add_event_handler(evtHandler); 
@@ -169,8 +169,7 @@ namespace knet
 					m.is_running = false;
 					tcp_acceptor->close();
 				}
-			}
- 
+			} 
 
 			virtual bool  handle_data(TPtr conn, const std::string& msg  ) { 
 				return invoke_data_chain(conn, msg  ); 		
@@ -294,8 +293,7 @@ namespace knet
 			// }
 
 			TPtr create_connection(SocketPtr sock ,WorkerPtr worker)
-			{
- 
+			{ 
 				auto conn = m.factory->create(); 
 				conn->init(  sock, worker , this );
 				return conn;

@@ -22,21 +22,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 		virtual ~TcpSession() {
 			dlog("destroy tcp session");
 		}
-
-		// connection events
-		void on_connect() {
-			dlog("on connected "); 
-		}
-		//read on buffer for one package
-		//return one package length ,if not enough return -1
-		// int read_packet(const char *pData, uint32_t dataLen) {
-		// 	return dataLen;
-		// }
-
-		void on_disconnect() {
-			dlog("on session disconnect");
-			//   trace;
-		}
+ 
 
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 		uint32_t on_recv(const std::string_view & msg  ) {

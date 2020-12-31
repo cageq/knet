@@ -9,6 +9,7 @@
 #include "wsock_connection.hpp"
 #include "http/http_response.hpp"
 #include "http/http_url.hpp"
+#include "wsock_router.hpp"
 
 using namespace knet::tcp;
 using namespace knet::http;
@@ -22,7 +23,7 @@ class WSockFactory : public TcpFactory<T>  , public UserEventHandler<T> {
 public:
 	using TPtr = std::shared_ptr<T>;
 
-	WSockFactory() { dlog("init http factory"); }
+	WSockFactory() {  }
 	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
 		ilog("handle event in http factory ", evt);
@@ -38,12 +39,10 @@ public:
 			break;
 		case EVT_CREATE:
 			dlog("handle new http session, thread id is", std::this_thread::get_id());
-
 			break;
 		case EVT_RECV:
 			break;
 		case EVT_SEND:
-
 			//	conn->close();
 			break;
 		default:;
@@ -51,21 +50,18 @@ public:
 		return true; 
 	}
 
-	virtual bool handle_data(TPtr conn, const std::string& msg ) {
-		dlog("websocket handle data len is {}  websocket : {}", msg.length(), conn->is_websocket);
-
-		if (conn->is_websocket) {
-
-			auto readLen = conn->read_websocket(msg);
-			dlog("read websocket data len is {}/{}", readLen, msg.length());
-			return readLen;
-
-		} else {
-
-			dlog("websocket data is {} len is {}", msg, msg.length());
+	virtual bool handle_data(TPtr conn, const std::string& msg ) {  
+			const char * data = msg.data(); 
+			uint32_t len  = msg.length(); 	
+			if (conn->is_websocket) {
+				auto readLen = conn->read_websocket(data, len );
+				dlog("read websocket data len is {}/{}", readLen, len);
+				return true;
+			}  	
+			
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
 				auto req = std::make_shared<HttpRequest>();
-				auto msgLen = req->parse_request(msg.data(), msg.length(), true);
+				auto msgLen = req->parse_request(data, len, true);
 				if (msgLen > 0) {
 
 					HttpUrl urlInfo(req->url());
@@ -73,10 +69,9 @@ public:
 					ilog("request Upgrade header {}", req->get_header("Upgrade"));
 					ilog("request Connection header {}", req->get_header("Connection"));
 					if (req->get_header("Upgrade") == "websocket") {
-
+						
 						dlog("find request path is {}", urlInfo.path());
 						auto itr = wsock_routers.find(urlInfo.path());
-
 						if (itr != wsock_routers.end()) {
 							dlog("found websocket handle , send back websocket response");
 							auto ret = conn->upgrade_websocket(req);
@@ -85,7 +80,6 @@ public:
 								conn->wsock_handler = itr->second;
 							}
 						} else {
-
 							wlog("not found websocket handler :{}", urlInfo.path());
 							conn->reply(HttpResponse(404));
 						}
@@ -111,23 +105,22 @@ public:
 						}
 					}
 				} else {
-					return 0;
+					return true;
 				}
-				return msgLen;
+				return true;
 			} else if (conn->is_status(WSockStatus::WSOCK_CONNECTING)) {
 				HttpResponse rsp;
-				auto msgLen = rsp.parse_response(msg.data(), msg.length());
+				auto msgLen = rsp.parse_response(data, len);
 				if (msgLen > 0) {
-					dlog("parse response len is {},  {}", msg.length(), msgLen);
+					dlog("parse response len is {},  {}", len, msgLen);
 					if (rsp.is_websocket()) {
 						dlog("upgrade to websocket success");
 						conn->is_websocket = true;
 					}
 				} else {
-					return 0;
+					return true;
 				}
 			}
-		}
 
 		return true;
 	}
@@ -160,8 +153,11 @@ public:
 	//	return len;
 	//};
 
+
 	HttpRouteMap http_routers;
 	std::unordered_map<std::string, WSockHandler<T>> wsock_routers;
+	// WSockRouter  wsock_router; 
+
 };
 
 } // namespace websocket

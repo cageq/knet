@@ -5,7 +5,8 @@
 //***************************************************************
 #pragma once
  #include <fmt/format.h>
- 
+
+#include "http/http_url.hpp" 
 #include "http/http_parser.hpp"
 #include "http/http_request.hpp"
 #include "http/http_connection.hpp"
@@ -37,15 +38,13 @@ public:
 		bind_event_handler([this]( NetEvent evt) {
 			switch (evt) {
 			case NetEvent::EVT_CONNECT:
-				dlog("on connected event ");
+			
 				if (first_request) {
 					auto msg = first_request->encode();
 					dlog("send first  request  {} :\n{}", msg.length(), msg);
 					this->msend(first_request->encode());
 					m_status = WSockStatus::WSOCK_CONNECTING;
-				} else {
-				}
-
+				} 
 				break;
 			default:;
 			}
@@ -65,13 +64,7 @@ public:
 	}
 
 	// void bind_message_handler(WSMessageHandler handler) { message_handler = handler; }
- 
 
-	// connection events
-	void on_connect() {
-		dlog("on connected ");
-		 
-	}
 
 	// read on buffer for one package
 	// return one package length ,if not enough return -1
@@ -106,7 +99,6 @@ public:
 		header.assign(sizeof(uint16_t) + (msg.length() >= 126 ? 2 : 0) +
 						  (msg.length() >= 65536 ? 6 : 0) + (mask ? 4 : 0),	0);
 		uint8_t payloadByte = mask ?0x80:0; 
-
 		header[0] = 0x80 | op;
 
 		if (msg.length() < 126) {
@@ -156,7 +148,6 @@ public:
 		}
 
 		std::string sendMsg = msg;
-
 		if (mask)
 		{				
 			for (uint32_t i = 0; i < sendMsg.length(); i++) {
@@ -164,8 +155,7 @@ public:
 				sendMsg[i] ^= maskKey[j];
 			}
 		}
-
-
+		
 		parse_message((const char*)header.data(), header.size());
 		dlog("send head length {}, message length {} ", header.size(),sendMsg.length()); 
 
@@ -210,10 +200,61 @@ public:
 	// 	return len;
 	// }
 
-	uint32_t read_websocket( const std::string & msg ) {
-
-		return wsock_reader.read(msg.data(),msg.length(), std::bind(&WSockConnection::read_message, this, std::placeholders::_1 ));
+	uint32_t read_websocket(const char * data, uint32_t len ) {
+		return wsock_reader.read(data, len , std::bind(&WSockConnection::read_message, this, std::placeholders::_1 ));
 	}
+
+	uint64_t get_message_length(const char * data, uint32_t len ){	
+		uint64_t headSize  = sizeof(uint16_t); 
+		if (len < sizeof(MinFrameHead)){
+			return 0; 
+		}
+		uint8_t* vals = (uint8_t*)data;
+		uint32_t payloadMark = vals[1] & 0x7f;
+		 uint32_t mask = ((vals[1] & 0x80) == 0x80);
+		 if (mask )
+		 {
+			 headSize += sizeof(uint32_t ); 
+		 }
+	
+		if (payloadMark < 126) {	 
+			return headSize +  payloadMark ; 
+		}else if (payloadMark == 126) {	
+			headSize += sizeof(uint16_t);	
+			uint16_t payloadLen = 0; 	 
+			payloadLen= *(uint16_t*)((uint16_t*)data + 1);
+			payloadLen = ntohs(payloadLen);
+			return headSize + payloadLen; 
+		}else {
+			headSize += sizeof(uint64_t);	
+			uint64_t payloadLen = 0; 	 
+			payloadLen = *(uint64_t*)((uint16_t*)data + 1);
+			payloadLen = ntohll(payloadLen);	
+			return headSize + payloadLen; 
+		}
+
+		return 0; 
+	}
+
+	virtual int32_t handle_package(const char * data, uint32_t len ){
+	
+		// MinFrameHead head = {0};		
+		// head.fin = ((vals[0] & 0x80) == 0x80);
+		// head.opcode = (vals[0] & 0x0f);
+		// head.len = (vals[1] & 0x7F);
+		// head.mask = ((vals[1] & 0x80) == 0x80);
+
+
+		uint64_t wsLen = get_message_length(data, len); 
+		if (wsLen > len ){
+			return 0; 
+		}
+	 
+		return wsLen;
+	}
+
+
+
 
 	bool upgrade_websocket(HttpRequestPtr req) {
 
@@ -225,7 +266,6 @@ public:
 			WSockHandshake::generate(secWebSocketKey.data(), secWebSocketAccept);
 
 			HttpResponse rsp("", 101);
-
 			rsp.add_header("Upgrade", "websocket");
 			rsp.add_header("Connection", "Upgrade");
 			rsp.add_header("Sec-WebSocket-Accept", secWebSocketAccept);
@@ -271,7 +311,6 @@ public:
 
 	void read_message(const std::string_view& msg  )
 	{
-
 		if (wsock_handler.message)
 		{
 			wsock_handler.message(this->shared_from_this() , std::string(msg.data(), msg.size()) ); 
@@ -284,13 +323,8 @@ public:
 	WSMessageReader wsock_reader;
 	WSockHandler<WSockConnection>  wsock_handler; 
 
-private:
- 
-	WSockStatus m_status = WSockStatus::WSOCK_INIT;
-
-//	WSMessageHandler message_handler;
-
-	
+private: 
+	WSockStatus m_status = WSockStatus::WSOCK_INIT; 	
 };
 
 } // namespace websocket

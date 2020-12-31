@@ -1,11 +1,10 @@
-
+#pragma once
 //***************************************************************
 //	created:	2020/08/01
 //	author:		wkui
 //***************************************************************
 
 
-#pragma once
 #include "knet.hpp"
  
 using namespace knet::tcp; 
@@ -73,18 +72,17 @@ using WSMessageHandler = std::function<void(std::string_view  )>;
 struct WSMessageReader {
 
 	MinFrameHead head = {0};
-
 	WSMessageReader(uint32_t bufSize = 1024 * 8)
 		: buffer_size(bufSize) {}
 
-	uint64_t buffer_size = 2048;
+	uint64_t buffer_size = 4096;
 	uint64_t left_length = 0;
-
 	uint64_t payload_length = 0;
- 
+
+	uint32_t status = 0; 
 
 	uint32_t read( const char* pData, uint32_t dataLen, WSMessageHandler handler) {
-		int status = 0; 
+ 
 		dlog("reading websocket message {} status {}", dataLen, status);
 		if (dataLen < sizeof(uint16_t)) {
 			return 0;
@@ -114,7 +112,6 @@ struct WSMessageReader {
 					dlog("payload length is {} head size {} , mask size {}", payload_length, headSize , maskSize); 
 					if (head.mask)
 					{
-
 						std::string payload ; 
 						payload.reserve(payload_length); 
 
@@ -127,8 +124,7 @@ struct WSMessageReader {
 					} else {
 
 						handler(std::string_view((const char*)(pData + headSize + maskSize), payload_length) );
-					}
-			 
+					}			 
 					
 				}
 		 
@@ -149,11 +145,9 @@ struct WSMessageReader {
 
 						auto ploadLen = (buffer_size - headSize) > payload_length
 											? payload_length
-											: (buffer_size - headSize);
-
+											: (buffer_size - headSize); 
 						if (head.mask)
 						{
-
 							std::string payload ; 
 							payload.reserve(ploadLen); 
 							uint8_t * maskKey = (uint8_t *)pData + headSize; 
@@ -185,13 +179,9 @@ struct WSMessageReader {
 							handler(std::string_view(payload.data(), payload_length) );
 						} else {
 							handler(std::string_view(pData + headSize + maskSize, payload_length) );
-						}
-
-
-						
+						}						
 					}
 					//status = MessageStatus::MESSAGE_NONE;
-
 					return payload_length + headSize + maskSize;
 				}
 
@@ -231,7 +221,6 @@ struct WSMessageReader {
 						else {
 							handler(std::string_view(pData + headSize, payload_length) );
 						}
-
 						
 					}
 				//	status = MessageStatus::MESSAGE_NONE;
