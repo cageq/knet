@@ -20,7 +20,7 @@ class MyConnection : public UdpConnection<MyConnection >
 int main(int argc , char * argv[])
 {   
 
-	kLogIns.add_sink<klog::ConsoleSink>(); 
+	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
     UdpConnector<MyConnection> connector; 
     connector.start(); 
 
