@@ -60,14 +60,14 @@ namespace knet
 				{
 					conn = std::make_shared<T>();
 				}
-				conn->init(m.worker,this);
+				conn->init(nullptr, m.worker,this);
 
 				asio::ip::address remoteAddr = asio::ip::make_address(host);
 				asio::ip::udp::endpoint remotePoint(remoteAddr, port);
 				
 				if (remoteAddr.is_multicast())
 				{
-					conn->connect(m.worker->context(), remotePoint, localPort, localAddr);
+					conn->connect(  remotePoint, localPort, localAddr);
 				}
 				else
 				{
@@ -77,7 +77,7 @@ namespace knet
 
 					if (!endpoints.empty())
 					{
-						conn->connect(m.worker->context(), *endpoints.begin(), localPort);
+						conn->connect(  *endpoints.begin(), localPort);
 					}
 				}
 

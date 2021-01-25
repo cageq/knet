@@ -97,7 +97,6 @@ namespace knet {
 
 			TPtr create_connection(udp::endpoint pt) {
 				TPtr conn = nullptr;
-			 
 
 				if (m.factory)
 				{
@@ -107,9 +106,8 @@ namespace knet {
 				{
 					conn = std::make_shared<T>();
 				}
-				conn->init(worker, this );
-			
-				//conn->event_handler = m.event_handler;
+		
+ 
 				dlog("add remote connection {}", addrstr(pt));
 				m.connections[addrstr(pt)] = conn;
 				return conn;
@@ -142,8 +140,8 @@ namespace knet {
 							auto conn = this->find_connection(m.remote_point);
 							if (!conn) {
 								conn = this->create_connection(m.remote_point);
-								conn->udp_socket = m.server_socket;
-
+								conn->init(m.server_socket, worker, this );
+								//conn->udp_socket = m.server_socket;
 								conn->remote_point = m.remote_point;
 								// if (m.multi_host.empty()) {
 								// 	conn->remote_point = m.remote_point;

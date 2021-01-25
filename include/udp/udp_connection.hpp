@@ -45,8 +45,9 @@ namespace knet {
 			using DataHandler = std::function<bool(const std::string & )>;	
 
 
-			void init(EventWorkerPtr worker = nullptr, UserEventHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, UserEventHandler<T>* evtHandler = nullptr)
 			{
+				udp_socket = socket;
 				static uint64_t index = 1024;				
 				cid = ++index;
 				m.event_worker = worker;
@@ -145,9 +146,7 @@ namespace knet {
 		
 			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
 			
-			virtual PackageType handle_package(const std::string& msg) {
-
-				wlog("{}", msg.data());
+			virtual PackageType handle_package(const std::string& msg) {		
 				return PACKAGE_USER;
 			}
 
@@ -217,11 +216,11 @@ namespace knet {
 			template <class, class, class>
 			friend class UdpConnector;
 
-			void connect(asio::io_context& ctx, udp::endpoint pt, uint32_t localPort = 0,
+			void connect(udp::endpoint pt, uint32_t localPort = 0,
 				const std::string& localAddr = "0.0.0.0") {
 				remote_point = pt;
 				// this->udp_socket = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
-				this->udp_socket = std::make_shared<udp::socket>(ctx);
+				this->udp_socket = std::make_shared<udp::socket>(m.event_worker->context());
 				if (udp_socket) {
 					asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
 					udp_socket->open(lisPoint.protocol());
@@ -231,7 +230,7 @@ namespace knet {
 						udp_socket->bind(lisPoint);
 					}
 
-					m.timer = std::unique_ptr<Timer>(new Timer(ctx));
+					m.timer = std::unique_ptr<Timer>(new Timer(m.event_worker->context()));
 					m.timer->start_timer(
 						[this]() {
 							std::chrono::steady_clock::time_point nowPoint =
@@ -242,8 +241,7 @@ namespace knet {
 							if (elapseTime.count() > 3) {
 							 
 								this->release(); 
-							}
-							ilog("check heartbeat timer ");
+							}					
 						},
 						4000000);
 					m.status = CONN_OPEN;
@@ -265,8 +263,10 @@ namespace knet {
 							dlog("get message from {}:{}", sender_point.address().to_string(),
 								sender_point.port());
 							recv_buffer[bytes_recvd] = 0;
-							this->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
-							process_data(std::string((const char*)recv_buffer, bytes_recvd)); 
+							auto pkgType = this->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
+							if (pkgType == PACKAGE_USER){
+								process_data(std::string((const char*)recv_buffer, bytes_recvd)); 
+							}						
 					
 							do_receive();
 						}
