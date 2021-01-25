@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 #include "tcp_connection.hpp"
-#include "c11patch.hpp"
+#include "utils/c11patch.hpp"
 #include "tcp_factory.hpp"
 
 namespace knet
@@ -18,7 +18,7 @@ namespace knet
  
 		using asio::ip::tcp;
 		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpListener final : public UserEventHandler<T>    
+		class TcpListener final : public TcpEventHandler<T>    
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;		 
@@ -40,14 +40,14 @@ namespace knet
 					elog("can't live without listen worker");
 				}
 				if (fac != nullptr){
-					//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac); 
-					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
+					//factory_event_helper<std::is_base_of<TcpEventHandler<T> , Factory >::value>( fac); 
+					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<TcpEventHandler<T> , Factory >::value>() , fac); 
 				} 
  
 			}
 
 			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){				
-					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+					auto evtHandler = static_cast<TcpEventHandler<T> *>(fac); 	
 					if (evtHandler){
 						add_event_handler(evtHandler); 
 					}					
@@ -61,8 +61,8 @@ namespace knet
 			// using allow_if = typename std::enable_if<flag>::type; 
 			// template<bool S = true>
 			// 	allow_if<S> factory_event_helper(FactoryPtr fac){
-			// 		elog("add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
-			// 		auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+			// 		elog("add factory event helper {}", std::is_base_of<TcpEventHandler<T> , Factory >::value ); 
+			// 		auto evtHandler = static_cast<TcpEventHandler<T> *>(fac); 	
 			// 		if (evtHandler){
 			// 			add_event_handler(evtHandler); 
 			// 		}					
@@ -70,7 +70,7 @@ namespace knet
 
 			// template<bool S = true>
 			// allow_if<!S> factory_event_helper(FactoryPtr fac){
-			// 	elog("not add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory  >::value ); 
+			// 	elog("not add factory event helper {}", std::is_base_of<TcpEventHandler<T> , Factory  >::value ); 
 				 
 			// }
 	
@@ -182,7 +182,7 @@ namespace knet
 				}
 				return ret; 
 			}
-			void add_event_handler(UserEventHandler<T> * handler){
+			void add_event_handler(TcpEventHandler<T> * handler){
 				if (handler){
 					m.event_handler_chain.push_back(handler); 
 				}
@@ -307,7 +307,7 @@ namespace knet
 				bool is_running = false;
 				void *ssl_context = nullptr;
 				FactoryPtr factory = nullptr;
-				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
+				std::vector< TcpEventHandler<T> *>  event_handler_chain; 				
 			} m;
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
