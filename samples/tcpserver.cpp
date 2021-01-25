@@ -21,10 +21,15 @@ class TcpSession : public TcpConnection<TcpSession>{
 		virtual ~TcpSession() {
 			dlog("destroy tcp session");
 		}
+		virtual bool handle_event(knet::NetEvent evt) {
+
+			dlog("handle tcp event {}", evt); 
+			return true; 
+		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 		virtual bool handle_data(const std::string &msg ) {
-			//		dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
+			  dlog("handle data {}", msg ); 			
 			this->send(msg);
 			return true; 		
 		}
@@ -54,6 +59,7 @@ int main(int argc, char **argv)
 	// TcpListener<TcpSession> listener(&factory, workers); 
 
 	std::shared_ptr<knet::EventWorker> myworker = std::make_shared<knet::EventWorker>();
+	myworker->start();
 	//TcpListener<TcpSession, UserFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
 	DefaultTcpListener<TcpSession> listener(myworker); 
 	int port = 8855;

@@ -297,6 +297,8 @@ namespace knet
 			}
 
 			bool process_event(NetEvent evt){
+
+				dlog("process event {}", evt);
 				bool ret = true; 
 				if (event_handler)
 				{

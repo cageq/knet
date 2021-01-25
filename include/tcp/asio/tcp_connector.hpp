@@ -89,9 +89,7 @@ namespace knet
 				for (auto& elem : connections) {
 					elem.second->close();
 				}
-			}
-
-
+			} 
 
 			bool remove_connection(uint64_t cid)
 			{
