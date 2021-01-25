@@ -26,12 +26,14 @@ namespace knet
 
 	 
 
-			UdpConnector(FactoryPtr f = nullptr, WorkerPtr w = nullptr) {
-				m.factory = f;
+			UdpConnector(FactoryPtr fac = nullptr, WorkerPtr w = nullptr) {
+				m.factory = fac;
 				m.worker = w;
+
+				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T>, Factory >::value>(), fac);
 			}
 
-		//	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
+
 			bool start(FactoryPtr fac = nullptr)
 			{
 				m.factory = fac; 
@@ -58,6 +60,7 @@ namespace knet
 				{
 					conn = std::make_shared<T>();
 				}
+				conn->init(m.worker,this);
 
 				asio::ip::address remoteAddr = asio::ip::make_address(host);
 				asio::ip::udp::endpoint remotePoint(remoteAddr, port);
@@ -93,14 +96,54 @@ namespace knet
 			virtual bool handle_event(std::shared_ptr<T>, NetEvent) {
 				return true;
 			}
-
+			void add_event_handler(UserEventHandler<T>* handler) {
+				if (handler) {
+					m.event_handler_chain.push_back(handler);
+				}
+			}
 		private:
+				bool  invoke_data_chain(TPtr conn, const std::string& msg) {
+				bool ret = true;
+				for (auto handler : m.event_handler_chain) {
+					if (handler) {
+						ret = handler->handle_data(conn, msg);
+						if (!ret) {
+							break;
+						}
+					}
+				}
+				return ret;
+			}
 
+			bool invoke_event_chain(TPtr conn, NetEvent evt) {
+				bool ret = true;
+				for (auto handler : m.event_handler_chain) {
+					if (handler) {
+						ret = handler->handle_event(conn, evt);
+						if (!ret)
+						{
+							break;
+						}
+					}
+				}
+				return ret;
+			}
+			inline void add_factory_event_handler(std::true_type, FactoryPtr fac) {
+
+				auto evtHandler = static_cast<UserEventHandler<T> *>(fac);
+				if (evtHandler) {
+					add_event_handler(evtHandler);
+				}
+			}
+
+			inline void add_factory_event_handler(std::false_type, FactoryPtr fac) {
+
+			}
 			struct
 			{
 				FactoryPtr factory = nullptr;
 				WorkerPtr worker;
-				
+				std::vector< UserEventHandler<T>*>  event_handler_chain;
 				std::unordered_map<std::string, TPtr> connections;
 			} m;
 		};

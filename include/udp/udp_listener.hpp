@@ -97,15 +97,19 @@ namespace knet {
 
 			TPtr create_connection(udp::endpoint pt) {
 				TPtr conn = nullptr;
-				if (m.event_handler) {
-					conn = m.event_handler(nullptr, EVT_CREATE, {});
-				}
+			 
 
-				if (!conn) {
-					conn = T::create();
+				if (m.factory)
+				{
+					conn = m.factory->create();
 				}
-				conn->status = T::CONN_OPEN;
-				conn->event_handler = m.event_handler;
+				else
+				{
+					conn = std::make_shared<T>();
+				}
+				conn->init(worker, this );
+			
+				//conn->event_handler = m.event_handler;
 				dlog("add remote connection {}", addrstr(pt));
 				m.connections[addrstr(pt)] = conn;
 				return conn;
