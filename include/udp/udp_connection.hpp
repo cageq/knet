@@ -146,7 +146,7 @@ public:
 	}
 
 private:
-	template <class, class>
+	template <class, class, class>
 	friend class UdpListener;
 	template <class, class, class>
 	friend class UdpConnector;

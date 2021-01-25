@@ -14,10 +14,6 @@ namespace knet
 {
 	namespace tcp
 	{ 
-
-
-
-
 		template <class T, class Factory = UserFactory<T>, class Worker = EventWorker>
 		class TcpConnector : public UserEventHandler<T>
 		{
@@ -28,7 +24,7 @@ namespace knet
 
 			TcpConnector(FactoryPtr fac = nullptr, WorkerPtr worker = nullptr)
 			{
-				factory = fac;
+				m.factory = fac;
 
 				if (worker)
 				{
@@ -91,7 +87,7 @@ namespace knet
 			{
 				if (fac != nullptr)
 				{
-					factory = fac;
+					m.factory = fac;
 				}
 				// nothing to do
 				for (uint32_t i = 0; i < thrds; i++)
@@ -146,9 +142,9 @@ namespace knet
 				auto worker = this->get_worker();
 				auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
 				TPtr conn = nullptr;
-				if (factory)
+				if (m.factory)
 				{
-					conn = factory->create(args...);
+					conn = m.factory->create(args...);
 				}
 				else
 				{
@@ -243,9 +239,9 @@ namespace knet
 					asio::post(*conn->get_context(), [this, conn]() {
 
 						conn->disable_reconnect();
-						if (factory)
+						if (m.factory)
 						{
-							factory->release(conn);
+							m.factory->release(conn);
 						}
 						});
 					}
@@ -289,11 +285,11 @@ namespace knet
 			}
 
 
-			uint32_t worker_index = 0;
-			FactoryPtr factory = nullptr;
+			uint32_t worker_index = 0;			
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
 			struct {
+				FactoryPtr factory = nullptr;
 				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
 			} m; 
 

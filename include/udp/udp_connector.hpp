@@ -22,7 +22,13 @@ namespace knet
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			UdpConnector(WorkerPtr w = nullptr) {
+
+			using FactoryPtr = Factory*;
+
+	 
+
+			UdpConnector(FactoryPtr f = nullptr, WorkerPtr w = nullptr) {
+				m.factory = f;
 				m.worker = w;
 			}
 
@@ -89,8 +95,10 @@ namespace knet
 			}
 
 		private:
+
 			struct
 			{
+				FactoryPtr factory = nullptr;
 				WorkerPtr worker;
 				EventHandler event_handler = nullptr;
 				std::unordered_map<std::string, TPtr> connections;
