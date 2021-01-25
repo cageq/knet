@@ -44,8 +44,18 @@ public:
 	using TPtr = std::shared_ptr<T>;
 	using EventHandler = std::function<TPtr(TPtr, knet::NetEvent, const std::string & )>;
 	using Buffers = std::vector<std::string>;
+ 
 
-	static TPtr create() { return std::make_shared<T>(); }
+	void init(   EventWorkerPtr worker = nullptr, UserEventHandler<T> * evtHandler = nullptr)
+	{
+		static uint64_t index = 1024;
+		event_worker = worker;			 
+		cid = ++index; 
+ 
+		user_event_handler = evtHandler; 
+		handle_event(EVT_CREATE);
+	}
+
 
 	int32_t send(const char* data, std::size_t length) {
 		if (udp_socket) {
@@ -145,6 +155,19 @@ public:
 		}
 	}
 
+		virtual bool handle_event(NetEvent evt) 
+		{
+			dlog("handle event in connection {}", evt);
+			return true; 
+		}
+
+
+		virtual bool handle_data(const std::string &msg )
+		{
+			return true; 
+		}
+
+
 private:
 	template <class, class, class>
 	friend class UdpListener;
@@ -222,6 +245,7 @@ private:
 	udp::endpoint multicast_point;
 	EventHandler event_handler = nullptr;
 
+	UserEventHandler<T>* user_event_handler = nullptr;
 private: 
 	UdpSocketPtr udp_socket;
 	std::chrono::steady_clock::time_point last_msg_time;

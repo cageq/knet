@@ -22,7 +22,6 @@ namespace knet
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-
 			using FactoryPtr = Factory*;
 
 	 
@@ -32,10 +31,10 @@ namespace knet
 				m.worker = w;
 			}
 
-			using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
-			bool start(EventHandler evtHandler = nullptr)
+		//	using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
+			bool start(FactoryPtr fac = nullptr)
 			{
-				m.event_handler = evtHandler;
+				m.factory = fac; 
 				if (m.worker == nullptr)
 				{
 					m.worker = std::make_shared<Worker>();
@@ -44,24 +43,25 @@ namespace knet
 				return true;
 			}
 
+
 			TPtr connect(const std::string& host, uint32_t port, uint32_t localPort = 0,
 				const std::string& localAddr = "0.0.0.0")
 			{
 
 				TPtr conn = nullptr;
-				if (m.event_handler)
+					
+				if (m.factory)
 				{
-					conn = m.event_handler(nullptr, EVT_CREATE, {});
+					conn = m.factory->create();
+				}
+				else
+				{
+					conn = std::make_shared<T>();
 				}
 
-				if (!conn)
-				{
-					conn = T::create();
-				}
 				asio::ip::address remoteAddr = asio::ip::make_address(host);
 				asio::ip::udp::endpoint remotePoint(remoteAddr, port);
-
-				conn->event_handler = m.event_handler;
+				
 				if (remoteAddr.is_multicast())
 				{
 					conn->connect(m.worker->context(), remotePoint, localPort, localAddr);
@@ -100,7 +100,7 @@ namespace knet
 			{
 				FactoryPtr factory = nullptr;
 				WorkerPtr worker;
-				EventHandler event_handler = nullptr;
+				
 				std::unordered_map<std::string, TPtr> connections;
 			} m;
 		};
