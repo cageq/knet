@@ -148,7 +148,7 @@ public:
 private:
 	template <class, class>
 	friend class UdpListener;
-	template <class, class>
+	template <class, class, class>
 	friend class UdpConnector;
 
 	void connect(asio::io_context& ctx, udp::endpoint pt, uint32_t localPort = 0,

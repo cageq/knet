@@ -50,11 +50,11 @@ int main(int argc, char **argv)
 	// for(auto & worker : workers){
 	// 	worker->start(); 
 	// }
-	// TcpFactory<TcpSession> factory; 
+	// UserFactory<TcpSession> factory; 
 	// TcpListener<TcpSession> listener(&factory, workers); 
 
 	std::shared_ptr<knet::EventWorker> myworker = std::make_shared<knet::EventWorker>();
-	//TcpListener<TcpSession, TcpFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
+	//TcpListener<TcpSession, UserFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
 	DefaultTcpListener<TcpSession> listener(myworker); 
 	int port = 8855;
 	listener.start( port); 

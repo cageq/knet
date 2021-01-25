@@ -49,7 +49,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 
 
 
-class MyFactory: public TcpFactory<TcpSession > { 
+class MyFactory: public UserFactory<TcpSession > { 
 
 	public:
 

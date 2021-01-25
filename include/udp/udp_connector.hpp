@@ -5,6 +5,8 @@
 
 #pragma once
 #include "udp/udp_connection.hpp"
+#include "user_factory.hpp"
+#include "user_event_handler.hpp"
 
 using asio::ip::udp;
 
@@ -13,15 +15,15 @@ namespace knet
 	namespace udp
 	{
 
-		template <typename T, typename Worker = EventWorker>
-		class UdpConnector
+		template <typename T, class Factory = UserFactory<T>, typename Worker = EventWorker>
+		class UdpConnector : public UserEventHandler<T>
 		{
 
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			UdpConnector(WorkerPtr w = nullptr)  {
-					m.worker = w; 
+			UdpConnector(WorkerPtr w = nullptr) {
+				m.worker = w;
 			}
 
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
@@ -36,8 +38,8 @@ namespace knet
 				return true;
 			}
 
-			TPtr connect(const std::string &host, uint32_t port, uint32_t localPort = 0,
-						 const std::string &localAddr = "0.0.0.0")
+			TPtr connect(const std::string& host, uint32_t port, uint32_t localPort = 0,
+				const std::string& localAddr = "0.0.0.0")
 			{
 
 				TPtr conn = nullptr;
@@ -77,11 +79,20 @@ namespace knet
 				m.connections.clear();
 			}
 
+
+			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg) {
+
+				return true;
+			}
+			virtual bool handle_event(std::shared_ptr<T>, NetEvent) {
+				return true;
+			}
+
 		private:
 			struct
-			{ 
+			{
 				WorkerPtr worker;
-				EventHandler event_handler = nullptr; 
+				EventHandler event_handler = nullptr;
 				std::unordered_map<std::string, TPtr> connections;
 			} m;
 		};

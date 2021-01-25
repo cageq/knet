@@ -6,7 +6,7 @@
 #pragma once
 #include <unordered_map>
 #include "tcp_connection.hpp"
-#include "tcp_factory.hpp"
+#include "user_factory.hpp"
 #include "event_worker.hpp"
 #include  <type_traits>
 
@@ -18,8 +18,8 @@ namespace knet
 
 
 
-		template <class T, class Factory = TcpFactory<T>, class Worker = EventWorker>
-		class TcpConnector : public TcpEventHandler<T>
+		template <class T, class Factory = UserFactory<T>, class Worker = EventWorker>
+		class TcpConnector : public UserEventHandler<T>
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;
@@ -41,16 +41,16 @@ namespace knet
 					// user_workers.emplace_back(worker);
 					// worker->start();
 				}
-				//factory_event_helper<std::is_base_of<TcpEventHandler<T> , Factory  >::value>( fac); 		  
+				//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory  >::value>( fac); 		  
 
-				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<TcpEventHandler<T> , Factory >::value>() , fac); 
+				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
 			}
 
 
 
 			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){
 				
-					auto evtHandler = static_cast<TcpEventHandler<T> *>(fac); 	
+					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
 					if (evtHandler){
 						add_event_handler(evtHandler); 
 					}					
@@ -65,8 +65,8 @@ namespace knet
 		// using allow_if = typename std::enable_if<flag>::type;
 		// 	template<bool S = true>
 		// 		allow_if<S> factory_event_helper(FactoryPtr fac){
-		// 			elog("add factory event helper {}", std::is_base_of<TcpEventHandler<T> , Factory >::value ); 
-		// 			auto evtHandler = static_cast<TcpEventHandler<T> *>(fac); 	
+		// 			elog("add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
+		// 			auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
 		// 			if (evtHandler){
 		// 				add_event_handler(evtHandler); 
 		// 			}					
@@ -74,7 +74,7 @@ namespace knet
 
 		// 	template<bool S = true>
 		// 	allow_if<!S> factory_event_helper(FactoryPtr fac){
-		// 		elog("not add factory event helper {}", std::is_base_of<TcpEventHandler<T> , Factory >::value ); 
+		// 		elog("not add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
 				 
 		// 	}
 	
@@ -255,7 +255,7 @@ namespace knet
 
 
 	 
-			void add_event_handler(TcpEventHandler<T> * handler){
+			void add_event_handler(UserEventHandler<T> * handler){
 				if (handler){
 					m.event_handler_chain.push_back(handler); 
 				}
@@ -294,7 +294,7 @@ namespace knet
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
 			struct {
-				std::vector< TcpEventHandler<T> *>  event_handler_chain; 				
+				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
 			} m; 
 
 			

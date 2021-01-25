@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "knet.hpp"
 #include <iostream>
+#include "knet.hpp"
 
 using namespace knet::tcp;
 
@@ -17,7 +17,7 @@ class TcpSession : public TcpConnection<TcpSession>
 };
 
 
-class MyFactory: public TcpFactory<TcpSession> { 
+class MyFactory: public knet::UserFactory<TcpSession> { 
 
 	public:
 

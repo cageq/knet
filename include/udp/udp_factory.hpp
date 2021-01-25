@@ -11,10 +11,10 @@ namespace knet {
 	namespace tcp {
 
 		template <class T, class ... Params >
-		class TcpFactory {
+		class UdpFactory {
 		public:
 			using TPtr = std::shared_ptr<T>;
-			TcpFactory(Params ... params) :init_params(params ...) {
+			UdpFactory(Params ... params) :init_params(params ...) {
 			}
 
 			template <class ... Args> 
@@ -23,7 +23,7 @@ namespace knet {
 			} 
 
 			TPtr create() {
-				return std::apply(&TcpFactory<T, Params...>::create_helper, init_params);
+				return std::apply(&UdpFactory<T, Params...>::create_helper, init_params);
 			} 
 			void release(TPtr sess) {} 
 
