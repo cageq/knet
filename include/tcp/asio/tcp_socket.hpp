@@ -36,7 +36,7 @@ public:
 	}
 
 	void init(TPtr conn ){
-		this->connection = conn;
+		m.connection = conn;
 	}
 
 	bool connect(const std::string& host, uint32_t port, const std::string & localAddr = "0.0.0.0", uint32_t localPort = 0 ) {
@@ -53,8 +53,8 @@ public:
 			[self](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 				if (!ec) {
 
-					if (self->connection) {
-						self->connection->process_event(EVT_CONNECT);
+					if (self->m.connection) {
+						self->m.connection->process_event(EVT_CONNECT);
 					} else {
 						wlog("no connection");
 					}
@@ -124,7 +124,6 @@ public:
 		if (is_inloop()) {
 			return send_inloop(msg.data(), msg.length());
 		}
-
 		return msend(std::string(msg.data(), msg.length()));
 	}
 
@@ -168,13 +167,13 @@ public:
 
 	bool do_async_write() {
 		if (m.send_buffer.size() > 0 ) {  
-	 		m.is_writing = true; 
-			ilog("send data length in single buffer {}", m.send_buffer.size());
+
 			auto self = this->shared_from_this();			
+			m.is_writing = true; 
 			asio::async_write(tcp_sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
 				[this, self](std::error_code ec, std::size_t length) {
 					if (!ec && tcp_sock.is_open() && length > 0 ) {					
-						connection->process_event(EVT_SEND);
+					//	m.connection->process_event(EVT_SEND);
 						{
 							std::lock_guard<std::mutex>  guard(m.mutex); 
 							m.send_buffer.consume(length); 					 	
@@ -224,20 +223,20 @@ public:
 	}
  
 	void process_data(uint32_t nread) {
-		if (!connection || nread == 0 ) {
+		if (!m.connection || nread == 0 ) {
 
 			return;
 		}
 
-		this->connection->process_event(EVT_RECV);
+		this->m.connection->process_event(EVT_RECV);
 		//	this->m.read_buffer.resize(m.read_buffer.size() + nread);
 		read_buffer_pos += nread;
 		uint32_t readPos = 0;
-		int32_t pkgLen = this->connection->process_package(m.read_buffer, read_buffer_pos);
+		int32_t pkgLen = this->m.connection->process_package(m.read_buffer, read_buffer_pos);
 		dlog("process data  pkg size is {}", pkgLen);
 		if (pkgLen > kReadBufferSize) {
 			elog("single packet size ({}) error, close connection", pkgLen);
-			connection->close();
+			m.connection->close();
 			return;
 		}
 
@@ -247,7 +246,7 @@ public:
 				char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 				char endChar = *pkgEnd;
 				*pkgEnd = 0;
-				this->connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen) );
+				this->m.connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen) );
 				*pkgEnd = endChar;
 				readPos += pkgLen;
 			}else {
@@ -255,7 +254,7 @@ public:
 			}
 
 			if (readPos < read_buffer_pos) {
-				pkgLen = this->connection->process_package(
+				pkgLen = this->m.connection->process_package(
 					(char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 				if (pkgLen <= 0) {
 					dlog("moving buffer to front {} ", read_buffer_pos - readPos);
@@ -290,18 +289,18 @@ public:
 		asio::post(io_context, [self]() {
 			wlog("try to close connection ..."); 
 
-			if (self->connection) {
-				self->connection->process_event(EVT_DISCONNECT);
+			if (self->m.connection) {
+				self->m.connection->process_event(EVT_DISCONNECT);
 				self->read_buffer_pos = 0;
-				if (self->connection->need_reconnect()) {
+				if (self->m.connection->need_reconnect()) {
 					self->m.status = SocketStatus::SOCKET_RECONNECT;
 				} else {
 					self->m.status = SocketStatus::SOCKET_CLOSED;
 					if (self->socket().is_open()) {
 						self->socket().close();
 					}
-					self->connection->release();
-					self->connection.reset();
+					self->m.connection->release();
+					self->m.connection.reset();
 
 				}
 
@@ -333,12 +332,13 @@ public:
 
 private:
 
-	TPtr connection;
+	
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 
 	asio::io_context& io_context; 
 	tcp::socket tcp_sock; 
 	struct {
+		TPtr connection;
 		asio::streambuf send_buffer;  
 		char read_buffer[kReadBufferSize];
 		std::mutex mutex;

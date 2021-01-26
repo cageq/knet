@@ -21,7 +21,7 @@ public:
 	virtual bool handle_data(const std::string& msg)
 	{
 
-		dlog("received data length {} ", msg.length());
+		dlog("received data   {} ", msg );
 		std::string mymsg("hello world");
 		this->send(mymsg);
 
@@ -34,6 +34,7 @@ public:
 			std::string msg("hello world");
 			this->send(msg.c_str(), msg.length());
 		}
+		return true; 
 	}
 
 
