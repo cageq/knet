@@ -33,7 +33,7 @@ namespace knet
 		}; 
 
 
-		template <class T, class Sock = TcpSocket<T>>
+		template <class T>
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
@@ -41,8 +41,7 @@ namespace knet
 			friend class Listener;
 			template <class, class, class>
 			friend class Connector;
-
-			using ConnSock = Sock; 
+ 
 			using EventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
 
@@ -52,7 +51,7 @@ namespace knet
 			using DataHandler = std::function<bool(const std::string & )>;
 			using SelfDataHandler = bool (T::*)(const std::string & );
 
-			using SocketPtr = std::shared_ptr<Sock>; 
+			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
 
 			// for passive connection 
 			template <class ... Args>

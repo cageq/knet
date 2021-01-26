@@ -109,7 +109,7 @@ namespace knet
 				{
 					auto worker = this->get_worker();
 					auto sock =
-						std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
+						std::make_shared<TcpSocket<T> >(worker->thread_id(), worker->context());
 					conn->init(sock, worker, this);
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
 					conn->connect(connInfo);
@@ -123,7 +123,7 @@ namespace knet
 			TPtr add_connection(const ConnectionInfo& connInfo, Args... args)
 			{
 				auto worker = this->get_worker();
-				auto sock = std::make_shared<typename T::ConnSock>(worker->thread_id(), worker->context());
+				auto sock = std::make_shared<TcpSocket<T> >(worker->thread_id(), worker->context());
 				TPtr conn = nullptr;
 				if (m.factory)
 				{

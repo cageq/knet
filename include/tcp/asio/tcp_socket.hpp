@@ -81,8 +81,10 @@ public:
 			tcp_sock.async_read_some(
 				buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
 					if (!ec) {
-						// dlog("received data {}", bytes_transferred);
-						process_data(bytes_transferred);
+						dlog("received data length {}", bytes_transferred);
+						if (bytes_transferred > 0 ){
+							process_data(bytes_transferred);
+						}						
 						//dlog("read data: {} length {}", m.read_buffer, bytes_transferred);
 						self->do_read();
 					} else {
@@ -96,9 +98,11 @@ public:
 	}
 
 	int32_t send_inloop(const char* pData, uint32_t dataLen) {
-	 
+	 	
 		asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [&](std::error_code ec, std::size_t length) {
 				if (!ec) {
+					dlog("send out data length is {}", length); 
+					//TODO it's useless? 
 					if (length < dataLen) {
 						send_inloop(pData + length, dataLen - length);
 					}
@@ -114,7 +118,7 @@ public:
 	int32_t send(const char* pData, uint32_t dataLen) {
 
 		if (is_inloop()) {
-			return send_inloop(pData, dataLen);
+		//	return send_inloop(pData, dataLen);
 		}
 		return msend(std::string(pData, dataLen));
 	}
@@ -122,7 +126,7 @@ public:
 	int32_t send(const std::string& msg) {
 
 		if (is_inloop()) {
-			return send_inloop(msg.data(), msg.length());
+			//return send_inloop(msg.data(), msg.length());
 		}
 		return msend(std::string(msg.data(), msg.length()));
 	}
@@ -170,11 +174,13 @@ public:
 
 			auto self = this->shared_from_this();			
 			m.is_writing = true; 
+			dlog("send out buffer size is {}", m.send_buffer.size()); 
 			asio::async_write(tcp_sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
 				[this, self](std::error_code ec, std::size_t length) {
 					if (!ec && tcp_sock.is_open() && length > 0 ) {					
 					//	m.connection->process_event(EVT_SEND);
 						{
+							dlog("send out data length is {}", length);
 							std::lock_guard<std::mutex>  guard(m.mutex); 
 							m.send_buffer.consume(length); 					 	
 							if (m.send_buffer.size() == 0){
@@ -228,11 +234,12 @@ public:
 			return;
 		}
 
-		this->m.connection->process_event(EVT_RECV);
+		//this->m.connection->process_event(EVT_RECV);
 		//	this->m.read_buffer.resize(m.read_buffer.size() + nread);
 		read_buffer_pos += nread;
 		uint32_t readPos = 0;
-		int32_t pkgLen = this->m.connection->process_package(m.read_buffer, read_buffer_pos);
+		dlog("process data length {}", nread);
+		int32_t pkgLen = this->m.connection->process_package((char*)m.read_buffer, read_buffer_pos);
 		dlog("process data  pkg size is {}", pkgLen);
 		if (pkgLen > kReadBufferSize) {
 			elog("single packet size ({}) error, close connection", pkgLen);
@@ -314,8 +321,7 @@ public:
 		});
 	}
 
-	tcp::endpoint local_endpoint() {
-		 
+	tcp::endpoint local_endpoint() {		 
 		return tcp_sock.local_endpoint();
 	
 	}
@@ -326,7 +332,10 @@ public:
 
 	inline tcp::socket& socket() { return tcp_sock; }
 
-	inline bool is_inloop() { return worker_tid == std::this_thread::get_id(); }
+	inline bool is_inloop() { 
+		dlog("my work tid is {}  ,current tid is {}",worker_tid, std::this_thread::get_id() ); 
+		return worker_tid == std::this_thread::get_id(); 
+		}
 
 	inline asio::io_context& context() { return io_context; } 
 

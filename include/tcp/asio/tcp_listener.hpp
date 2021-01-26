@@ -24,7 +24,7 @@ namespace knet
 			using TPtr = std::shared_ptr<T>;		 
 			using FactoryPtr = Factory *;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			using SocketPtr = std::shared_ptr<typename T::ConnSock>; 
+			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
 
 			TcpListener(
 				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
@@ -171,7 +171,7 @@ namespace knet
 				}
 			} 
 
-			virtual bool  handle_data(TPtr conn, const std::string& msg  ) { 
+			virtual bool handle_data(TPtr conn, const std::string& msg  ) { 
 				return invoke_data_chain(conn, msg  ); 		
 			}
 
@@ -234,8 +234,7 @@ namespace knet
 					return;
 				}
 
-				auto socket = std::make_shared<typename T::ConnSock>(
-					worker->thread_id(), worker->context(), m.ssl_context);
+				auto socket = std::make_shared<TcpSocket<T> >(worker->thread_id(), worker->context(), m.ssl_context);
 				tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 					if (!ec)
 					{
@@ -264,7 +263,7 @@ namespace knet
 				}
 			}
 
-			void init_conn(WorkerPtr worker, std::shared_ptr<typename T::ConnSock> socket)
+			void init_conn(WorkerPtr worker, SocketPtr socket)
 			{
 
 				if (worker)
