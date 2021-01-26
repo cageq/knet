@@ -37,8 +37,12 @@ public:
 
 	~TcpSocket() {}
 
-	template <class,class>
-	friend class Connection;
+	// template <class,class>
+	// friend class Connection;
+
+	void init(TPtr conn ){
+		this->connection = conn;
+	}
 
 	bool connect(const std::string& host, uint32_t port, const std::string & localAddr = "0.0.0.0", uint32_t localPort = 0 ) {
 		tcp::resolver resolver(io_context);
@@ -104,7 +108,7 @@ public:
 						send_inloop(pData + length, dataLen - length);
 					}
 				} else {
-					dlog("send in loop error : {} , {}", ec ,ec.message()  ); 
+					elog("send in loop error : {} , {}", ec ,ec.message()  ); 
 					this->do_close();
 				}
 			});
@@ -251,13 +255,15 @@ public:
 				this->connection->process_data(std::string ( (char*)m.read_buffer + readPos, pkgLen) );
 				*pkgEnd = endChar;
 				readPos += pkgLen;
+			}else {
+				break; 
 			}
 
 			if (readPos < read_buffer_pos) {
 				pkgLen = this->connection->process_package(
 					(char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 				if (pkgLen <= 0) {
-					elog("moving buffer to front {} ", read_buffer_pos - readPos);
+					dlog("moving buffer to front {} ", read_buffer_pos - readPos);
 					memmove(m.read_buffer, (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 					read_buffer_pos -= readPos;
 					// this->m.read_buffer.erase(m.read_buffer.begin(),m.read_buffer.begin()+ readPos);
@@ -287,7 +293,7 @@ public:
 			do_async_write(); //try last write
 		}
 		asio::post(io_context, [self]() {
-			elog("try to close connection ..."); 
+			wlog("try to close connection ..."); 
 
 			if (self->connection) {
 				self->connection->process_event(EVT_DISCONNECT);
@@ -301,6 +307,7 @@ public:
 					}
 					self->connection->release();
 					self->connection.reset();
+
 				}
 
 			} else {
@@ -325,12 +332,13 @@ public:
 
 	inline tcp::socket& socket() { return tcp_sock; }
 
-	TPtr connection;
 	inline bool is_inloop() { return worker_tid == std::this_thread::get_id(); }
 
 	inline asio::io_context& context() { return io_context; } 
 
 private:
+
+	TPtr connection;
 	enum { kReadBufferSize = 1024*8, kMaxPackageLimit = 8*1024 * 1024 };
 
 	asio::io_context& io_context; 

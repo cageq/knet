@@ -12,19 +12,25 @@ public:
 	TcpSession()
 	{
 		bind_data_handler(&TcpSession::process_data);
-		bind_event_handler([this](knet::NetEvent) {
+		bind_event_handler([this](knet::NetEvent evt ) {
 
-			std::string msg("hello world");
-			this->send(msg.c_str(), msg.length());
+				if (evt == knet::NetEvent::EVT_CONNECT)
+				{
+					std::string msg("hello world");
+					this->send(msg.c_str(), msg.length());
+				}
+			
 			return true;
 			});
 
 	}
-
+	virtual int32_t handle_package(const char* data, uint32_t len) {
+		dlog("received package length is {}", len);
+		return len;
+	}
 	virtual bool process_data(const std::string& msg)
 	{
-		//    trace;
-		dlog("received data {} ", msg);
+		dlog("received data length {} ", msg.length());
 		this->send(msg.data(), msg.length());
 		return true;
 	}
@@ -61,11 +67,7 @@ int main(int argc, char** argv)
 
 	auto conn = connector.add_connection({ "127.0.0.1", 8855 });
 	//connector->add_connection("10.246.34.55", 8855);
-
-	while (1) {
-		conn->send("hello world");
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	}
+ 
 
 	char c = getchar();
 	while (c)
