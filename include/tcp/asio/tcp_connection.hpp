@@ -37,10 +37,6 @@ namespace knet
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
-			template <class, class, class>
-			friend class Listener;
-			template <class, class, class>
-			friend class Connector;
  
 			using EventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
