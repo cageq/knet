@@ -35,11 +35,6 @@ public:
 		//m.send_buffer.reserve(4096);
 	}
 
-	~TcpSocket() {}
-
-	// template <class,class>
-	// friend class Connection;
-
 	void init(TPtr conn ){
 		this->connection = conn;
 	}
