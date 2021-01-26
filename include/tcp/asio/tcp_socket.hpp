@@ -26,6 +26,7 @@ namespace knet {
 				SOCKET_RECONNECT,
 				SOCKET_CLOSED,
 			};
+			enum { kReadBufferSize = 1024 * 8, kMaxPackageLimit = 8 * 1024 * 1024 };
 			using TPtr = std::shared_ptr<T>;
 			TcpSocket(const std::thread::id& tid, asio::io_context& ctx, void* = nullptr)
 				: io_context(ctx)
@@ -331,8 +332,6 @@ namespace knet {
 
 			inline asio::io_context& context() { return io_context; }
 		private:
-			enum { kReadBufferSize = 1024 * 8, kMaxPackageLimit = 8 * 1024 * 1024 };
-
 			asio::io_context& io_context;
 			tcp::socket tcp_sock;				
 			struct {

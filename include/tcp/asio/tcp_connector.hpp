@@ -214,8 +214,6 @@ namespace knet
 			}
 
 		private:
-
-
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac) {
 
 				auto evtHandler = static_cast<UserEventHandler<T> *>(fac);
@@ -236,7 +234,6 @@ namespace knet
 				bool ret = invoke_event_chain(conn, evt);
 
 				if (evt == EVT_RELEASE) {
-
 					asio::post(*conn->get_context(), [this, conn]() {
 
 						conn->disable_reconnect();
