@@ -173,8 +173,7 @@ public:
 		if (m.send_buffer.size() > 0 ) {  
 
 			auto self = this->shared_from_this();			
-			m.is_writing = true; 
-			dlog("send out buffer size is {}", m.send_buffer.size()); 
+			m.is_writing = true; 			
 			asio::async_write(tcp_sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
 				[this, self](std::error_code ec, std::size_t length) {
 					if (!ec && tcp_sock.is_open() && length > 0 ) {					
