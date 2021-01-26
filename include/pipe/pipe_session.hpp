@@ -32,21 +32,17 @@ namespace knet {
 			}
 
 			int32_t transfer(const std::string& msg) {
-
 				return transfer(msg.data(), msg.length());
 			}
 
 			int32_t transfer(const char* pData, uint32_t len) {
 				if (connection) {
-					dlog("transfer data  to pipe {} , length {}", m.pipeid, len);
-
 					PipeMsgHead head(PIPE_MSG_DATA, len);
-					dlog("send head length {}, type is {}", head.length, head.type);
+					dlog("transfer data to pipe {} , length {} type {}", m.pipeid, len , head.type);					
+					//dlog("send head length {}, type is {}", head.length, head.type);
 					return connection->msend(
 						std::string((const char*)&head, sizeof(PipeMsgHead)), std::string(pData, len));
-				}
-				else {
-
+				}else {
 					wlog("pipe session has no connection {}", m.pipeid);
 				}
 				return -1;
