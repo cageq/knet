@@ -45,7 +45,7 @@ namespace knet
 				//	bind_package_handler(&HttpConnection::handle_package);
 			}
 
-			~HttpConnection() { elog("destroy session"); }
+			~HttpConnection() { wlog("destroy session"); }
 
 			// int32_t handle_package(char* data, uint32_t len) {
 

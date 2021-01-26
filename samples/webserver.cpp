@@ -5,6 +5,7 @@ using namespace knet::http;
 
 int main(int argc, char* argv[]) {
 
+	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >();
 	HttpServer<> webSrv;
 
 	webSrv.register_router("/", [](  HttpRequestPtr req) {
