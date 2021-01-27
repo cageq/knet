@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "utils/c11patch.hpp"
 #include "utils/timer.hpp"
 #include <mutex>
 using namespace knet::utils;
@@ -14,18 +15,19 @@ namespace knet
 	{
 	public:
 		using WorkStarter = std::function<void()>;
+        using IOContextPtr = std::shared_ptr<asio::io_context>; 
 
-		EventWorker(asio::io_context* ctx = nullptr, void* udata = nullptr)
+		EventWorker(IOContextPtr ctx = nullptr, void* udata = nullptr)
 		{
 			if (ctx == nullptr) {
-				io_context = new asio::io_context();
+				io_context = std::make_shared<asio::io_context>(); 
 				self_context = io_context; //hold self context
 			}
 			else {
 				io_context = ctx;
 			}
 			this->user_data = udata;
-			event_timer = std::make_shared<Timer>(*io_context);
+			event_timer = std::make_unique<Timer>(*io_context);
 		}
 
 
@@ -34,8 +36,13 @@ namespace knet
 			if (self_context)
 			{
 				io_context = nullptr;
-				delete self_context;
-				self_context = nullptr;
+                for (auto& thrd : work_threads) {
+                    if (thrd.joinable()) {
+                        thrd.join();
+                    }
+                }
+                self_context->stop();
+                self_context = nullptr;
 			}
 		}
 
@@ -67,15 +74,14 @@ namespace knet
 		}
 		void stop()
 		{
-
+            if (self_context) {
+                self_context->stop();
+                self_context = nullptr; 
+            }
 			for (auto& thrd : work_threads) {
-				if (thrd.joinable()) {
-					if (self_context) {
-						self_context->stop();
-						thrd.join();
-					}
-				}
-
+                if (thrd.joinable()) {
+                    thrd.join();
+                }
 			}
 		}
 
@@ -91,8 +97,6 @@ namespace knet
 			}
 		}
 
-
-		inline asio::io_context* get_context() { return io_context; }
 		inline asio::io_context& context() { return *io_context; }
 		inline std::thread::id thread_id() const { return work_threads[0].get_id(); }
 
@@ -129,9 +133,9 @@ namespace knet
 		WorkStarter work_starter = nullptr;
 		std::vector<std::thread> work_threads;
 
-		asio::io_context* io_context = nullptr;
-		asio::io_context* self_context = nullptr;
-		TimerPtr event_timer;
+		IOContextPtr io_context = nullptr;
+		IOContextPtr self_context = nullptr;
+        std::unique_ptr<Timer> event_timer;
 	};
 	using EventWorkerPtr = std::shared_ptr<EventWorker>;
 } // namespace knet

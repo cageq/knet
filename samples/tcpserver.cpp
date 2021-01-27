@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 		}
 		c = getchar();
 	}
+    listener.stop(); 
 
 	//dlog("quit server");
 	return 0;

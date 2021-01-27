@@ -27,13 +27,13 @@ namespace knet
 			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
 
 			TcpListener(
-				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
-				: listen_worker(lisWorker) 	{
+				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>()) {
+                m.listen_worker = lisWorker; 
 				m.factory = fac;
-				if (listen_worker)
+				if (m.listen_worker)
 				{
-					listen_worker->start();
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(listen_worker->context());
+					m.listen_worker->start();
+					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
 				}
 				else
 				{
@@ -76,15 +76,15 @@ namespace knet
 	
 
 			TcpListener(WorkerPtr lisWorker)
-				: listen_worker(lisWorker)
 			{
+                m.listen_worker = lisWorker; 
 				dlog("create listener without factory");
 				m.factory = nullptr;
 
-				if (listen_worker)
+				if (m.listen_worker)
 				{
-					listen_worker->start();
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(listen_worker->context());
+					m.listen_worker->start();
+					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
 				}
 				else
 				{
@@ -168,6 +168,8 @@ namespace knet
 				{
 					m.is_running = false;
 					tcp_acceptor->close();
+                    m.user_workers.clear(); 
+                    m.listen_worker->stop(); 
 				}
 			} 
 
@@ -217,7 +219,7 @@ namespace knet
 
 			void release(TPtr conn)
 			{
-				asio::post(listen_worker->context(), [this, conn]() {
+				asio::post(m.listen_worker->context(), [this, conn]() {
 					if (m.factory)
 					{
 						m.factory->release(conn);
@@ -259,7 +261,7 @@ namespace knet
 				else
 				{
 					dlog("dispatch work  to listen worker {}", std::this_thread::get_id());
-					return listen_worker;
+					return m.listen_worker;
 				}
 			}
 
@@ -307,10 +309,10 @@ namespace knet
 				void *ssl_context = nullptr;
 				FactoryPtr factory = nullptr;
 				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
+                WorkerPtr listen_worker;
 			} m;
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
-			WorkerPtr listen_worker;
 
 		};
 
