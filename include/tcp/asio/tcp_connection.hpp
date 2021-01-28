@@ -260,7 +260,7 @@ namespace knet
 				return remote_port;
 			} 
 			bool need_reconnect() const {
-				return reconn_flag; 
+				return reconn_flag && !passive_mode; 
 			}
 		 
 		 	/*

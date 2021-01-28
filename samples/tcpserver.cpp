@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 	//TcpListener<TcpSession, UserFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
 	DefaultTcpListener<TcpSession> listener(myworker); 
 	int port = 8855;
-	listener.start( port); 
+	bool ret = listener.start( port); 
 
 	//tcpService.start();
 	// static int index  = 0;
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 //
 //			return 0;
 //			});
-	dlog("start server on port {}", port);
+	dlog("start server on port {} , status {}", port,ret );
   	//co_sched.Start(4);
 
 	char c = getchar();

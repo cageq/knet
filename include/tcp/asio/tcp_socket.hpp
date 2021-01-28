@@ -27,7 +27,7 @@ namespace knet {
 				SOCKET_CLOSED,
 			};
 			enum { kReadBufferSize = 1024 * 8, kMaxPackageLimit = 8 * 1024 * 1024 };
-			using TPtr = std::shared_ptr<T>;
+			using TPtr = std::shared_ptr<T>;//NOTICY not weak_ptr 
 			TcpSocket(const std::thread::id& tid, asio::io_context& ctx, void* = nullptr)
 				: io_context(ctx)
 				, tcp_sock(ctx) {
@@ -103,7 +103,6 @@ namespace knet {
 			}
 
 			int32_t send_inloop(const char* pData, uint32_t dataLen) {
-
 				asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
 					if (ec) {
 						elog("send in loop error : {} , {}", ec, ec.message());
@@ -134,9 +133,8 @@ namespace knet {
 			int32_t msend(const P& first, const Args&... rest) {
 				if (tcp_sock.is_open()) {
 					if (!first.empty()) {
-						m.mutex.lock();
-						this->mpush(first, rest...);
-						m.mutex.unlock();
+						std::lock_guard<std::mutex> guard(m.mutex); 						 
+						this->mpush(first, rest...);					 
 					}
 					return 0;
 				}
@@ -163,7 +161,6 @@ namespace knet {
 
 			bool do_async_write() {
 				if (m.send_buffer.size() > 0) {
-
 					auto self = this->shared_from_this();
 					m.is_writing = true;
 					asio::async_write(tcp_sock, asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
@@ -180,8 +177,7 @@ namespace knet {
 									}
 								}
 								self->do_async_write();
-							}
-							else {
+							}else {
 								self->do_close();
 							}
 						});
@@ -226,9 +222,8 @@ namespace knet {
 				if (!m.connection || nread == 0) {
 					return;
 				}
-
-				//this->m.connection->process_event(EVT_RECV);
-				//	this->m.read_buffer.resize(m.read_buffer.size() + nread);
+			 	m.connection->process_event(EVT_RECV);
+				
 				read_buffer_pos += nread;
 				uint32_t readPos = 0;
 
@@ -286,38 +281,32 @@ namespace knet {
 				if (m.send_buffer.size() > 0 && !m.is_writing) {
 					do_async_write(); //try last write
 				}
-				asio::post(io_context, [self]() {
-					wlog("try to close connection ...");
-
-					if (self->m.connection) {
-						self->m.connection->process_event(EVT_DISCONNECT);
-						self->read_buffer_pos = 0;
-						if (self->m.connection->need_reconnect()) {
-							self->m.status = SocketStatus::SOCKET_RECONNECT;
-						}
-						else {
-							self->m.status = SocketStatus::SOCKET_CLOSED;
-							if (self->socket().is_open()) {
-								self->socket().close();
+				asio::post(io_context, [this, self]() {
+					   auto & conn = self->m.connection; 
+						if (conn) {
+							conn->process_event(EVT_DISCONNECT);					
+							if (conn->need_reconnect()) {
+								self->m.status = SocketStatus::SOCKET_RECONNECT;
+							}else {
+								self->m.status = SocketStatus::SOCKET_CLOSED;
+								if (tcp_sock.is_open()) {
+									tcp_sock.close();
+								}
+								conn->release();
+								conn.reset();
 							}
-							self->m.connection->release();
-							self->m.connection.reset();
+						}else {
+							self->m.status = SocketStatus::SOCKET_CLOSED;
+							if (tcp_sock.is_open()) {
+								tcp_sock.close();							
+							}
 						}
-
-					}
-					else {
-						self->m.status = SocketStatus::SOCKET_CLOSED;
-						if (self->socket().is_open()) {
-							self->socket().close();
-							self->read_buffer_pos = 0;
-						}
-					}
+						self->read_buffer_pos = 0;
 					});
 			}
 
 			tcp::endpoint local_endpoint() {
 				return tcp_sock.local_endpoint();
-
 			}
 
 			tcp::endpoint remote_endpoint() {
