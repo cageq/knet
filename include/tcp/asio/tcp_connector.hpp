@@ -40,6 +40,7 @@ namespace knet
 
 				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T>, Factory >::value>(), fac);
 			}
+			virtual ~TcpConnector(){}
 
 
 			// template<bool flag>
