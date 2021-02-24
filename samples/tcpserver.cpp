@@ -24,13 +24,18 @@ class TcpSession : public TcpConnection<TcpSession>{
 		virtual bool handle_event(knet::NetEvent evt) {
 
 			dlog("handle tcp event {}", evt); 
+
+			std::string rst= "{\"code\":0, \"msg\":\"success\"}"; 
+			this->send(rst); 
 			return true; 
 		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 		virtual bool handle_data(const std::string &msg ) {
 //			  dlog("handle data {}", msg ); 			
-			this->send(msg);
+			//this->send(msg);
+			std::string rst= "{\"code\":0, \"msg\":\"success\"}"; 
+			this->send(rst); 
 			return true; 		
 		}
 };
@@ -62,7 +67,7 @@ int main(int argc, char **argv)
 	myworker->start();
 	//TcpListener<TcpSession, UserFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
 	DefaultTcpListener<TcpSession> listener(myworker); 
-	int port = 8855;
+	int port = 9999;
 	bool ret = listener.start( port); 
 
 	//tcpService.start();

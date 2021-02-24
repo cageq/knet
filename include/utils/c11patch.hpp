@@ -5,7 +5,6 @@
 #include <memory>
 #include <fmt/format.h>
 
-#if __cplusplus <= 201103L  
  
 #ifndef   CPLUSPLUSVER
 # if defined(_MSVC_LANG ) && !defined(__clang__)
@@ -25,7 +24,7 @@
 
 namespace std{
 
-
+#if CPLUSPLUSVER <= 201103L 
 
 #ifndef __cpp_lib_apply 
 
@@ -83,29 +82,30 @@ namespace std{
 
 #endif //__cpp_lib_apply
 
-
    
-#if  CPLUSPLUSVER < 201402L
   template<typename T, typename ...Args>
         std::unique_ptr<T> make_unique(Args&& ...args)
         {
             return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
         }
 
-#if __has_include( <string_view> )
+#if __has_include( <string_view> )   
+
+#ifdef  __cpp_lib_string_view
 		#include <string_view>
 #else 
         using string_view = fmt::string_view; 
 #endif 
 
-#endif 
- 
+#else 
+        using string_view = fmt::string_view; 
+#endif  // __has_include 
 
- 
 
+
+#endif  //CPLUSPLUSVER < 201103L 
 
 
 } //namespace std
 
 
-#endif  //__cplusplus  <= 201103L
