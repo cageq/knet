@@ -28,10 +28,12 @@ class MyChannel : public PipeSession{
 int main(int argc, char * argv[]){ 
 
 	kLogIns.add_console(); 
-	auto mySession = std::make_shared<MyChannel>("1"); 
+	auto mySession = std::make_shared<MyChannel>("pipe1"); 
 	KPipe<> cpipe(PipeMode::PIPE_CLIENT_MODE); 
-	cpipe.attach(mySession,"127.0.0.1",9999); 
-	cpipe.start("127.0.0.1",9999);  
+
+	uint32_t port = 6688; 
+	cpipe.attach(mySession,"127.0.0.1",port); 
+	cpipe.start();  
 
 	while(1){
 		std::this_thread::sleep_for(std::chrono::seconds(3)); 
