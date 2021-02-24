@@ -25,7 +25,7 @@ namespace knet {
 
 			virtual ~PipeSession(){}
 			virtual bool handle_event(NetEvent evt) { dlog("handle net event {}", evt); return true; }
-			virtual int32_t handle_message(const std::string_view& msg) {
+			virtual int32_t handle_message(const std::string& msg) {
 
 				dlog("handle pipe message : {}", msg);
 				return 0;

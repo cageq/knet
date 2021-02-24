@@ -1,6 +1,5 @@
 #pragma once   
 
-
 #include <tuple>
 #include <type_traits>
 #include <memory>
@@ -8,13 +7,27 @@
 
 #if __cplusplus <= 201103L  
  
+#ifndef   CPLUSPLUSVER
+# if defined(_MSVC_LANG ) && !defined(__clang__)
+#  define CPLUSPLUSVER  (_MSC_VER == 1900 ? 201103L : _MSVC_LANG )
+# else
+#  define CPLUSPLUSVER  __cplusplus
+# endif
+#endif
+
+
+
+#define KNET_CPP98_OR_GREATER  ( CPLUSPLUSVER >= 199711L )
+#define KNET_CPP11_OR_GREATER  ( CPLUSPLUSVER >= 201103L )
+#define KNET_CPP14_OR_GREATER  ( CPLUSPLUSVER >= 201402L )
+#define KNET_CPP17_OR_GREATER  ( CPLUSPLUSVER >= 201703L )
+#define KNET_CPP20_OR_GREATER  ( CPLUSPLUSVER >= 202000L )
 
 namespace std{
 
 
 
 #ifndef __cpp_lib_apply 
- 
 
   template<size_t... Ints>
         struct apply_index_sequence {
@@ -72,24 +85,22 @@ namespace std{
 
 
    
- 
-
-
- 
-
-#if    __cpp_lib_string_view  < 201606L
-
-#ifdef __linux__
-        template<typename T, typename ...Args>
+#if  CPLUSPLUSVER < 201402L
+  template<typename T, typename ...Args>
         std::unique_ptr<T> make_unique(Args&& ...args)
         {
             return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
         }
 
-#endif 
-
+#if __has_include( <string_view> )
+		#include <string_view>
+#else 
         using string_view = fmt::string_view; 
 #endif 
+
+#endif 
+ 
+
  
 
 

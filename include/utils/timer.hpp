@@ -10,7 +10,7 @@ namespace knet
 	{
 
 		using TimerHandler = std::function<void()>;
-		class Timer final
+		class Timer 
 		{
 		public:
 			struct TimerNode
