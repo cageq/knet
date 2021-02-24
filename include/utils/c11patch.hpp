@@ -94,7 +94,9 @@ namespace std{
 #ifdef  __cpp_lib_string_view
 		#include <string_view>
 #else 
+#if __linux__
         using string_view = fmt::string_view; 
+#endif 
 #endif 
 
 #else 
