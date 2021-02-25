@@ -50,8 +50,9 @@ namespace knet {
 
 			int32_t send(const std::string& msg) {
 				if (connection) {
+					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
 
-					return connection->send(msg);
+					return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)), msg);				 
 				}
 				return -1;
 			}
@@ -64,10 +65,13 @@ namespace knet {
 
 			int32_t send(const char* pData, uint32_t len) {
 				if (connection) {
-					return connection->send(pData, len);
+					PipeMsgHead head(PIPE_MSG_DATA, len);
+					return connection->msend(
+						std::string((const char*)&head, sizeof(PipeMsgHead)), std::string(pData, len));
 				}
 				return -1;
-			}
+			} 
+
 			void send_heartbeat(const std::string& msg) {
 				PipeMsg  hbMsg;
 				hbMsg.fill(PIPE_MSG_HEART_BEAT, msg);
