@@ -64,8 +64,7 @@ namespace knet {
 					dlog("send thread id is {}", std::this_thread::get_id());
 
 					auto buffer = std::make_shared<std::string>(data, length);
-					udp_socket->async_send_to(asio::buffer(*buffer), remote_point,
-						[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
+					udp_socket->async_send_to(asio::buffer(*buffer), remote_point, [ buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 							if (!ec) {
 								// if (event_handler) {
 								// 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });

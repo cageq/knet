@@ -141,8 +141,8 @@ namespace knet {
 				return -1;
 			}
 
-			template <class... Args>
-			void mpush(const std::string& first, Args... rest) {
+			template <typename F, typename ... Args>
+			void mpush(const F &  first, Args... rest) {
 				std::ostream outbuf(&m.send_buffer);
 				outbuf << first;
 				mpush(rest...);
