@@ -24,7 +24,7 @@ namespace knet
 		};
  
 
-		uint32_t pipe_data_length()
+		inline uint32_t pipe_data_length()
 		{
 			return 0;
 		}
