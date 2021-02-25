@@ -39,6 +39,8 @@ int main(int argc, char * argv[]){
 		std::this_thread::sleep_for(std::chrono::seconds(3)); 
 		//mySession->transfer("welcome to 2020",15);  
 		cpipe.broadcast("welcome to 2020");  
+
+		mySession->msend(std::string("22322"),std::string("msend"));
 	}; 
 	return 0; 
 };

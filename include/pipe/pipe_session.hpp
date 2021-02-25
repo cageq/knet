@@ -73,13 +73,22 @@ namespace knet {
 			} 
 
 			int32_t send_heartbeat(const std::string& msg) {
-
 				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());	
 				if (connection) {
 					return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)), msg);
 				}
 				return -1; 				
 			}
+
+			template <class P, class... Args>
+			int32_t msend(const P &first, const Args &... rest)
+			{
+				uint32_t bodyLen = pipe_data_length(first, rest...);
+				dlog("msend body length is {}", bodyLen); 
+				PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
+				return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)),  first, rest...);
+			}
+
 
 			void bind(PipeConnectionPtr conn) {
 				this->connection = conn;
