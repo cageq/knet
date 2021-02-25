@@ -99,10 +99,13 @@ namespace knet {
 						auto session = itr->second;
 						session->bind(conn);
  
-						dlog("bind session success");
-						PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND);
-						shakeMsg.append(pipeId);
-						conn->send(shakeMsg.begin(), shakeMsg.length());
+						dlog("bind session {} success" , pipeId); 
+						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 
+						
+						conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
+
+
+						//conn->send(shakeMsg.begin(), shakeMsg.length());
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}else {
 						wlog("pipe id not found {}", pipeId);
@@ -127,9 +130,10 @@ namespace knet {
 					}
 
 					if (session) {
-						PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND);
-						shakeMsg.append(pipeId);
-						conn->send(shakeMsg.begin(), shakeMsg.length());
+						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 		 
+
+						conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
+ 
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 				}
@@ -195,11 +199,13 @@ namespace knet {
 
 			void send_shakehand(TPtr conn, const std::string& pipeId) {
 				
-				PipeMessage<64> shakeMsg(PIPE_MSG_SHAKE_HAND)  ;
-				shakeMsg.append(pipeId);
+				dlog("shakehande request pipe id {}  ", pipeId  ); 
+				PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 
+				conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
+
 				// if (!pipeId.empty()) {
-				dlog("shakehande request pipe id {} , msg length {}", pipeId , shakeMsg.length());
-				conn->send(shakeMsg.begin(), shakeMsg.length());
+				
+				// conn->send(shakeMsg.begin(), shakeMsg.length());
 				// }
 			}
 

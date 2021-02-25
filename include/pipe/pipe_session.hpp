@@ -72,10 +72,13 @@ namespace knet {
 				return -1;
 			} 
 
-			void send_heartbeat(const std::string& msg) {
-				PipeMsg  hbMsg;
-				hbMsg.fill(PIPE_MSG_HEART_BEAT, msg);
-				transfer(hbMsg.data(), hbMsg.length());
+			int32_t send_heartbeat(const std::string& msg) {
+
+				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());	
+				if (connection) {
+					return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)), msg);
+				}
+				return -1; 				
 			}
 
 			void bind(PipeConnectionPtr conn) {
