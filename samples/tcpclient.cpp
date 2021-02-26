@@ -23,7 +23,7 @@ public:
 
 		dlog("received data   {} ", msg );
 		std::string mymsg("hello world");
-		this->send(mymsg);
+		//this->send(mymsg);
 
 		return true;
 	}
@@ -32,7 +32,8 @@ public:
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
 			std::string msg("hello world");
-			this->send(msg.c_str(), msg.length());
+			//this->send(msg.c_str(), msg.length());
+			this->msend(123445,msg);
 		}
 		return true; 
 	}
@@ -69,7 +70,7 @@ int main(int argc, char** argv)
 	// });
 
 
-	auto conn = connector.add_connection({ "127.0.0.1", 8855 });
+	auto conn = connector.add_connection({ "127.0.0.1", 8888});
 	//connector->add_connection("10.246.34.55", 8855);
 
 

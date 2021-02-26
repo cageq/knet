@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include <type_traits>
 
 namespace knet {
 	namespace tcp {
@@ -128,11 +129,21 @@ namespace knet {
 				}
 				return msend(std::string(msg.data(), msg.length()));
 			}
-
+			
+			template <typename P> 
+			inline bool is_empty(const P & param) {
+				return false; 
+			}
+			inline bool is_empty(const std::string & param) {
+				return param.empty(); 
+			}
+			inline bool is_empty(const char *  param) {
+				return strlen(param) == 0 ; 
+			}
 			template <class P, class... Args>
 			int32_t msend(const P& first, const Args&... rest) {
 				if (tcp_sock.is_open()) {
-					if (!first.empty()) {
+					if (!is_empty(first) ) {
 						std::lock_guard<std::mutex> guard(m.mutex); 						 
 						this->mpush(first, rest...);					 
 					}
@@ -141,10 +152,33 @@ namespace knet {
 				return -1;
 			}
 
+	template <typename P >  
+ 		inline void write_data  (  const P & data,std::true_type ){
+				std::ostream outbuf(&m.send_buffer);			  
+				outbuf.write((const char*)&data, sizeof(P)); 
+			}
+  
+
+	template <typename P >  
+			inline void write_data( const P &  data, std::false_type){
+				std::ostream outbuf(&m.send_buffer);
+				 outbuf << data;		 
+			}
+		
+
+			inline void write_data( const std::string &  data, std::false_type){
+				std::ostream outbuf(&m.send_buffer);
+				outbuf.write(data.c_str(), data.length());  
+			}
+
 			template <typename F, typename ... Args>
 			void mpush(const F &  first, Args... rest) {
-				std::ostream outbuf(&m.send_buffer);
-				outbuf << first;
+				//std::ostream outbuf(&m.send_buffer);
+				//outbuf << first;				
+				//this->write_data<F>(first,std::integral_constant<bool,std::is_integral<F>::value>::value() ); 
+
+				this->write_data<F>(first, std::is_integral<F> () ); 
+				//write_data<F>(m.send_buffer,first, a); 
 				mpush(rest...);
 			}
 
@@ -324,7 +358,6 @@ namespace knet {
 			asio::io_context& io_context;
 			tcp::socket tcp_sock;				
 			struct {
-				
 				TPtr connection;
 				asio::streambuf send_buffer;
 				char read_buffer[kReadBufferSize];
