@@ -40,19 +40,17 @@ namespace knet
 					elog("can't live without listen worker");
 				}
 				if (fac != nullptr){
-					//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac); 
-					//add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T> , Factory >::value>() , fac); 
-
+					//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac);  
 					add_factory_event_handler( std::is_base_of<UserEventHandler<T> , Factory >() , fac); 
 				} 
  
 			}
 
 			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){				
-					auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
-					if (evtHandler){
-						add_event_handler(evtHandler); 
-					}					
+				auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
+				if (evtHandler){
+					add_event_handler(evtHandler); 
+				}					
 			}
 
 			inline void add_factory_event_handler(std::false_type , FactoryPtr fac){

@@ -123,7 +123,6 @@ namespace knet {
 			}
 
 			int32_t send(const std::string& msg) {
-
 				if (is_inloop()) {
 					return send_inloop(msg.data(), msg.length());
 				}
@@ -152,14 +151,14 @@ namespace knet {
 				return -1;
 			}
 
-	template <typename P >  
+		template <typename P >  
  		inline void write_data  (  const P & data,std::true_type ){
 				std::ostream outbuf(&m.send_buffer);			  
 				outbuf.write((const char*)&data, sizeof(P)); 
 			}
   
 
-	template <typename P >  
+		template <typename P >  
 			inline void write_data( const P &  data, std::false_type){
 				std::ostream outbuf(&m.send_buffer);
 				 outbuf << data;		 
@@ -172,13 +171,8 @@ namespace knet {
 			}
 
 			template <typename F, typename ... Args>
-			void mpush(const F &  first, Args... rest) {
-				//std::ostream outbuf(&m.send_buffer);
-				//outbuf << first;				
-				//this->write_data<F>(first,std::integral_constant<bool,std::is_integral<F>::value>::value() ); 
-
-				this->write_data<F>(first, std::is_integral<F> () ); 
-				//write_data<F>(m.send_buffer,first, a); 
+			void mpush(const F &  first, Args... rest) {  
+				this->write_data<F>(first, std::is_integral<F> () );  
 				mpush(rest...);
 			}
 
