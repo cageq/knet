@@ -88,6 +88,19 @@ namespace knet {
 				}
 				return -1; 				
 			}
+			template <class P, class... Args>
+				int32_t msend_with_obdata(uint64_t obdata, const P &first, const Args &... rest){
+					if (connection){
+						uint32_t bodyLen = pipe_data_length(first, rest...);
+						dlog("msend body length is {}", bodyLen); 
+						PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
+						head.data = obdata; 
+						return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)),  first, rest...);
+					}
+					return -1; 
+
+				}
+
 
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &... rest)
