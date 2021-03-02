@@ -78,7 +78,7 @@ namespace knet {
 				}
 				auto session = conn->get_session();
 				if (session) {
-					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ));
+					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ), msg->data);
 				}else {
 					elog("connection has no session");
 				}

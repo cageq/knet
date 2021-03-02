@@ -13,8 +13,9 @@ class MyChannel : public PipeSession{
 
 		virtual ~MyChannel(){}
 		virtual bool handle_event(knet::NetEvent evt) { dlog("handle net event {}", evt);  return true; }
-		virtual int32_t handle_message(const std::string& msg) {
+		virtual int32_t handle_message(const std::string& msg,uint64_t obdata = 0 ) {
 			dlog("---------------{}----------------", msg.size()); 
+			dlog("outband data is {}", obdata); 
 			dlog("{}",msg); 
 			dlog("---------------------------------"); 
 //			this->transfer(std::string(msg.data(), msg.length())); 

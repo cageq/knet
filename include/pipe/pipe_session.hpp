@@ -25,7 +25,7 @@ namespace knet {
 
 			virtual ~PipeSession(){}
 			virtual bool handle_event(NetEvent evt) { dlog("handle net event {}", evt); return true; }
-			virtual int32_t handle_message(const std::string& msg) {
+			virtual int32_t handle_message(const std::string& msg, uint64_t obdata = 0) {
 
 				dlog("handle pipe message : {}", msg);
 				return 0;
@@ -48,6 +48,15 @@ namespace knet {
 				return -1;
 			}
 
+			int32_t send(uint64_t obdata, const std::string& msg) {
+				if (connection) {
+					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
+				 	head.data = obdata; 
+					return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)), msg);				 
+				}
+				return -1;
+
+			}
 			int32_t send(const std::string& msg) {
 				if (connection) {
 					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
@@ -83,12 +92,14 @@ namespace knet {
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &... rest)
 			{
-				uint32_t bodyLen = pipe_data_length(first, rest...);
-				dlog("msend body length is {}", bodyLen); 
-				PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
-				return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)),  first, rest...);
+				if (connection){
+					uint32_t bodyLen = pipe_data_length(first, rest...);
+					dlog("msend body length is {}", bodyLen); 
+					PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
+					return connection->msend(std::string((const char*)&head, sizeof(PipeMsgHead)),  first, rest...);
+				}
+				return -1; 
 			}
-
 
 			void bind(PipeConnectionPtr conn) {
 				this->connection = conn;
