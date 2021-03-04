@@ -37,8 +37,6 @@ namespace knet
 			return arg.length() + pipe_data_length (args ... );
 		}
 
-	
-
 	}
 
 }

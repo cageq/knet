@@ -72,8 +72,7 @@ namespace knet {
 					}
 
 					return sizeof(PipeMsgHead) + msg->length;
-				}
-				else {
+				} else {
 					dlog("message type {}", msg->type );
 				}
 				auto session = conn->get_session();
@@ -82,7 +81,7 @@ namespace knet {
 				}else {
 					wlog("connection has no session");
 				}
-				return true;
+				return false;
 			}
 
 			std::string generate_id() {

@@ -36,12 +36,14 @@ int main(int argc, char * argv[]){
 	cpipe.attach(mySession,"127.0.0.1",port); 
 	cpipe.start();  
 
+	uint64_t index = 0; 
 	while(1){
 		std::this_thread::sleep_for(std::chrono::seconds(3)); 
 		//mySession->transfer("welcome to 2020",15);  
-		cpipe.broadcast("welcome to 2020");  
+//		cpipe.broadcast("welcome to 2020");  
 
-		mySession->msend(std::string("22322"),std::string("msend"));
+	std::string msg = fmt::format("index: {} , ",index ++); 
+		mySession->msend(msg, std::string("22322"),std::string("msend"));
 	}; 
 	return 0; 
 };

@@ -267,7 +267,6 @@ namespace knet
 
 			void init_conn(WorkerPtr worker, SocketPtr socket)
 			{
-
 				if (worker)
 				{
 					asio::dispatch(worker->context(), [=]() {
@@ -312,7 +311,6 @@ namespace knet
 			} m;
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
-
 		};
 
 		template <typename T >
