@@ -74,13 +74,13 @@ namespace knet {
 					return sizeof(PipeMsgHead) + msg->length;
 				}
 				else {
-					wlog("message type {}", msg->type );
+					dlog("message type {}", msg->type );
 				}
 				auto session = conn->get_session();
 				if (session) {
 					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ), msg->data);
 				}else {
-					elog("connection has no session");
+					wlog("connection has no session");
 				}
 				return true;
 			}

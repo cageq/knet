@@ -190,7 +190,7 @@ namespace knet
 				}
 			}
 		private: 
-			bool  invoke_data_chain(TPtr conn, const std::string& msg  ){
+			bool invoke_data_chain(TPtr conn, const std::string& msg  ){
 				bool ret = true; 
 				for(auto handler : m.event_handler_chain){
 					if (handler ){
@@ -271,9 +271,8 @@ namespace knet
 				if (worker)
 				{
 					asio::dispatch(worker->context(), [=]() {
-						auto conn = create_connection(socket, worker); 
-					 
-						conn->handle_event(EVT_CONNECT);
+						auto conn = create_connection(socket, worker);   
+						this->handle_event(conn, EVT_CONNECT);
 						socket->do_read();
 					});
 				}

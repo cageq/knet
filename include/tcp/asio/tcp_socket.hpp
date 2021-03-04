@@ -59,7 +59,7 @@ namespace knet {
 								self->m.connection->process_event(EVT_CONNECT);
 							}
 							else {
-								wlog("no connection");
+								wlog("no socket connection");
 							}
 							self->do_read();
 						}
