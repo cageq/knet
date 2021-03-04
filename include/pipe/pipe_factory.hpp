@@ -52,7 +52,7 @@ namespace knet {
 					dlog("handle session event {}", evt);
 					session->handle_event(evt);
 				}
-				return true;
+				return false;
 			}
 			virtual bool handle_data(TPtr conn, const std::string& buf) {
 
