@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "knet.hpp"
+#include "user_event_handler.hpp"
 
 using namespace knet::tcp;
 
@@ -17,7 +18,7 @@ class TcpSession : public TcpConnection<TcpSession>
 };
 
 
-class MyFactory: public knet::UserFactory<TcpSession> { 
+class MyFactory: public knet::UserFactory<TcpSession>, public knet::UserEventHandler<TcpSession> { 
 
 	public:
 
@@ -25,8 +26,9 @@ class MyFactory: public knet::UserFactory<TcpSession> {
 			dlog("connection factory destroy connection in my factory "); 
 		}	
 
-		virtual void handle_event(TPtr conn, knet::NetEvent evt) {
-			ilog("handle event in connection my factory"); 
+		virtual bool handle_event(TPtr conn, knet::NetEvent evt) {
+			ilog("handle event in connection my factory {}", evt ); 
+			return true; 
 		}
 
 		virtual bool handle_data(TPtr conn, const std::string & msg ) { 
@@ -38,7 +40,7 @@ class MyFactory: public knet::UserFactory<TcpSession> {
 
 int main(int argc, char **argv)
 {
- 
+ kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
 	MyFactory factory; 
 	dlog("start server");
 	TcpListener<TcpSession,MyFactory> listener(&factory);
