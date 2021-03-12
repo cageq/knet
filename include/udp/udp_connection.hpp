@@ -45,7 +45,7 @@ namespace knet {
 			using DataHandler = std::function<bool(const std::string & )>;	
 
 
-			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, UserEventHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, NetEventHandler<T>* evtHandler = nullptr)
 			{
 				udp_socket = socket;
 				static uint64_t index = 1024;				
@@ -294,7 +294,7 @@ namespace knet {
 			std::chrono::steady_clock::time_point last_msg_time;
 
 			struct {
-				UserEventHandler<T>* user_event_handler = nullptr;
+				NetEventHandler<T>* user_event_handler = nullptr;
 				EventWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
 				std::unique_ptr<Timer> timer = nullptr;

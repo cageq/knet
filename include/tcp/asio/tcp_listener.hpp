@@ -9,26 +9,27 @@
 #include <vector>
 #include "tcp_connection.hpp"
 #include "utils/c11patch.hpp"
-#include "user_factory.hpp"
+#include "conn_factory.hpp"
 
 namespace knet
 {
 	namespace tcp
 	{
- 
+
 		using asio::ip::tcp;
-		template <class T, class Factory = UserFactory<T>, class Worker = EventWorker>
-		class TcpListener final : public UserEventHandler<T>    
+		template <class T, class Factory = ConnFactory<T>, class Worker = EventWorker>
+		class TcpListener final : public NetEventHandler<T>
 		{
 		public:
-			using TPtr = std::shared_ptr<T>;		 
+			using TPtr = std::shared_ptr<T>;
 			using FactoryPtr = Factory *;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
+			using SocketPtr = std::shared_ptr<TcpSocket<T>>;
 
 			TcpListener(
-				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>()) {
-                m.listen_worker = lisWorker; 
+				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
+			{
+				m.listen_worker = lisWorker;
 				m.factory = fac;
 				if (m.listen_worker)
 				{
@@ -39,48 +40,16 @@ namespace knet
 				{
 					elog("can't live without listen worker");
 				}
-				if (fac != nullptr){
-					//factory_event_helper<std::is_base_of<UserEventHandler<T> , Factory >::value>( fac);  
-					add_factory_event_handler( std::is_base_of<UserEventHandler<T> , Factory >() , fac); 
-				} 
- 
+				if (fac != nullptr)
+				{					
+					add_factory_event_handler(std::is_base_of<NetEventHandler<T>, Factory>(), fac);
+				}
 			}
-
-			inline void add_factory_event_handler(std::true_type , FactoryPtr fac){				
-				auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
-				if (evtHandler){
-					add_event_handler(evtHandler); 
-				}					
-			}
-
-			inline void add_factory_event_handler(std::false_type , FactoryPtr fac){
-				
-			}
-
-				// 		template<bool flag>
-			// using allow_if = typename std::enable_if<flag>::type; 
-			// template<bool S = true>
-			// 	allow_if<S> factory_event_helper(FactoryPtr fac){
-			// 		elog("add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory >::value ); 
-			// 		auto evtHandler = static_cast<UserEventHandler<T> *>(fac); 	
-			// 		if (evtHandler){
-			// 			add_event_handler(evtHandler); 
-			// 		}					
-			// 	}
-
-			// template<bool S = true>
-			// allow_if<!S> factory_event_helper(FactoryPtr fac){
-			// 	elog("not add factory event helper {}", std::is_base_of<UserEventHandler<T> , Factory  >::value ); 
-				 
-			// }
-	
 
 			TcpListener(WorkerPtr lisWorker)
 			{
-                m.listen_worker = lisWorker; 
-				dlog("create listener without factory");
+				m.listen_worker = lisWorker;				
 				m.factory = nullptr;
-
 				if (m.listen_worker)
 				{
 					m.listen_worker->start();
@@ -89,10 +58,8 @@ namespace knet
 				else
 				{
 					elog("can't live without listen worker");
-				}			 
-
+				}
 			}
- 
 
 			void add_worker(WorkerPtr worker)
 			{
@@ -112,7 +79,7 @@ namespace knet
 				m.ssl_context = sslCtx;
 				if (!m.is_running)
 				{
-					m.is_running = true; 
+					m.is_running = true;
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(opt.host), opt.port);
 
 					// this->tcp_acceptor.open(asio::ip::tcp::v4());
@@ -168,53 +135,80 @@ namespace knet
 				{
 					m.is_running = false;
 					tcp_acceptor->close();
-                    m.user_workers.clear(); 
-                    m.listen_worker->stop(); 
+					m.user_workers.clear();
+					m.listen_worker->stop();
 				}
-			} 
-
-			virtual bool handle_data(TPtr conn, const std::string& msg  ) { 
-				return invoke_data_chain(conn, msg  ); 		
 			}
 
-			virtual bool handle_event(TPtr conn, NetEvent evt ) { 
-				bool ret = invoke_event_chain(conn,evt);  
-				if (evt == EVT_RELEASE){
-					this->release(conn); 				
-				}
-				return ret; 
-			}
-			void add_event_handler(UserEventHandler<T> * handler){
-				if (handler){
-					m.event_handler_chain.push_back(handler); 
-				}
-			}
-		private: 
-			bool invoke_data_chain(TPtr conn, const std::string& msg  ){
-				bool ret = true; 
-				for(auto handler : m.event_handler_chain){
-					if (handler ){
-						ret = handler->handle_data(conn, msg); 
-						if (!ret){
-							break; 
-						}
-					}
-				}
-				return ret; 
+			virtual bool handle_data(TPtr conn, const std::string &msg)
+			{
+				return invoke_data_chain(conn, msg);
 			}
 
-			bool invoke_event_chain(TPtr conn, NetEvent evt){
-				bool ret = true; 
-				for(auto handler : m.event_handler_chain){
-					if (handler ){
-						ret = handler->handle_event(conn, evt); 
+			virtual bool handle_event(TPtr conn, NetEvent evt)
+			{
+				bool ret = invoke_event_chain(conn, evt);
+				if (evt == EVT_RELEASE)
+				{
+					this->release(conn);
+				}
+				return ret;
+			}
+
+			void add_event_handler(NetEventHandler<T> *handler)
+			{
+				if (handler)
+				{
+					m.event_handler_chain.push_back(handler);
+				}
+			}
+
+		private:
+			inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
+			{
+				auto evtHandler = static_cast<NetEventHandler<T> *>(fac);
+				if (evtHandler)
+				{
+					add_event_handler(evtHandler);
+				}
+			}
+
+			inline void add_factory_event_handler(std::false_type, FactoryPtr fac)
+			{
+			}
+
+			bool invoke_data_chain(TPtr conn, const std::string &msg)
+			{
+				bool ret = true;
+				for (auto &handler : m.event_handler_chain)
+				{
+					if (handler)
+					{
+						ret = handler->handle_data(conn, msg);
 						if (!ret)
 						{
-							break; 
+							break;
 						}
 					}
 				}
-				return ret; 
+				return ret;
+			}
+
+			bool invoke_event_chain(TPtr conn, NetEvent evt)
+			{
+				bool ret = true;
+				for (auto &handler : m.event_handler_chain)
+				{
+					if (handler)
+					{
+						ret = handler->handle_event(conn, evt);
+						if (!ret)
+						{
+							break;
+						}
+					}
+				}
+				return ret;
 			}
 
 			void release(TPtr conn)
@@ -236,7 +230,7 @@ namespace knet
 					return;
 				}
 
-				auto socket = std::make_shared<TcpSocket<T> >(worker->thread_id(), worker->context(), m.ssl_context);
+				auto socket = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context(), m.ssl_context);
 				tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 					if (!ec)
 					{
@@ -260,7 +254,7 @@ namespace knet
 				}
 				else
 				{
-					dlog("dispatch work  to listen worker {}", std::this_thread::get_id());
+					dlog("dispatch work to listen worker {}", std::this_thread::get_id());
 					return m.listen_worker;
 				}
 			}
@@ -270,31 +264,16 @@ namespace knet
 				if (worker)
 				{
 					asio::dispatch(worker->context(), [=]() {
-						auto conn = create_connection(socket, worker);   
-						this->handle_event(conn, EVT_CONNECT);
-						socket->do_read();
+						auto conn = create_connection(socket, worker);				 
+						socket->init_read();
 					});
 				}
 			}
 
-			// static TPtr factory_create_helper(FactoryPtr fac)
-			// {
-			// 	if (fac)
-			// 	{
-			// 		wlog("create connection by factory");
-			// 		return fac->create(std::forward<Args>(args)... );
-			// 	}
-			// 	else
-			// 	{
-			// 		wlog("create connection by default");
-			// 		return std::make_shared<T>( std::forward<Args>(args)... );
-			// 	}
-			// }
-
-			TPtr create_connection(SocketPtr sock ,WorkerPtr worker)
-			{ 
-				auto conn = m.factory->create(); 
-				conn->init(  sock, worker , this );
+			TPtr create_connection(SocketPtr sock, WorkerPtr worker)
+			{
+				auto conn = m.factory->create();
+				conn->init(sock, worker, this);
 				return conn;
 			}
 
@@ -306,15 +285,15 @@ namespace knet
 				bool is_running = false;
 				void *ssl_context = nullptr;
 				FactoryPtr factory = nullptr;
-				std::vector< UserEventHandler<T> *>  event_handler_chain; 				
-                WorkerPtr listen_worker;
+				std::vector<NetEventHandler<T> *> event_handler_chain;
+				WorkerPtr listen_worker;
 			} m;
 
 			std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
 		};
 
-		template <typename T >
-		    using DefaultTcpListener = TcpListener<T, UserFactory<T>, EventWorker >;
+		template <typename T>
+		using DefaultTcpListener = TcpListener<T, ConnFactory<T>, EventWorker>;
 
 	} // namespace tcp
 

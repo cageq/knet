@@ -14,6 +14,7 @@ namespace knet{
 			public:
 
 				friend class PipeSession; 
+				using PipeSessionPtr = std::shared_ptr<PipeSession>; 
 				PipeConnection(const std::string& pid = "") { pipeid = pid; }
 
 				virtual int32_t handle_package( const char* data, uint32_t len) {
@@ -26,17 +27,19 @@ namespace knet{
 					return sizeof(PipeMsgHead) + msg->length;
 				} 
 
-				inline std::shared_ptr<PipeSession> get_session(){
+				inline PipeSessionPtr get_session(){
 					return session ; 
 				}
-				inline void set_session(std::shared_ptr<PipeSession> session){
+
+				inline void set_session( PipeSessionPtr session){
 					this->session = session; 
 				}
+
 				inline std::string get_pipeid()const {
 					return pipeid; 
 				}
 			private: 
-				std::shared_ptr<PipeSession> session;
+				PipeSessionPtr session;
 				std::string pipeid;
 		};
 

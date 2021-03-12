@@ -23,7 +23,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 		}
 		virtual bool handle_event(knet::NetEvent evt) {
 
-			dlog("handle tcp event {}", evt); 
+			dlog("handle my tcp event {}", evt); 
 
 			return true; 
 		}
@@ -60,12 +60,12 @@ int main(int argc, char **argv)
 	// for(auto & worker : workers){
 	// 	worker->start(); 
 	// }
-	// UserFactory<TcpSession> factory; 
+	// ConnFactory<TcpSession> factory; 
 	// TcpListener<TcpSession> listener(&factory, workers); 
 
 	std::shared_ptr<knet::EventWorker> myworker = std::make_shared<knet::EventWorker>();
 	myworker->start();
-	//TcpListener<TcpSession, UserFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
+	//TcpListener<TcpSession, ConnFactory<TcpSession>,  knet::EventWorker, int32_t> listener(myworker,222); 
 	DefaultTcpListener<TcpSession> listener(myworker); 
 	int port = 8888;
 	bool ret = listener.start( port); 

@@ -5,8 +5,8 @@
 
 #pragma once
 #include "udp/udp_connection.hpp"
-#include "user_factory.hpp"
-#include "user_event_handler.hpp"
+#include "conn_factory.hpp"
+#include "event_handler.hpp"
 
 using asio::ip::udp;
 
@@ -15,8 +15,8 @@ namespace knet
 	namespace udp
 	{
 
-		template <typename T, class Factory = UserFactory<T>, typename Worker = EventWorker>
-		class UdpConnector : public UserEventHandler<T>
+		template <typename T, class Factory = ConnFactory<T>, typename Worker = EventWorker>
+		class UdpConnector : public NetEventHandler<T>
 		{
 
 		public:
@@ -30,7 +30,7 @@ namespace knet
 				m.factory = fac;
 				m.worker = w;
 
-				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<UserEventHandler<T>, Factory >::value>(), fac);
+				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<NetEventHandler<T>, Factory >::value>(), fac);
 			}
 
 
@@ -96,7 +96,7 @@ namespace knet
 			virtual bool handle_event(std::shared_ptr<T>, NetEvent) {
 				return true;
 			}
-			void add_event_handler(UserEventHandler<T>* handler) {
+			void add_event_handler(NetEventHandler<T>* handler) {
 				if (handler) {
 					m.event_handler_chain.push_back(handler);
 				}
@@ -130,7 +130,7 @@ namespace knet
 			}
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac) {
 
-				auto evtHandler = static_cast<UserEventHandler<T> *>(fac);
+				auto evtHandler = static_cast<NetEventHandler<T> *>(fac);
 				if (evtHandler) {
 					add_event_handler(evtHandler);
 				}
@@ -143,7 +143,7 @@ namespace knet
 			{
 				FactoryPtr factory = nullptr;
 				WorkerPtr worker;
-				std::vector< UserEventHandler<T>*>  event_handler_chain;
+				std::vector< NetEventHandler<T>*>  event_handler_chain;
 				std::unordered_map<std::string, TPtr> connections;
 			} m;
 		};

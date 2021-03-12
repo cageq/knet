@@ -12,7 +12,7 @@ namespace knet {
 	namespace pipe{
 
 		template <class Worker = knet::EventWorker>
-			class KPipe : public UserFactory<PipeConnection> {
+			class KPipe : public ConnFactory<PipeConnection> {
 				public:
 					using PipeListener = TcpListener<PipeConnection, PipeFactory, Worker>;
 					using PipeConnector = TcpConnector<PipeConnection, PipeFactory, Worker>;
@@ -27,8 +27,7 @@ namespace knet {
 							pipe_worker->start(); 
 
 							if (pipe_mode & PIPE_SERVER_MODE) {
-								listener = std::make_shared<PipeListener>(&pipe_factory, worker);
-								listener->add_event_handler (&pipe_factory); 
+								listener = std::make_shared<PipeListener>(&pipe_factory, worker);						
 							}
 
 							if (pipe_mode & PIPE_CLIENT_MODE) {

@@ -37,14 +37,15 @@ int main(int argc, char * argv[]){
 	uint32_t port = 6688; 
 	dlog("start server at {} ", port); 
 	spipe.start("127.0.0.1",port);  
+	uint64_t obid = 10000; 
 
 	while(1){
 		std::this_thread::sleep_for(std::chrono::seconds(3));
  
-		const char * pMsg = "hello world"; 
+		std::string msg = fmt::format("msg from server {}" , obid++); 
 		//mySession->transfer(pMsg, strlen(pMsg)); 
-		uint64_t obid = 199999; 
-		mySession->send(obid, std::string( pMsg, strlen(pMsg)) ); 
+		
+		mySession->send(obid , msg ); 
 		//spipe.broadcast("message from serever"); 
 	}; 
 

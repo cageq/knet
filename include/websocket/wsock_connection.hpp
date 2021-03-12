@@ -41,7 +41,7 @@ public:
 			
 				if (first_request) {
 					auto msg = first_request->encode();
-					dlog("send first  request  {} :\n{}", msg.length(), msg);
+					dlog("send first request  {} :\n{}", msg.length(), msg);
 					this->msend(first_request->encode());
 					m_status = WSockStatus::WSOCK_CONNECTING;
 				} 

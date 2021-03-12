@@ -54,17 +54,9 @@ namespace knet {
 				async_connect(tcp_sock, result,
 					[self](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 						if (!ec) {
-
-							if (self->m.connection) {
-								self->m.connection->process_event(EVT_CONNECT);
-							}
-							else {
-								wlog("no socket connection");
-							}
-							self->do_read();
-						}
-						else {
-							dlog("connect failed");
+							self->init_read(); 
+						}else {
+							dlog("connect to server failed" );
 							self->tcp_sock.close();
 						}
 					});
@@ -72,12 +64,19 @@ namespace knet {
 			}
 
 			template <class F>
-			void run_inloop(F fn) {
+			void run_inloop(const F & fn) {
 				asio::dispatch(io_context, fn);
+			}
+			void init_read(){
+				if (m.connection) {
+					m.connection->process_event(EVT_CONNECT);
+					do_read(); 
+				}				
 			}
 
 			void do_read() {
-				if (tcp_sock.is_open()) {
+				if (tcp_sock.is_open() ) {
+					
 					m.status = SocketStatus::SOCKET_OPEN;
 					auto self = this->shared_from_this();
 					auto buf = asio::buffer((char*)m.read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);

@@ -7,16 +7,14 @@ namespace knet {
 	namespace pipe {
 
 		enum PipeMode { PIPE_SERVER_MODE = 1, PIPE_CLIENT_MODE = 2, PIPE_DUET_MODE = 3 };
-		class PipeFactory : public UserFactory<PipeConnection>, public UserEventHandler<PipeConnection> {
+		class PipeFactory : public ConnFactory<PipeConnection>, public NetEventHandler<PipeConnection> {
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
 
 			virtual bool handle_event(TPtr conn, NetEvent evt) {
 				auto session = conn->get_session();
-
 				ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
-
 				switch (evt) {
 				case EVT_CONNECT:
 				{
@@ -40,9 +38,7 @@ namespace knet {
 							dlog("erase pipe {} ", conn->get_cid());
 							unbind_pipes.erase(itr);
 						}
-
 					}
-
 				}
 				break;
 				default:;
@@ -54,8 +50,8 @@ namespace knet {
 				}
 				return false;
 			}
-			virtual bool handle_data(TPtr conn, const std::string& buf) {
 
+			virtual bool handle_data(TPtr conn, const std::string& buf) {
 				PipeMsgHead* msg = (PipeMsgHead*)buf.data();
 				if (msg->length + sizeof(PipeMsgHead) > buf.length()) {
 					elog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
@@ -81,7 +77,7 @@ namespace knet {
 				}else {
 					wlog("connection has no session");
 				}
-				return false;
+				return true;
 			}
 
 			std::string generate_id() {
@@ -96,14 +92,10 @@ namespace knet {
 					auto itr = pipe_map.find(pipeId);
 					if (itr != pipe_map.end()) {
 						auto session = itr->second;
-						session->bind(conn);
- 
+						session->bind(conn); 
 						dlog("bind session {} success" , pipeId); 
-						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 
-						
-						conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
-
-
+						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 						
+						conn->msend(std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
 						//conn->send(shakeMsg.begin(), shakeMsg.length());
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}else {
@@ -119,8 +111,7 @@ namespace knet {
 					if (itr == unbind_pipes.end()) {
 						dlog("create and bind session success {}", pipeId);
 						session = std::make_shared<PipeSession>();
-						session->bind(conn);
-			 
+						session->bind(conn);			 
 						unbind_pipes[conn->get_cid()] = session;
 					}
 					else {
@@ -130,9 +121,7 @@ namespace knet {
 
 					if (session) {
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 		 
-
-						conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
- 
+						conn->msend(  std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId); 
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 				}
@@ -140,7 +129,6 @@ namespace knet {
 
 
 			void process_client_handshake(TPtr conn, PipeMsgHead* msg) {
-
 				PipeSessionPtr session;
 				if (msg->length > 0) {
 					std::string pipeId = std::string( (const char *) msg + sizeof(PipeMsgHead) , msg->length);
@@ -159,7 +147,6 @@ namespace knet {
 						session = find_unbind_pipe(conn->get_cid());
 
 						if (session) {
-
 							session->bind(conn);
 							session->update_pipeid(pipeId);	
 			 
@@ -172,16 +159,13 @@ namespace knet {
 								unbind_pipes.erase(conn->get_cid());
 							}
 
-						}
-						else {
+						}else {
 							wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
 							conn->close();
 						}
 					}
-				}
-				else {
+				}else {
 					elog("handshake from server is empty");
-
 				}
 			}
 

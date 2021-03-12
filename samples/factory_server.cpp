@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "knet.hpp"
-#include "user_event_handler.hpp"
+#include "event_handler.hpp"
 
 using namespace knet::tcp;
 
@@ -18,7 +18,7 @@ class TcpSession : public TcpConnection<TcpSession>
 };
 
 
-class MyFactory: public knet::UserFactory<TcpSession>, public knet::UserEventHandler<TcpSession> { 
+class MyFactory: public knet::ConnFactory<TcpSession>, public knet::NetEventHandler<TcpSession> { 
 
 	public:
 
