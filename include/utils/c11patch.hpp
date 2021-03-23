@@ -22,9 +22,13 @@
 #define KNET_CPP17_OR_GREATER  ( CPLUSPLUSVER >= 201703L )
 #define KNET_CPP20_OR_GREATER  ( CPLUSPLUSVER >= 202000L )
 
+//#define   PRINT_MACRO_HELPER(x)   #x  
+//#define   PRINT_MACRO(x)   #x "=" PRINT_MACRO_HELPER(x)  
+//#pragma message(PRINT_MACRO(CPLUSPLUSVER))
+ 
 namespace std{
 
-#if CPLUSPLUSVER <= 201103L 
+#if CPLUSPLUSVER <= 201402L
 
 #ifndef __cpp_lib_apply 
 
@@ -82,7 +86,11 @@ namespace std{
 
 #endif //__cpp_lib_apply
 
-   
+
+#endif 
+
+#if CPLUSPLUSVER <= 201103L 
+     
   template<typename T, typename ...Args>
         std::unique_ptr<T> make_unique(Args&& ...args)
         {
