@@ -24,6 +24,7 @@ namespace knet
 				m.host = h;
 				m.port = p;
 				m.pipeid = pid;
+				ready_flag = false; 
 			}
 
 			virtual ~PipeSession() {}
@@ -45,7 +46,7 @@ namespace knet
 
 			int32_t transfer(const char *pData, uint32_t len)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					PipeMsgHead head(PIPE_MSG_DATA, len);
 					dlog("transfer data to pipe {} , length {} type {}", m.pipeid, len, head.type);
@@ -62,7 +63,7 @@ namespace knet
 
 			int32_t send(uint64_t obdata, const std::string &msg)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
 					head.data = obdata;
@@ -73,7 +74,7 @@ namespace knet
 
 			int32_t send(const std::string &msg)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
 					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
@@ -82,7 +83,7 @@ namespace knet
 			}
 			bool is_ready()
 			{
-				if (connection)
+				if (ready_flag.load(std::memory_order_acquire) && connection)
 				{
 					return connection->is_connected();
 				}
@@ -91,7 +92,7 @@ namespace knet
 
 			int32_t send(const char *pData, uint32_t len)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					PipeMsgHead head(PIPE_MSG_DATA, len);
 					return connection->msend(
@@ -142,9 +143,15 @@ namespace knet
 				this->connection = conn;
 				conn->pipeid = m.pipeid;
 				conn->session = this->shared_from_this();
+				//ready_flag  = true;
+				ready_flag.store(true, std::memory_order_acquire);
 			}
 			void unbind()
 			{
+
+				//ready_flag = false;
+				ready_flag.store(true, std::memory_order_release);
+				 
 				connection.reset();
 				// if (connection->session)
 				// {
@@ -195,7 +202,7 @@ namespace knet
 				std::string host;
 				uint16_t port;
 			} m;
-
+		 	std::atomic<bool> ready_flag; 
 			PipeConnectionPtr connection;
 		};
 
