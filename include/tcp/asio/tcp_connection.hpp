@@ -91,7 +91,10 @@ namespace knet
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &... rest)
 			{
-				return tcp_socket->msend(first, rest...);
+				if (tcp_socket)	{
+					return tcp_socket->msend(first, rest...);
+				}
+				return -1;  
 			}
 
 			void close()
@@ -102,16 +105,18 @@ namespace knet
 					tcp_socket->close();
 				}
 			}
-			void post(std::function<void()> handler)
+			bool post(std::function<void()> handler)
 			{
 				if (tcp_socket)
 				{
 					tcp_socket->run_inloop(handler);
+					return true; 
 				}
 				else
 				{
 					elog("socket is invalid");
 				}
+				return false; 
 			}
 
 			
