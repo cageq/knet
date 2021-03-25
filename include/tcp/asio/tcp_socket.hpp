@@ -155,56 +155,58 @@ namespace knet {
 
 		template <typename P >  
  		inline void write_data  (  const P & data,std::true_type ){
-				std::ostream outbuf(&m.send_buffer);			  
-				outbuf.write((const char*)&data, sizeof(P)); 
+				m.send_buffer.append(std::string((const char*)&data, sizeof(P)));
 			}
   
 
 		template <typename P >  
 			inline void write_data( const P &  data, std::false_type){
-				std::ostream outbuf(&m.send_buffer);
-				 outbuf << data;		 
+				m.send_buffer.append(data); 
 			}
 		
 
 			inline void write_data( const std::string &  data, std::false_type){
-				std::ostream outbuf(&m.send_buffer);
-				outbuf.write(data.c_str(), data.length());  
+				m.send_buffer.append(data ); 
 			}
 
 			template <typename F, typename ... Args>
 			void mpush(const F &  data, Args... rest) {  
-				this->write_data<F>(first, std::is_integral<F> () );  
+				this->write_data<F>(data, std::is_integral<F> () );  
 				mpush(rest...);
 			}
 
 			void mpush() {
 				auto self = this->shared_from_this();
-				asio::dispatch(io_context, [this, self]() {
+				asio::post(io_context, [this, self]() {
 					if (tcp_sock.is_open()) {
-						if (!m.is_writing) {
-							self->do_async_write();
+						if (m.cache_buffer.empty()) {
+							do_async_write();
 						}
 					}
 					});
 			}
 
 			bool do_async_write() {
-				if (m.send_buffer.size() > 0) {
+
+				if (m.cache_buffer.empty())
+				{
+					if (m.mutex.try_lock()) {
+						m.send_buffer.swap(m.cache_buffer);
+						m.mutex.unlock();
+					} 
+				} 
+
+
+				if (!m.cache_buffer.empty())
+				{
 					auto self = this->shared_from_this();
-					m.is_writing = true;
-   				
-					asio::async_write(tcp_sock,asio::buffer(m.send_buffer.data(), m.send_buffer.size()),
+					asio::async_write(tcp_sock,asio::buffer(m.cache_buffer.data(), m.cache_buffer.size()),
 						[this, self](std::error_code ec, std::size_t length) {
 							if (!ec && tcp_sock.is_open() && length > 0) {
 								//	m.connection->process_event(EVT_SEND);
-								{
-									std::lock_guard<std::mutex>  guard(m.mutex);	
-									m.send_buffer.consume(length);
-									if (m.send_buffer.size() == 0) {
-										m.is_writing = false;
-										return;
-									}
+								m.cache_buffer.clear(); 
+								if (m.send_buffer.size() == 0) {
+									return;
 								}
 								self->do_async_write();
 							}else {
@@ -212,9 +214,6 @@ namespace knet {
 							}
 						});
 
-				}
-				else {
-					m.is_writing = false;
 				}
 				return true;
 			}
@@ -280,7 +279,7 @@ namespace knet {
 				}
 
 				auto self = this->shared_from_this();
-				if (m.send_buffer.size() > 0 && !m.is_writing) {
+				if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
 					do_async_write(); //try last write
 				}
 				asio::post(io_context, [this, self]() {
@@ -327,11 +326,11 @@ namespace knet {
 			tcp::socket tcp_sock;				
 			struct {
 				TPtr connection;
-				asio::streambuf send_buffer;
 				char read_buffer[kReadBufferSize+4];
-				std::mutex mutex;
+				std::mutex mutex; 
+				std::string send_buffer; 
+				std::string cache_buffer; 
 				SocketStatus status = SocketStatus::SOCKET_IDLE;
-				bool is_writing = false;
 			} m;
 
 			std::thread::id worker_tid;
