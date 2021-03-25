@@ -38,11 +38,10 @@ int main(int argc, char * argv[]){
 
 	uint64_t index = 0; 
 	while(1){
-		std::this_thread::sleep_for(std::chrono::seconds(3)); 
+		std::this_thread::sleep_for(std::chrono::microseconds(1)); 
 		//mySession->transfer("welcome to 2020",15);  
 //		cpipe.broadcast("welcome to 2020");  
-
-	std::string msg = fmt::format("index: {} , ",index ++); 
+     	std::string msg = fmt::format("index: {} , ",index ++); 
 		mySession->msend_with_obdata(index , msg, std::string("msg from client "),std::string("msend"));
 	}; 
 	return 0; 
