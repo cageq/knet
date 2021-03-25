@@ -104,7 +104,7 @@ namespace knet
 			int32_t send_heartbeat(const std::string &msg)
 			{
 				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());
-				if (connection)
+				if (is_ready())
 				{
 					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
 				}
@@ -114,7 +114,7 @@ namespace knet
 			template <class P, class... Args>
 			int32_t msend_with_obdata(uint64_t obdata, const P &first, const Args &...rest)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					uint32_t bodyLen = pipe_data_length(first, rest...);
 					dlog("msend body length is {}", bodyLen);
@@ -128,7 +128,7 @@ namespace knet
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &...rest)
 			{
-				if (connection)
+				if (is_ready())
 				{
 					uint32_t bodyLen = pipe_data_length(first, rest...);
 					dlog("msend body length is {}", bodyLen);
