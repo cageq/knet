@@ -152,7 +152,7 @@ namespace knet
 				//ready_flag = false;
 				ready_flag.store(false, std::memory_order_release);
 				 
-				connection.reset();
+				//connection.reset();
 				// if (connection->session)
 				// {
 				// 	connection->session.reset();
