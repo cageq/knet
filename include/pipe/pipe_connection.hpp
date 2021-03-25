@@ -21,7 +21,7 @@ namespace knet{
 					dlog("demarcate  pipe package {}", len); 
 					PipeMsgHead* msg = (PipeMsgHead*)data;
 					if (msg->length + sizeof(PipeMsgHead) > len) {			 
-						elog("demarcate pipe message length {}  message head  {} ", len , msg->length);
+						wlog("demarcate pipe message length {}  message head  {} ", len , msg->length);
 						return 0;
 					}
 					return sizeof(PipeMsgHead) + msg->length;
