@@ -173,8 +173,10 @@ namespace knet {
 			}
 
 			template <typename F, typename ... Args>
-			void mpush(const F &  first, Args... rest) {  
-				this->write_data<F>(first, std::is_integral<F> () );  
+			void mpush(const F &  data, Args... rest) {  
+				//this->write_data<F>(first, std::is_integral<F> () );  
+				std::ostream outbuf(&m.send_buffer);
+				outbuf.write(data.c_str(), data.length());  
 				mpush(rest...);
 			}
 

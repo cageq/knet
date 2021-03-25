@@ -32,8 +32,8 @@ public:
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
 			std::string msg("hello world");
-			//this->send(msg.c_str(), msg.length());
-			this->msend(123445,msg);
+			this->send(msg.c_str(), msg.length());
+//			this->msend(123445,msg);
 		}
 		return true; 
 	}
