@@ -80,16 +80,14 @@ namespace knet {
 					m.status = SocketStatus::SOCKET_OPEN;
 					auto self = this->shared_from_this();
 					auto buf = asio::buffer((char*)m.read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
-					// dlog("left buffer size {}", kReadBufferSize - read_buffer_pos);
 					tcp_sock.async_read_some(
 						buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
 							if (!ec) {
 								dlog("received data length {}", bytes_transferred);
 								if (bytes_transferred > 0) {
 									process_data(bytes_transferred);
+									self->do_read();
 								}
-								//dlog("read data: {} length {}", m.read_buffer, bytes_transferred);
-								self->do_read();
 							}
 							else {
 								dlog("read error ,close connection {} ", ec.value());
