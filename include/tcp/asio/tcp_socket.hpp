@@ -34,6 +34,8 @@ namespace knet {
 				, tcp_sock(ctx) {
 				worker_tid = tid;
 				m.status = SocketStatus::SOCKET_INIT; 
+				m.send_buffer.reserve(1024); 
+				m.cache_buffer.reserve(1024); 
 			}
 
 			void init(TPtr conn) {
@@ -145,7 +147,6 @@ namespace knet {
 			int32_t msend(const P& first, const Args&... rest) {
 				if (tcp_sock.is_open()) {
 					if (!is_empty(first) ) {
-						std::lock_guard<std::mutex> guard(m.mutex); 						 
 						this->mpush(first, rest...);					 
 					}
 					return 0;
@@ -171,7 +172,10 @@ namespace knet {
 
 			template <typename F, typename ... Args>
 			void mpush(const F &  data, Args... rest) {  
+				//std::lock_guard<std::mutex> guard(m.mutex); 						 
+				m.mutex.lock(); 
 				this->write_data<F>(data, std::is_integral<F> () );  
+				m.mutex.unlock(); 
 				mpush(rest...);
 			}
 
