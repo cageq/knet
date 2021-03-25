@@ -263,11 +263,7 @@ namespace knet
 				return reconn_flag && !passive_mode; 
 			}
 		 
-		 	/*
-			*   0  : user has not use data, but need more 
-			*   < 0 : user has used the data, but need more 
-			*  > 0 : user has used the data, and maybe some bytes left
-			*/
+		 
 		 	int32_t process_package(const char * data , uint32_t len){
 				 if (package_handler){
 					 return package_handler(data , len); 

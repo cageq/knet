@@ -37,12 +37,15 @@ int main(int argc, char * argv[]){
 	cpipe.start();  
 
 	uint64_t index = 0; 
+		std::this_thread::sleep_for(std::chrono::seconds(1)); 
 	while(1){
-		std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+		//std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+		//std::this_thread::sleep_for(std::chrono::seconds(1)); 
 		//mySession->transfer("welcome to 2020",15);  
 //		cpipe.broadcast("welcome to 2020");  
      	std::string msg = fmt::format("index: {} , ",index ++); 
-		mySession->msend_with_obdata(index , msg, std::string("msg from client "),std::string("msend"));
+		//mySession->msend_with_obdata(index , msg, std::string("msg from client "),std::string("msend"));
+		mySession->transfer(msg); 
 	}; 
 	return 0; 
 };

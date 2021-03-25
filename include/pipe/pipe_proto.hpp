@@ -16,11 +16,11 @@ namespace knet
 
 		struct PipeMsgHead
 		{
-			uint32_t length ;
-			uint32_t type ;
+			uint32_t length =0;
+			uint32_t type =0;
 			uint64_t data = 0 ; //user data 
 
-			PipeMsgHead(uint16_t t = 0, uint32_t len = 0)
+			PipeMsgHead(uint32_t t = 0, uint32_t len = 0)
 				: length(len), type(t) {}
 		};
  

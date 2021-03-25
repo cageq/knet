@@ -57,7 +57,7 @@ namespace knet {
 					elog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
-
+				dlog("pipe message type {}", msg->type );
 				if (msg->type == PIPE_MSG_SHAKE_HAND) {
 					dlog("handle pipe shake hande message ");
 					if (conn->is_passive()) { //server side  
@@ -65,12 +65,10 @@ namespace knet {
 					}
 					else {
 						process_client_handshake(conn, msg);
-					}
-
+					} 
 					return sizeof(PipeMsgHead) + msg->length;
-				} else {
-					dlog("message type {}", msg->type );
-				}
+				} 
+
 				auto session = conn->get_session();
 				if (session) {
 					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ), msg->data);
@@ -93,10 +91,9 @@ namespace knet {
 					if (itr != pipe_map.end()) {
 						auto session = itr->second;
 						session->bind(conn); 
-						dlog("bind session {} success" , pipeId); 
+						ilog("bind session {} success" , pipeId); 
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length()); 						
-						conn->msend(std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId);
-						//conn->send(shakeMsg.begin(), shakeMsg.length());
+						conn->msend(std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) ),  pipeId); 
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}else {
 						wlog("pipe id not found {}", pipeId);
