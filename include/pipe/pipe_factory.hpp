@@ -73,8 +73,9 @@ namespace knet {
 				if (session) {
 					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ), msg->data);
 				}else {
-					wlog("connection has no session");
+					
 					if (conn->is_passive()){
+						wlog("connection has no session, send shakehand challenge");
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND); 	//challenge client to send shakehand again					
 						conn->msend(std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) )); 
 					}
