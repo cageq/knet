@@ -66,7 +66,7 @@ namespace knet {
 					else {
 						process_client_handshake(conn, msg);
 					} 
-					return sizeof(PipeMsgHead) + msg->length;
+					return true;
 				} 
 
 				auto session = conn->get_session();
@@ -74,6 +74,10 @@ namespace knet {
 					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length ), msg->data);
 				}else {
 					wlog("connection has no session");
+					if (conn->is_passive()){
+						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND); 	//challenge client to send shakehand again					
+						conn->msend(std::string((const char * )&shakeMsg,sizeof(PipeMsgHead) )); 
+					}
 				}
 				return true;
 			}
@@ -162,7 +166,9 @@ namespace knet {
 						}
 					}
 				}else {
-					elog("handshake from server is empty");
+
+					send_shakehand(conn, conn->get_pipeid());
+					wlog("handshake from server is empty, resend client shakehand {}",conn->get_cid());
 				}
 			}
 
