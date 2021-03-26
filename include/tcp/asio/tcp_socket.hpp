@@ -98,6 +98,7 @@ namespace knet {
 						wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", kReadBufferSize, read_buffer_pos); 
 						process_data(0);
 						if (read_buffer_pos >= kReadBufferSize ){
+							//packet size exceed the limit, so we close it. 
 							self->do_close();
 						}						
 					}	
@@ -118,8 +119,7 @@ namespace knet {
 			}
 
 
-			int32_t send(const char* pData, uint32_t dataLen) {
-
+			int32_t send(const char* pData, uint32_t dataLen) { 
 				if (is_inloop()) {
 					return send_inloop(pData, dataLen);
 				}

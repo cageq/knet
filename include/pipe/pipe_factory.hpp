@@ -139,9 +139,8 @@ namespace knet {
 					if (itr != pipe_map.end()) {
 						session = itr->second;
 						session->bind(conn);
-						session->update_pipeid(pipeId);	
-		 
-						dlog("bind session success");
+						session->update_pipeid(pipeId);	 
+						dlog("bind session success {}", pipeId);
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 					else {
