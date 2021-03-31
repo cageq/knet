@@ -256,7 +256,10 @@ namespace knet {
 
 					if (readPos < read_buffer_pos) {
 						pkgLen = this->m.connection->process_package( (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-						if (pkgLen <= 0) {
+						if (pkgLen > kReadBufferSize) {
+							elog("single packet size ({}) error, close connection", pkgLen);
+							m.connection->close();
+						}else if (pkgLen <= 0) {
 							dlog("moving buffer to front {} ", read_buffer_pos - readPos);
 							memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 							read_buffer_pos -= readPos;

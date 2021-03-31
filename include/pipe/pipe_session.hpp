@@ -86,6 +86,8 @@ namespace knet
 				if (ready_flag.load(std::memory_order_acquire) && connection)
 				{
 					return connection->is_connected();
+				}else {
+					wlog("pipe is not ready"); 
 				}
 				return false;
 			}

@@ -166,7 +166,7 @@ namespace knet
 		private:
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 			{
-				auto evtHandler = static_cast<NetEventHandler<T> *>(fac);
+				auto evtHandler = dynamic_cast<NetEventHandler<T> *>(fac);
 				if (evtHandler)
 				{
 					add_event_handler(evtHandler);
@@ -177,7 +177,7 @@ namespace knet
 			{
 			}
 
-			bool invoke_data_chain(TPtr conn, const std::string &msg)
+			bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
 			{
 				bool ret = true;
 				for (auto &handler : m.event_handler_chain)
@@ -194,7 +194,7 @@ namespace knet
 				return ret;
 			}
 
-			bool invoke_event_chain(TPtr conn, NetEvent evt)
+			bool invoke_event_chain(const TPtr &  conn, NetEvent evt)
 			{
 				bool ret = true;
 				for (auto &handler : m.event_handler_chain)
@@ -211,7 +211,7 @@ namespace knet
 				return ret;
 			}
 
-			void release(TPtr conn)
+			void release(const TPtr &  conn)
 			{
 				asio::post(m.listen_worker->context(), [this, conn]() {
 					if (m.factory)
