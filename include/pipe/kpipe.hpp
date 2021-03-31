@@ -91,7 +91,7 @@ namespace knet {
 						}
 					}
 
-					PipeSessionPtr find(const std::string& pid) { return pipe_factory.find(pid); }
+					PipeSessionPtr find(const std::string& pid) { return pipe_factory.find_bind_pipe(pid); }
 
 					virtual void destroy(TPtr conn) {
 						dlog("connection factory destroy connection in my factory ");
