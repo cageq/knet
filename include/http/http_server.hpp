@@ -38,7 +38,7 @@ public:
 
 	bool start(uint32_t port = 8888, const std::string& host = "0.0.0.0") {
 
-		dlog("start http server :{} , thread id {}", port, std::this_thread::get_id());
+		//dlog("start http server :{} , thread id {}", port, std::this_thread::get_id());
 		http_listener.start(port, host);
 		return true;
 	}

@@ -30,7 +30,7 @@ public:
 
 		switch (evt) {
 		case EVT_THREAD_INIT:
-			dlog("handle thread init event {}", std::this_thread::get_id());
+			//dlog("handle thread init event {}", std::this_thread::get_id());
 			// worker_.start(routers);
 			break;
 		case EVT_THREAD_EXIT:
@@ -38,7 +38,7 @@ public:
 			// worker_.stop();
 			break;
 		case EVT_CREATE:
-			dlog("handle new http session, thread id is", std::this_thread::get_id());
+			//dlog("handle new http session, thread id is", std::this_thread::get_id());
 			break;
 		case EVT_RECV:
 			break;
@@ -92,7 +92,7 @@ public:
 						auto itr = http_routers.find(urlInfo.path());
 						if (itr != http_routers.end()) {
 							if (itr->second) {
-								dlog("handle data in thread id {}", std::this_thread::get_id());
+								//dlog("handle data in thread id {}", std::this_thread::get_id());
 								auto rsp = itr->second(req);
 								if (rsp.status_code != 0) {
 									conn->reply(rsp);

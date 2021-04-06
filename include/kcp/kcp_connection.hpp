@@ -316,7 +316,7 @@ private:
 				asio::buffer((const char*)&shakehand_response_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-					dlog("send to remote point {}", remote_point); 
+					//dlog("send to remote point {}", remote_point); 
 						dlog("send shakehand response successful  {}", shakehand_response_.conv);
 					} else {
 						dlog("sent message , error code {}, {}", ec.value(), ec.message());
