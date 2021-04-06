@@ -52,6 +52,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 
 int main(int argc, char **argv)
 {
+	add_console_logger();
 	dlog("start server");
 	TcpListener<TcpSession> listener;
 	int port = 8899;

@@ -23,7 +23,7 @@ namespace knet
 			virtual bool handle_event(TPtr conn, NetEvent evt)
 			{
 				auto session = conn->get_session();
-				ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
+				//ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
 				switch (evt)
 				{
 				case EVT_CONNECT:

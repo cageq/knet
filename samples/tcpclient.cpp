@@ -43,7 +43,7 @@ public:
 
 int main(int argc, char** argv)
 {
-	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >();
+	add_console_logger(); 
 	dlog("init client ");
 	TcpConnector<TcpSession>  connector;
 

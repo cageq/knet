@@ -9,7 +9,7 @@
 
 
 #include <asio.hpp>
-#include "klog.hpp"
+#include "utils/knet_log.hpp"
 #include "utils/timer.hpp"
 #include "ikcp.h"
 #include "kcp_message.hpp"

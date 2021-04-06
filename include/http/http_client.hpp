@@ -1,5 +1,5 @@
 #pragma once
-#include "klog.hpp"
+ 
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_factory.hpp"

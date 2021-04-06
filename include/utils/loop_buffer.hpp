@@ -7,7 +7,7 @@
 #include <vector>
 #include <functional>
 #include <array>
-#include "klog.hpp"
+#include "utils/knet_log.hpp"
 using namespace klog; 
 namespace knet {
 namespace utils {

@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <asio.hpp>
 #include <chrono>
-#include "klog.hpp"
+#include "utils/knet_log.hpp"
 namespace knet
 {
 	namespace utils

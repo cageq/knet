@@ -42,7 +42,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 
 int main(int argc, char **argv)
 {
-	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
+	add_console_logger(); 
  
     // dout << "test tcp server with cout format " << std::endl; 
     // iout << "test tcp server with cout format " << std::endl; 

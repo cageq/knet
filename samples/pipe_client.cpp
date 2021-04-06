@@ -28,7 +28,7 @@ class MyChannel : public PipeSession{
 
 int main(int argc, char * argv[]){ 
 
-	kLogIns.add_console(); 
+	add_console_logger();
 	auto mySession = std::make_shared<MyChannel>("pipe1"); 
 	KPipe<> cpipe(PipeMode::PIPE_CLIENT_MODE); 
 

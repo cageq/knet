@@ -51,7 +51,7 @@ namespace knet
 
 		void start(WorkStarter starter = nullptr, uint32_t thrds = 1)
 		{
-			wlog("start event work {}", std::this_thread::get_id());
+			//dlog("start event work {}", std::this_thread::get_id());
 			work_starter = starter;
 			if (self_context != nullptr)
 			{
