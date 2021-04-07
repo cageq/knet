@@ -21,12 +21,6 @@
 // #define elog(...) spdlog::error(__VA_ARGS__)
 
 
- 
-#define ilog(format, args...) spdlog::error(format, ##args)
-#define dlog(format, args...) spdlog::error(format, ##args)
-#define wlog(format, args...) spdlog::error(format, ##args)
-#define flog(format, args...) spdlog::error(format, ##args)
-#define elog(format, args...) spdlog::error(format, ##args)
 
 
 #define dout  std::cout 
@@ -35,12 +29,26 @@ class KNetLogger : public knet::utils::Singleton<KNetLogger>{
 public: 
     KNetLogger(){
         logger = std::make_shared<spdlog::logger>("knet");
+         logger->set_level(spdlog::level::trace);  
     }
 
-void add_console(){
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    logger->sinks().emplace_back(console_sink); 
-}
+    void add_console(){
+        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();      
+        logger->sinks().emplace_back(console_sink);       
+    }
+
+    void add_file_logger(const std::string & filePath, uint32_t hour, uint32_t minute ){
+        auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filePath, hour, minute);
+        logger->sinks().emplace_back(file_sink); 
+    }
+
+    void use_logger(std::shared_ptr<spdlog::logger> lg){
+        logger = lg; 
+    }
+
+    spdlog::logger & get_logger(){
+        return *logger; 
+    }
 
     std::shared_ptr<spdlog::logger> logger; 
 };
@@ -50,9 +58,17 @@ inline void add_console_logger(){
     KNetLogger::instance().add_console();    
 }
 
-inline void add_file_logger(const std::string &filename){
-   // KNetLogger::instance().add_console();    
+inline void add_file_logger(const std::string &filePath, uint32_t hour, uint32_t minute ){
+  KNetLogger::instance().add_file_logger(filePath, hour,minute);    
 }
+
+ 
+#define ilog(format, args...) KNetLogger::instance().get_logger().info(format, ##args)
+#define dlog(format, args...) KNetLogger::instance().get_logger().debug(format, ##args)
+#define wlog(format, args...) KNetLogger::instance().get_logger().warn(format, ##args)
+#define flog(format, args...) KNetLogger::instance().get_logger().critical(format, ##args)
+#define elog(format, args...) KNetLogger::instance().get_logger().error(format, ##args)
+
 
 #else //
 #include "klog.hpp" 
