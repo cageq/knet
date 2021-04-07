@@ -14,12 +14,7 @@
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 
-// #define ilog(...) spdlog::info(__VA_ARGS__)
-// #define dlog(...) spdlog::debug(__VA_ARGS__)
-// #define wlog(...) spdlog::warn(__VA_ARGS__)
-// #define flog(...) spdlog::critical(__VA_ARGS__)
-// #define elog(...) spdlog::error(__VA_ARGS__)
-
+ 
 
 
 
@@ -37,7 +32,7 @@ public:
         logger->sinks().emplace_back(console_sink);       
     }
 
-    void add_file_logger(const std::string & filePath, uint32_t hour, uint32_t minute ){
+    void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
         auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filePath, hour, minute);
         logger->sinks().emplace_back(file_sink); 
     }
@@ -54,31 +49,32 @@ public:
 };
 
 
-inline void add_console_logger(){
-    KNetLogger::instance().add_console();    
-}
-
-inline void add_file_logger(const std::string &filePath, uint32_t hour, uint32_t minute ){
-  KNetLogger::instance().add_file_logger(filePath, hour,minute);    
-}
-
+#define  KNetLogIns KNetLogger::instance()
  
-#define ilog(format, args...) KNetLogger::instance().get_logger().info(format, ##args)
-#define dlog(format, args...) KNetLogger::instance().get_logger().debug(format, ##args)
-#define wlog(format, args...) KNetLogger::instance().get_logger().warn(format, ##args)
-#define flog(format, args...) KNetLogger::instance().get_logger().critical(format, ##args)
-#define elog(format, args...) KNetLogger::instance().get_logger().error(format, ##args)
+#define ilog(format, args...) KNetLogIns.get_logger().info(format, ##args)
+#define dlog(format, args...) KNetLogIns.get_logger().debug(format, ##args)
+#define wlog(format, args...) KNetLogIns.get_logger().warn(format, ##args)
+#define flog(format, args...) KNetLogIns.get_logger().critical(format, ##args)
+#define elog(format, args...) KNetLogIns.get_logger().error(format, ##args)
 
 
 #else //
 #include "klog.hpp" 
- 
-inline void add_console_logger(){
-    kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
-}
 
-inline void add_file_logger(const std::string &filename){
-    kLogIns.add_sink<FileSink<> >(filename);
-}
+class KNetLogger : public knet::utils::Singleton<KNetLogger>{
+    public: 
+     void add_console(){
+        kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
+     }
 
+     void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
+
+             kLogIns.add_sink<FileSink<> >(filePath);
+     }
+}; 
+
+
+#define  KNetLogIns KNetLogger::instance()
+  
 #endif //
+

@@ -20,7 +20,7 @@ class MyConnection : public UdpConnection<MyConnection >
 int main(int argc , char * argv[])
 {   
 
-	add_console_logger(); 
+	KNetLogIns.add_console(); 
     UdpConnector<MyConnection> connector; 
     connector.start(); 
 

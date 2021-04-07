@@ -40,7 +40,7 @@ class MyFactory: public knet::ConnFactory<TcpSession>, public knet::NetEventHand
 
 int main(int argc, char **argv)
 {
- add_console_logger(); 
+ KNetLogIns.add_console(); 
 	MyFactory factory; 
 	dlog("start server");
 	TcpListener<TcpSession,MyFactory> listener(&factory);

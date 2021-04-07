@@ -42,7 +42,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 
 int main(int argc, char **argv)
 {
-	add_console_logger(); 
+	KNetLogIns.add_console(); 
  
     // dout << "test tcp server with cout format " << std::endl; 
     // iout << "test tcp server with cout format " << std::endl; 

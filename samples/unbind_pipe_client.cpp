@@ -37,7 +37,7 @@ class MyChannel : public PipeSession{
 
 
 int main(int argc, char * argv[]){ 
- 	add_console_logger();
+ 	KNetLogIns.add_console();
 	KPipe<> cpipe(PipeMode::PIPE_CLIENT_MODE); 
 	cpipe.attach("127.0.0.1",9999); 
 	cpipe.start("127.0.0.1",9999);  

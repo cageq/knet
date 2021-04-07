@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
 
 
-	add_console_logger(); 
+	KNetLogIns.add_console(); 
 	KcpConnector<MyConnection> connector;
 	connector.start();
 

@@ -52,7 +52,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 
 int main(int argc, char **argv)
 {
-	add_console_logger();
+	KNetLogIns.add_console();
 	dlog("start server");
 	TcpListener<TcpSession> listener;
 	int port = 8899;
