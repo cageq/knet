@@ -9,7 +9,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 template <class T = HttpConnection>
-class HttpFactory : public ConnFactory<T> , public NetEventHandler<T> {
+class HttpFactory : public KNetFactory<T> , public KNetHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;

@@ -14,7 +14,7 @@ namespace knet
 			PIPE_CLIENT_MODE = 2,
 			PIPE_DUET_MODE = 3
 		};
-		class PipeFactory : public ConnFactory<PipeConnection>, public NetEventHandler<PipeConnection>
+		class PipeFactory : public KNetFactory<PipeConnection>, public KNetHandler<PipeConnection>
 		{
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)

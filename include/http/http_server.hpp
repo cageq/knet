@@ -7,7 +7,7 @@
 
 namespace knet {
 namespace http {
-template <class Worker = knet::EventWorker, class Factory = HttpFactory< HttpConnection> >
+template <class Worker = knet::KNetWorker, class Factory = HttpFactory< HttpConnection> >
 class HttpServer  {
 public:
 	using WorkerPtr = std::shared_ptr<Worker>;

@@ -9,9 +9,8 @@
 #include <memory>
 #include <asio.hpp>
 #include "utils/knet_log.hpp"
-
 #include "utils/timer.hpp"
-#include "event_worker.hpp"
+#include "knet_worker.hpp"
 
 
 using namespace knet::utils;
@@ -45,7 +44,7 @@ namespace knet {
 			using DataHandler = std::function<bool(const std::string & )>;	
 
 
-			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, NetEventHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
 			{
 				udp_socket = socket;
 				static uint64_t index = 1024;				
@@ -294,7 +293,7 @@ namespace knet {
 			std::chrono::steady_clock::time_point last_msg_time;
 
 			struct {
-				NetEventHandler<T>* user_event_handler = nullptr;
+				KNetHandler<T>* user_event_handler = nullptr;
 				EventWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
 				std::unique_ptr<Timer> timer = nullptr;

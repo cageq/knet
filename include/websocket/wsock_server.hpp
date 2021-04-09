@@ -13,7 +13,7 @@ using namespace knet::http;
 namespace knet {
 namespace websocket {
 
-template <class Worker = knet::EventWorker, class Factory = WSockFactory <WSockConnection> >
+template <class Worker = knet::KNetWorker, class Factory = WSockFactory <WSockConnection> >
 class WSockServer {
 public:
 	using WorkerPtr = std::shared_ptr<Worker>;

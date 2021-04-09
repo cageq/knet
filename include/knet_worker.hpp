@@ -11,13 +11,13 @@
 using namespace knet::utils;
 namespace knet
 {
-	class EventWorker
+	class KNetWorker
 	{
 	public:
 		using WorkStarter = std::function<void()>;
         using IOContextPtr = std::shared_ptr<asio::io_context>; 
 
-		EventWorker(IOContextPtr ctx = nullptr, void* udata = nullptr)
+		KNetWorker(IOContextPtr ctx = nullptr, void* udata = nullptr)
 		{
 			if (ctx == nullptr) {
 				io_context = std::make_shared<asio::io_context>(); 
@@ -31,7 +31,7 @@ namespace knet
 		}
 
 
-		virtual ~EventWorker()
+		virtual ~KNetWorker()
 		{
 			if (self_context)
 			{
@@ -46,8 +46,8 @@ namespace knet
 			}
 		}
 
-		EventWorker(EventWorker&& rhs) = delete;
-		EventWorker& operator=(EventWorker&& rhs) = delete;
+		KNetWorker(KNetWorker&& rhs) = delete;
+		KNetWorker& operator=(KNetWorker&& rhs) = delete;
 
 		void start(WorkStarter starter = nullptr, uint32_t thrds = 1)
 		{
@@ -60,7 +60,7 @@ namespace knet
 
 					//	wlog("real start event work here {}", std::this_thread::get_id());
 
-					work_threads.emplace_back(std::thread(&EventWorker::run, this));
+					work_threads.emplace_back(std::thread(&KNetWorker::run, this));
 				}
 			}
 			else {
@@ -137,5 +137,5 @@ namespace knet
 		IOContextPtr self_context = nullptr;
         std::unique_ptr<Timer> event_timer;
 	};
-	using EventWorkerPtr = std::shared_ptr<EventWorker>;
+	using EventWorkerPtr = std::shared_ptr<KNetWorker>;
 } // namespace knet

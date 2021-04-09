@@ -9,8 +9,8 @@
 #include <unordered_map>
 
 #include "tcp_socket.hpp"
-#include "event_worker.hpp"
-#include "event_handler.hpp"
+#include "knet_worker.hpp"
+#include "knet_handler.hpp"
 using asio::ip::tcp;
 
 namespace knet
@@ -72,7 +72,7 @@ namespace knet
 				}
 			}
 
-			void init( SocketPtr sock = nullptr,const  EventWorkerPtr  & worker = nullptr, NetEventHandler<T> * evtHandler = nullptr)
+			void init( SocketPtr sock = nullptr,const  EventWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
 				static uint64_t index = 1024;
 				event_worker = worker;			 
@@ -327,7 +327,7 @@ namespace knet
 			std::string remote_host ;
 			uint16_t remote_port; 
 			EventWorkerPtr event_worker = nullptr;
-			NetEventHandler<T>* user_event_handler = nullptr;
+			KNetHandler<T>* user_event_handler = nullptr;
 		};
 
 	} // namespace tcp

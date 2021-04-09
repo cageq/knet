@@ -7,14 +7,14 @@
 #pragma once
 
 #include <unordered_map>
-#include "conn_factory.hpp"
+#include "knet_factory.hpp"
 #include "udp/udp_connection.hpp"
 
 namespace knet {
 	namespace udp {
 
-		template <typename T, class Factory = ConnFactory<T>, typename Worker = EventWorker>
-		class UdpListener : public NetEventHandler<T> {
+		template <typename T, class Factory = KNetFactory<T>, typename Worker = KNetWorker>
+		class UdpListener : public KNetHandler<T> {
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string&)>;
