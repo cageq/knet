@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-#define KNET_LOG_SPDLOG  1 
+//#define KNET_LOG_SPDLOG  1 
 
 
 #ifdef KNET_LOG_SPDLOG 
@@ -60,6 +60,7 @@ public:
 
 #else //
 #include "klog.hpp" 
+#include "file_sink.hpp"
 
 class KNetLogger : public knet::utils::Singleton<KNetLogger>{
     public: 
@@ -69,7 +70,7 @@ class KNetLogger : public knet::utils::Singleton<KNetLogger>{
 
      void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
 
-             kLogIns.add_sink<FileSink<> >(filePath);
+             kLogIns.add_sink<klog::FileSink<> >(filePath);
      }
 }; 
 
