@@ -112,7 +112,7 @@ you can create a factory, then handle all sessions' event in the factory instanc
 
 ```cpp 
 
-class MyFactory: public ConnFactory<TcpSession> { 
+class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
 	public:
 		virtual void destroy(TPtr conn) {
