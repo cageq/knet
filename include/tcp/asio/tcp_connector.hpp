@@ -32,9 +32,9 @@ namespace knet
 				}
 				else
 				{
-					// worker = std::make_shared<Worker>();
-					// user_workers.emplace_back(worker);
-					// worker->start();
+					 worker = std::make_shared<Worker>();
+					 user_workers.emplace_back(worker);
+					 worker->start();
 				}
 				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
 			}
