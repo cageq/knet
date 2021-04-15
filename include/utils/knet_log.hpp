@@ -3,28 +3,29 @@
 #include "utils/singleton.hpp"
 #include <fmt/format.h>
 #include <iostream>
+#include <fmt/chrono.h>
 
 
-//#define KNET_LOG_SPDLOG  1 
+#define KNET_LOG_SWITCH 1
+#define KNET_LOG_SPDLOG  1 
 
 
+
+
+#ifdef KNET_LOG_SWITCH 
 #ifdef KNET_LOG_SPDLOG 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
-
  
-
-
-
 #define dout  std::cout 
 
 class KNetLogger : public knet::utils::Singleton<KNetLogger>{
 public: 
     KNetLogger(){
         logger = std::make_shared<spdlog::logger>("knet");
-         logger->set_level(spdlog::level::trace);  
+	logger->set_level(spdlog::level::trace);  
     }
 
     void add_console(){
@@ -77,5 +78,30 @@ class KNetLogger : public knet::utils::Singleton<KNetLogger>{
 
 #define  KNetLogIns KNetLogger::instance()
   
-#endif //
+#endif // KNET_LOG_SPDLOG  
+
+
+#else 
+ 
+#define ilog(format, args...) 
+#define dlog(format, args...)
+#define wlog(format, args...)
+#define flog(format, args...)
+#define elog(format, args...)
+#define dout  std::cout 
+
+class KNetLogger : public knet::utils::Singleton<KNetLogger>{
+    public: 
+     inline void add_console(){
+     }
+
+     inline void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
+     }
+}; 
+
+
+#define  KNetLogIns KNetLogger::instance()
+
+
+#endif //  KNET_LOG_SWITCH 
 
