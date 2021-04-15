@@ -1,7 +1,8 @@
 #pragma once
 #include <map>
+#include "utils/knet_log.hpp"
 #include "http_message.hpp"
-#include "klog.hpp"
+
 namespace knet {
 namespace http {
 

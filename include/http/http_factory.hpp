@@ -9,7 +9,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 template <class T = HttpConnection>
-class HttpFactory : public ConnFactory<T> , public NetEventHandler<T> {
+class HttpFactory : public KNetFactory<T> , public KNetHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
@@ -23,7 +23,7 @@ public:
 		ilog("handle event in http factory ", evt);
 		switch (evt) {
 		case EVT_THREAD_INIT:
-			dlog("handle thread init event {}", std::this_thread::get_id());
+			//dlog("handle thread init event {}", std::this_thread::get_id());
 			// worker_.start(routers);
 			break;
 		case EVT_THREAD_EXIT:
@@ -31,7 +31,7 @@ public:
 			// worker_.stop();
 			break;
 		case EVT_CREATE:
-			dlog("handle new http session, thread id is", std::this_thread::get_id());
+			//dlog("handle new http session, thread id is", std::this_thread::get_id());
 
 			break;
 		case EVT_RECV:
@@ -80,7 +80,7 @@ public:
 			 auto itr = http_routers.find(req->url());
 			 if (itr != http_routers.end()) {
 			 	if (itr->second) {
-			 		dlog("handle data in thread id {}", std::this_thread::get_id());
+			 		//dlog("handle data in thread id {}", std::this_thread::get_id());
 			 		auto rsp = itr->second(req);
 			 		if (rsp.status_code != 0) {
 			 			conn->reply(rsp);

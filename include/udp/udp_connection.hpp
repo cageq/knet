@@ -8,10 +8,9 @@
 #include <string>
 #include <memory>
 #include <asio.hpp>
-#include "klog.hpp"
-
+#include "utils/knet_log.hpp"
 #include "utils/timer.hpp"
-#include "event_worker.hpp"
+#include "knet_worker.hpp"
 
 
 using namespace knet::utils;
@@ -45,7 +44,7 @@ namespace knet {
 			using DataHandler = std::function<bool(const std::string & )>;	
 
 
-			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, NetEventHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
 			{
 				udp_socket = socket;
 				static uint64_t index = 1024;				
@@ -61,7 +60,7 @@ namespace knet {
 					dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
 						remote_point.port());
 
-					dlog("send thread id is {}", std::this_thread::get_id());
+					//dlog("send thread id is {}", std::this_thread::get_id());
 
 					auto buffer = std::make_shared<std::string>(data, length);
 					udp_socket->async_send_to(asio::buffer(*buffer), remote_point, [ buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
@@ -69,7 +68,7 @@ namespace knet {
 								// if (event_handler) {
 								// 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
 								// }
-								dlog("sent out thread id is {}", std::this_thread::get_id());
+								//dlog("sent out thread id is {}", std::this_thread::get_id());
 							}
 							else {
 								dlog("sent message error : {}, {}", ec.value(), ec.message());
@@ -294,7 +293,7 @@ namespace knet {
 			std::chrono::steady_clock::time_point last_msg_time;
 
 			struct {
-				NetEventHandler<T>* user_event_handler = nullptr;
+				KNetHandler<T>* user_event_handler = nullptr;
 				EventWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
 				std::unique_ptr<Timer> timer = nullptr;

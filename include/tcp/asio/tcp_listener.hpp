@@ -9,7 +9,7 @@
 #include <vector>
 #include "tcp_connection.hpp"
 #include "utils/c11patch.hpp"
-#include "conn_factory.hpp"
+#include "knet_factory.hpp"
 
 namespace knet
 {
@@ -17,8 +17,8 @@ namespace knet
 	{
 
 		using asio::ip::tcp;
-		template <class T, class Factory = ConnFactory<T>, class Worker = EventWorker>
-		class TcpListener final : public NetEventHandler<T>
+		template <class T, class Factory = KNetFactory<T>, class Worker = KNetWorker>
+		class TcpListener final : public KNetHandler<T>
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;
@@ -42,7 +42,7 @@ namespace knet
 				}
 				if (fac != nullptr)
 				{					
-					add_factory_event_handler(std::is_base_of<NetEventHandler<T>, Factory>(), fac);
+					add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
 				}
 			}
 
@@ -155,8 +155,22 @@ namespace knet
 				return ret;
 			}
 
-			void add_event_handler(NetEventHandler<T> *handler)
+			void add_event_handler(KNetHandler<T> *handler)
 			{
+				if (handler)
+				{
+					m.event_handler_chain.push_back(handler);
+				}
+			}
+			void add_first(KNetHandler<T> *handler){
+				if (handler)
+				{
+					auto beg = m.event_handler_chain.begin(); 
+					m.event_handler_chain.insert(beg, handler);
+				}
+			}
+			
+			void add_last(KNetHandler<T> *handler){
 				if (handler)
 				{
 					m.event_handler_chain.push_back(handler);
@@ -166,7 +180,7 @@ namespace knet
 		private:
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 			{
-				auto evtHandler = dynamic_cast<NetEventHandler<T> *>(fac);
+				auto evtHandler = dynamic_cast<KNetHandler<T> *>(fac);
 				if (evtHandler)
 				{
 					add_event_handler(evtHandler);
@@ -254,7 +268,7 @@ namespace knet
 				}
 				else
 				{
-					dlog("dispatch work to listen worker {}", std::this_thread::get_id());
+					//dlog("dispatch work to listen worker {}", std::this_thread::get_id());
 					return m.listen_worker;
 				}
 			}
@@ -285,7 +299,7 @@ namespace knet
 				bool is_running = false;
 				void *ssl_context = nullptr;
 				FactoryPtr factory = nullptr;
-				std::vector<NetEventHandler<T> *> event_handler_chain;
+				std::vector<KNetHandler<T> *> event_handler_chain;
 				WorkerPtr listen_worker;
 			} m;
 
@@ -293,7 +307,7 @@ namespace knet
 		};
 
 		template <typename T>
-		using DefaultTcpListener = TcpListener<T, ConnFactory<T>, EventWorker>;
+		using DefaultTcpListener = TcpListener<T, KNetFactory<T>, KNetWorker>;
 
 	} // namespace tcp
 

@@ -1,13 +1,13 @@
 #pragma once  
 
-#include "klog.hpp"
+ 
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_factory.hpp"
 
 namespace knet {
 namespace http {
-template <class Worker = knet::EventWorker, class Factory = HttpFactory< HttpConnection> >
+template <class Worker = knet::KNetWorker, class Factory = HttpFactory< HttpConnection> >
 class HttpServer  {
 public:
 	using WorkerPtr = std::shared_ptr<Worker>;
@@ -38,7 +38,7 @@ public:
 
 	bool start(uint32_t port = 8888, const std::string& host = "0.0.0.0") {
 
-		dlog("start http server :{} , thread id {}", port, std::this_thread::get_id());
+		//dlog("start http server :{} , thread id {}", port, std::this_thread::get_id());
 		http_listener.start(port, host);
 		return true;
 	}

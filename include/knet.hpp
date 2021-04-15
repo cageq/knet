@@ -7,9 +7,9 @@
 #define __KNET_H__
 
 #include <thread>
-#include "klog.hpp"
+#include "utils/knet_log.hpp"
 #include <functional>
-#include "event_handler.hpp"
+#include "knet_handler.hpp"
 namespace knet
 {
 

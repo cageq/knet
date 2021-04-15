@@ -6,16 +6,16 @@
 #pragma once
 #include <unordered_map>
 #include "tcp_connection.hpp"
-#include "conn_factory.hpp"
-#include "event_worker.hpp"
+#include "knet_factory.hpp"
+#include "knet_worker.hpp"
 #include <type_traits>
 
 namespace knet
 {
 	namespace tcp
 	{
-		template <class T, class Factory = ConnFactory<T>, class Worker = EventWorker>
-		class TcpConnector : public NetEventHandler<T>
+		template <class T, class Factory = KNetFactory<T>, class Worker = KNetWorker>
+		class TcpConnector : public KNetHandler<T>
 		{
 		public:
 			using TPtr = std::shared_ptr<T>;
@@ -32,11 +32,11 @@ namespace knet
 				}
 				else
 				{
-					// worker = std::make_shared<Worker>();
-					// user_workers.emplace_back(worker);
-					// worker->start();
+					 worker = std::make_shared<Worker>();
+					 user_workers.emplace_back(worker);
+					 worker->start();
 				}
-				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<NetEventHandler<T>, Factory>::value>(), fac);
+				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
 			}
 			virtual ~TcpConnector() {}
 
@@ -141,8 +141,23 @@ namespace knet
 					return nullptr;
 				}
 			}
-			void add_event_handler(NetEventHandler<T> *handler)
+			void add_event_handler(KNetHandler<T> *handler)
 			{
+				if (handler)
+				{
+					m.event_handler_chain.push_back(handler);
+				}
+			}
+
+			void add_first(KNetHandler<T> *handler){
+				if (handler)
+				{
+					auto beg = m.event_handler_chain.begin(); 
+					m.event_handler_chain.insert(beg, handler);
+				}
+			}
+			
+			void add_last(KNetHandler<T> *handler){
 				if (handler)
 				{
 					m.event_handler_chain.push_back(handler);
@@ -152,7 +167,7 @@ namespace knet
 		private:
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 			{
-				auto evtHandler = static_cast<NetEventHandler<T> *>(fac);
+				auto evtHandler = static_cast<KNetHandler<T> *>(fac);
 				if (evtHandler)
 				{
 					add_event_handler(evtHandler);
@@ -226,7 +241,7 @@ namespace knet
 			struct
 			{
 				FactoryPtr factory = nullptr;
-				std::vector<NetEventHandler<T> *> event_handler_chain;
+				std::vector<KNetHandler<T> *> event_handler_chain;
 			} m;
 		};
 

@@ -9,11 +9,11 @@
 
 
 #include <asio.hpp>
-#include "klog.hpp"
+#include "utils/knet_log.hpp"
 #include "utils/timer.hpp"
 #include "ikcp.h"
 #include "kcp_message.hpp"
-#include "event_worker.hpp"
+#include "knet_worker.hpp"
 
 
 
@@ -316,7 +316,7 @@ private:
 				asio::buffer((const char*)&shakehand_response_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-					dlog("send to remote point {}", remote_point); 
+					//dlog("send to remote point {}", remote_point); 
 						dlog("send shakehand response successful  {}", shakehand_response_.conv);
 					} else {
 						dlog("sent message , error code {}, {}", ec.value(), ec.message());

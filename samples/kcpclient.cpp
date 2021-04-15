@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
 
 
-	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
+	KNetLogIns.add_console(); 
 	KcpConnector<MyConnection> connector;
 	connector.start();
 

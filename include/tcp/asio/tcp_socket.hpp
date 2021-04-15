@@ -111,7 +111,7 @@ namespace knet {
 			int32_t send_inloop(const char* pData, uint32_t dataLen) {
 				asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
 					if (ec) {
-						elog("send in loop error : {} , {}", ec, ec.message());
+						//elog("send in loop error : {} , {}", ec, ec.message());
 						this->do_close();
 					}
 					});

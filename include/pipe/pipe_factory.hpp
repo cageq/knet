@@ -14,7 +14,7 @@ namespace knet
 			PIPE_CLIENT_MODE = 2,
 			PIPE_DUET_MODE = 3
 		};
-		class PipeFactory : public ConnFactory<PipeConnection>, public NetEventHandler<PipeConnection>
+		class PipeFactory : public KNetFactory<PipeConnection>, public KNetHandler<PipeConnection>
 		{
 		public:
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
@@ -23,7 +23,7 @@ namespace knet
 			virtual bool handle_event(TPtr conn, NetEvent evt)
 			{
 				auto session = conn->get_session();
-				ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
+				//ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
 				switch (evt)
 				{
 				case EVT_CONNECT:

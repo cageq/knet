@@ -7,3 +7,6 @@
 [submodule "opt/klog"]
 	path = opt/klog
 	url = https://github.com/cageq/klog
+[submodule "opt/spdlog"]
+	path = opt/spdlog
+	url = https://github.com/gabime/spdlog.git

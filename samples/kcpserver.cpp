@@ -22,9 +22,9 @@ class MyConnection : public KcpConnection<MyConnection> {
 
 int main(int argc, char* argv[]) {
 
-	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
+	KNetLogIns.add_console(); 
 	dlog("start kcp server"); 
-	knet::EventWorkerPtr worker = std::make_shared<knet::EventWorker>(); 
+	knet::EventWorkerPtr worker = std::make_shared<knet::KNetWorker>(); 
 	worker->start(nullptr, 4); //4 threads 
 
 	KcpListener<MyConnection> kcpLis(worker);

@@ -12,7 +12,7 @@ using asio::ip::udp;
 
 namespace knet {
 namespace kcp {
-template <typename T, typename Worker = EventWorker, class ... Args>
+template <typename T, typename Worker = KNetWorker, class ... Args>
 class KcpConnector {
 
 public:

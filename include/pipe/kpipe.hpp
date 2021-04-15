@@ -11,8 +11,8 @@ using namespace knet::tcp;
 namespace knet {
 	namespace pipe{
 
-		template <class Worker = knet::EventWorker>
-			class KPipe : public ConnFactory<PipeConnection> {
+		template <class Worker = knet::KNetWorker>
+			class KPipe : public KNetFactory<PipeConnection> {
 				public:
 					using PipeListener = TcpListener<PipeConnection, PipeFactory, Worker>;
 					using PipeConnector = TcpConnector<PipeConnection, PipeFactory, Worker>;

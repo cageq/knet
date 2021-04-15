@@ -49,7 +49,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 };
 int main(int argc, char* argv[]) {
 
-	kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
+	KNetLogIns.add_console(); 
 	UdpListener<MyConnection> udpListener;
 	udpListener.start([](MyConnection::TPtr conn, knet::NetEvent evt, const std::string &dv) {
 		dlog("received connection event {}", evt);

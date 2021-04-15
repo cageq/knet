@@ -13,7 +13,7 @@
 namespace knet {
 	namespace kcp {
 
-		template <typename T, typename Worker = EventWorker, typename ... Args>
+		template <typename T, typename Worker = KNetWorker, typename ... Args>
 		class KcpListener {
 		public:
 			using TPtr = std::shared_ptr<T>;

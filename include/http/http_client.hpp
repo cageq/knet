@@ -1,5 +1,5 @@
 #pragma once
-#include "klog.hpp"
+ 
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_factory.hpp"
@@ -13,7 +13,7 @@ using namespace knet::tcp;
 namespace knet {
 namespace http {
 
-class HttpClient : public ConnFactory<HttpConnection> {
+class HttpClient : public KNetFactory<HttpConnection> {
 
 public:
 	using HttpConnector = TcpConnector<HttpConnection, HttpClient>;

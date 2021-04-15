@@ -10,10 +10,10 @@
 namespace knet {
 
 		template <class T, class ... Params >
-		class ConnFactory {
+		class KNetFactory {
 		public:
 			using TPtr = std::shared_ptr<T>;
-			ConnFactory(Params ... params) :init_params(params ...) {
+			KNetFactory(Params ... params) :init_params(params ...) {
 			}
 
 			template <class ... Args> 
@@ -22,7 +22,7 @@ namespace knet {
 			} 
 
 			TPtr create() {
-				return std::apply(&ConnFactory<T, Params...>::create_helper, init_params);
+				return std::apply(&KNetFactory<T, Params...>::create_helper, init_params);
 			} 
 			void release(TPtr sess) {} 
 

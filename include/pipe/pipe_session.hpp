@@ -145,14 +145,14 @@ namespace knet
 				this->connection = conn;
 				conn->pipeid = m.pipeid;
 				conn->session = this->shared_from_this();
-				//ready_flag  = true;
-				ready_flag.store(true, std::memory_order_acquire);
+				ready_flag  = true;
+				//ready_flag.store(true, std::memory_order_acquire);
 			}
 			void unbind()
 			{
 
-				//ready_flag = false;
-				ready_flag.store(false, std::memory_order_release);
+				ready_flag = false;
+				//ready_flag.store(false, std::memory_order_release);
 				 
 				//connection.reset();
 				// if (connection->session)
