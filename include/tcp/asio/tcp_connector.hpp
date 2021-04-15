@@ -149,6 +149,21 @@ namespace knet
 				}
 			}
 
+			void add_first(KNetHandler<T> *handler){
+				if (handler)
+				{
+					auto beg = m.event_handler_chain.begin(); 
+					m.event_handler_chain.insert(beg, handler);
+				}
+			}
+			
+			void add_last(KNetHandler<T> *handler){
+				if (handler)
+				{
+					m.event_handler_chain.push_back(handler);
+				}
+			}
+
 		private:
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 			{
