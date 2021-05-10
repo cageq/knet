@@ -52,11 +52,18 @@ public:
 
 #define  KNetLogIns KNetLogger::instance()
  
-#define ilog(format, args...) KNetLogIns.get_logger().info(format, ##args)
-#define dlog(format, args...) KNetLogIns.get_logger().debug(format, ##args)
-#define wlog(format, args...) KNetLogIns.get_logger().warn(format, ##args)
-#define flog(format, args...) KNetLogIns.get_logger().critical(format, ##args)
-#define elog(format, args...) KNetLogIns.get_logger().error(format, ##args)
+#define ilog(format,  ...) KNetLogIns.get_logger().info(format, ##__VA_ARGS__)
+#define dlog(format,  ...) KNetLogIns.get_logger().debug(format, ##__VA_ARGS__)
+#define wlog(format,  ...) KNetLogIns.get_logger().warn(format, ##__VA_ARGS__)
+#define flog(format,  ...) KNetLogIns.get_logger().critical(format, ##__VA_ARGS__)
+#define elog(format,  ...) KNetLogIns.get_logger().error(format, ##__VA_ARGS__)
+
+
+//#define ilog(format, args...) KNetLogIns.get_logger().info(format, ##args)
+//#define dlog(format, args...) KNetLogIns.get_logger().debug(format, ##args)
+//#define wlog(format, args...) KNetLogIns.get_logger().warn(format, ##args)
+//#define flog(format, args...) KNetLogIns.get_logger().critical(format, ##args)
+//#define elog(format, args...) KNetLogIns.get_logger().error(format, ##args)
 
 
 #else //
