@@ -22,6 +22,7 @@ namespace knet {
 			enum class SocketStatus {
 				SOCKET_IDLE,
 				SOCKET_INIT = 1,
+				SOCKET_CONNECTING, 
 				SOCKET_OPEN,
 				SOCKET_CLOSING,
 				SOCKET_RECONNECT,
@@ -51,7 +52,7 @@ namespace knet {
 					asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
 					tcp_sock.bind(laddr);
 				}
-
+				m.status = SocketStatus::SOCKET_CONNECTING; 
 				async_connect(tcp_sock, result,
 					[self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 						if (!ec) {
@@ -59,6 +60,7 @@ namespace knet {
 						}else {
 							dlog("connect to server failed, {}:{}", host.c_str(), port);
 							self->tcp_sock.close();
+							self->m.status = SocketStatus::SOCKET_CLOSED; 
 						}
 					});
 				return true;
@@ -226,6 +228,11 @@ namespace knet {
 				//		dlog("status is {}", static_cast<uint32_t>(m.status ));
 				return tcp_sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 			}
+			bool is_connecting() {
+				//		dlog("status is {}", static_cast<uint32_t>(m.status ));
+				return  m.status == SocketStatus::SOCKET_CONNECTING;
+			}
+
 
 			bool process_data(uint32_t nread) {
 				if (!m.connection  || nread <= 0) {

@@ -40,7 +40,7 @@ int main(int argc, char * argv[]){
 		std::this_thread::sleep_for(std::chrono::seconds(1)); 
 	while(1){
 		//std::this_thread::sleep_for(std::chrono::microseconds(1)); 
-		//std::this_thread::sleep_for(std::chrono::seconds(1)); 
+		std::this_thread::sleep_for(std::chrono::seconds(1)); 
 		//mySession->transfer("welcome to 2020",15);  
 //		cpipe.broadcast("welcome to 2020");  
      	std::string msg = fmt::format("index: {} , ",index ++); 

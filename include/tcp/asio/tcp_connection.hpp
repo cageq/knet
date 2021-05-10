@@ -143,6 +143,7 @@ namespace knet
 			}
 
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
+			inline bool is_connecting() { return tcp_socket && tcp_socket->is_connecting(); }
 
 			bool connect(const ConnectionInfo & connInfo )
 			{
@@ -180,8 +181,10 @@ namespace knet
 						[=]() {
 							if (!is_connected())
 							{
-								dlog("try to reconnect to server ");
-								self->connect();
+								if (!is_connecting()){
+									dlog("try to reconnect to server ");
+									self->connect();
+								}
 							}
 						},
 						interval);
