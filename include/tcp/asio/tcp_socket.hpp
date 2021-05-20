@@ -311,7 +311,12 @@ namespace knet {
 								conn.reset();
 							}
 						}else {
-							self->m.status = SocketStatus::SOCKET_CLOSED;
+
+							if (conn->need_reconnect()) {
+								self->m.status = SocketStatus::SOCKET_RECONNECT;
+							} else {
+								self->m.status = SocketStatus::SOCKET_CLOSED;
+							}
 							if (tcp_sock.is_open()) {
 								tcp_sock.close();							
 							}
