@@ -74,6 +74,7 @@ namespace knet
 
 			void init( SocketPtr sock = nullptr,const  EventWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
+				dlog("init tcp connection "); 
 				static uint64_t index = 1024;
 				event_worker = worker;			 
 				cid = ++index; 

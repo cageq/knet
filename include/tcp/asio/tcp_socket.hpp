@@ -48,6 +48,7 @@ namespace knet {
 				auto result = resolver.resolve(host, std::to_string(port));
 				dlog("connect to server {}:{}", host.c_str(), port);
 				auto self = this->shared_from_this();
+				tcp_sock.close(); 
 				tcp_sock = std::move(tcp::socket(io_context)); 
 				if (localPort > 0) {
 					asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
@@ -57,9 +58,10 @@ namespace knet {
 				async_connect(tcp_sock, result,
 					[self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
 						if (!ec) {
+							dlog("connect to server success"); 
 							self->init_read(); 
 						}else {
-							dlog("connect to server failed, {}:{}", host.c_str(), port);
+							dlog("connect to server failed, {}:{} , error : {}", host.c_str(), port, ec.message() );
 							self->tcp_sock.close();
 							self->m.status = SocketStatus::SOCKET_CLOSED; 
 						}
@@ -92,7 +94,7 @@ namespace knet {
 									self->do_read();
 								}
 								else {
-									dlog("read error, close connection {} ", ec.value());
+									dlog("read error, close connection {} , message {}", ec.value(), ec.message() );
 									do_close();
 								}
 							});
@@ -195,6 +197,7 @@ namespace knet {
 
 			bool do_async_write() {
 
+				dlog("start async write"); 
 				if (m.cache_buffer.empty())
 				{
 					if (m.mutex.try_lock()) {
@@ -217,6 +220,7 @@ namespace knet {
 								}
 								self->do_async_write();
 							}else {
+								dlog("write error , do close , status is {}", self->m.status); 
 								self->do_close();
 							}
 						});
@@ -283,7 +287,7 @@ namespace knet {
 
 			void close() { do_close(true); }
 			void do_close(bool force = false) {
-
+				dlog("do close socket "); 
 				if (m.status == SocketStatus::SOCKET_CLOSING || m.status == SocketStatus::SOCKET_CLOSED) {
 					dlog("already in closing status {}", m.status);
 					return;
