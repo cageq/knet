@@ -94,7 +94,7 @@ namespace knet {
 									self->do_read();
 								}
 								else {
-									dlog("read error, close connection {} , message {}", ec.value(), ec.message() );
+									dlog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
 									do_close();
 								}
 							});
