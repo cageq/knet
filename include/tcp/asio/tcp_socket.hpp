@@ -48,6 +48,7 @@ namespace knet {
 				auto result = resolver.resolve(host, std::to_string(port));
 				dlog("connect to server {}:{}", host.c_str(), port);
 				auto self = this->shared_from_this();
+				tcp_sock = std::move(tcp::socket(io_context)); 
 				if (localPort > 0) {
 					asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
 					tcp_sock.bind(laddr);
@@ -311,15 +312,11 @@ namespace knet {
 								conn.reset();
 							}
 						}else {
-
-							if (conn->need_reconnect()) {
-								self->m.status = SocketStatus::SOCKET_RECONNECT;
-							} else {
-								self->m.status = SocketStatus::SOCKET_CLOSED;
-							}
+							self->m.status = SocketStatus::SOCKET_CLOSED;
 							if (tcp_sock.is_open()) {
 								tcp_sock.close();							
 							}
+						
 						}
 						self->read_buffer_pos = 0;
 					});
