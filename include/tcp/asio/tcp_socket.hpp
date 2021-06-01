@@ -238,10 +238,12 @@ namespace knet {
 				return  m.status == SocketStatus::SOCKET_CONNECTING;
 			}
 
-			void rewind_buffer(uint32_t readPos){
-				dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
-				memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-				read_buffer_pos -= readPos;
+			void rewind_buffer(int32_t readPos){
+				if (read_buffer_pos > readPos) {
+					dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
+					memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
+					read_buffer_pos -= readPos;
+				}
 			}
 
 			bool process_data(uint32_t nread) {
@@ -253,7 +255,7 @@ namespace knet {
 				int32_t pkgLen = this->m.connection->process_package((char*)m.read_buffer, read_buffer_pos); 
 				
 				//package size is larger than data we have 
-				if (pkgLen > read_buffer_pos){
+				if (pkgLen >  read_buffer_pos){
 					if (pkgLen > kReadBufferSize) {
 						elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
 						m.connection->close();
@@ -263,7 +265,7 @@ namespace knet {
 					return true; 
 				}
 
-				uint32_t readPos = 0;
+				int32_t readPos = 0;
 				while (pkgLen > 0) {
 					dlog("process data package size is {} ,read buffer pos is {}  readPos is {}", pkgLen, read_buffer_pos, readPos);
 					if (readPos + pkgLen <= read_buffer_pos) {
@@ -282,8 +284,9 @@ namespace knet {
 					}
 
 					if (readPos < read_buffer_pos) {
-						pkgLen = this->m.connection->process_package( (char*)m.read_buffer + readPos, read_buffer_pos - readPos); 	
-						if (pkgLen <= 0 ||  pkgLen > read_buffer_pos - readPos) {
+						int32_t  dataLen = read_buffer_pos - readPos; 
+						pkgLen = this->m.connection->process_package( (char*)m.read_buffer + readPos, dataLen); 	
+						if (pkgLen <= 0 ||  pkgLen > dataLen) {
 
 							if (pkgLen > kReadBufferSize) {
 								elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
@@ -372,8 +375,7 @@ namespace knet {
 			} m;
 
 			std::thread::id worker_tid;
-			uint32_t read_buffer_pos = 0;
-			uint32_t need_package_length = 0;
+			int32_t read_buffer_pos = 0;
 		};
 
 
