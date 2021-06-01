@@ -229,15 +229,20 @@ namespace knet {
 				return true;
 			}
  
-			bool is_open() {
+			inline bool is_open() {
 				//		dlog("status is {}", static_cast<uint32_t>(m.status ));
 				return tcp_sock.is_open() && m.status == SocketStatus::SOCKET_OPEN;
 			}
-			bool is_connecting() {
+			inline bool is_connecting() {
 				//		dlog("status is {}", static_cast<uint32_t>(m.status ));
 				return  m.status == SocketStatus::SOCKET_CONNECTING;
 			}
 
+			void rewind_buffer(uint32_t readPos){
+				dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
+				memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
+				read_buffer_pos -= readPos;
+			}
 
 			bool process_data(uint32_t nread) {
 				if (!m.connection  || nread <= 0) {
@@ -246,10 +251,16 @@ namespace knet {
 			 	m.connection->process_event(EVT_RECV);				
 				read_buffer_pos += nread; 
 				int32_t pkgLen = this->m.connection->process_package((char*)m.read_buffer, read_buffer_pos); 
-				if (pkgLen > kReadBufferSize) {
-					elog("single packet size ({}) error, close connection", pkgLen);
-					m.connection->close();
-					return false;
+				
+				//package size is larger than data we have 
+				if (pkgLen > read_buffer_pos){
+					if (pkgLen > kReadBufferSize) {
+						elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
+						m.connection->close();
+						return false;
+					}
+					dlog("need more data to get one package"); 
+					return true; 
 				}
 
 				uint32_t readPos = 0;
@@ -265,24 +276,25 @@ namespace knet {
 					} else {
 						if (read_buffer_pos > readPos )
 						{
-							dlog("moving buffer to front: {} ", read_buffer_pos - readPos);
-							memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-							read_buffer_pos -= readPos;
+							rewind_buffer(readPos);
 							break;
 						} 
 					}
 
 					if (readPos < read_buffer_pos) {
-						pkgLen = this->m.connection->process_package( (char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-						if (pkgLen > kReadBufferSize) {
-							elog("single packet size ({}) error, close connection", pkgLen);
-							m.connection->close();
-						}else if (pkgLen <= 0) {
-							dlog("moving buffer to front {} ", read_buffer_pos - readPos);
-							memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
-							read_buffer_pos -= readPos;
+						pkgLen = this->m.connection->process_package( (char*)m.read_buffer + readPos, read_buffer_pos - readPos); 	
+						if (pkgLen <= 0 ||  pkgLen > read_buffer_pos - readPos) {
+
+							if (pkgLen > kReadBufferSize) {
+								elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
+								m.connection->close();
+								return false; 
+							}
+
+							rewind_buffer(readPos);
 							break;
-						}
+						}  
+
 					}else {
 						read_buffer_pos = 0;
 						break;
