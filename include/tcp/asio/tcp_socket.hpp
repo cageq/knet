@@ -262,8 +262,14 @@ namespace knet {
 						this->m.connection->process_data(std::string((const char*)m.read_buffer + readPos, pkgLen));
 						*pkgEnd = endChar;
 						readPos += pkgLen;
-					}else {
-						break;
+					} else {
+						if (read_buffer_pos > readPos )
+						{
+							dlog("moving buffer to front: {} ", read_buffer_pos - readPos);
+							memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
+							read_buffer_pos -= readPos;
+							break;
+						} 
 					}
 
 					if (readPos < read_buffer_pos) {
