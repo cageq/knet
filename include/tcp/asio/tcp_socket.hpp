@@ -239,7 +239,7 @@ namespace knet {
 			}
 
 			void rewind_buffer(int32_t readPos){
-				if (read_buffer_pos > readPos) {
+				if (read_buffer_pos >= readPos) {
 					dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
 					memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 					read_buffer_pos -= readPos;
