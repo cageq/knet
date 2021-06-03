@@ -18,10 +18,11 @@ namespace knet{
 				PipeConnection(const std::string& pid = "") { pipeid = pid; }
 
 				virtual int32_t handle_package( const char* data, uint32_t len) {
+					if(len < sizeof(PipeMsgHead)){
+						return 0; 
+					}
 		
 					PipeMsgHead* msg = (PipeMsgHead*)data;
-
-					dlog("demarcate package length {} ,package length {}", len, msg->length); 
 					if (msg->length + sizeof(PipeMsgHead) > len) {			 
 						wlog("demarcate message length {}  message head length {} ", len , msg->length);
 						return 0;
