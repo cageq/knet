@@ -21,11 +21,13 @@
  
 #define dout  std::cout 
 
-class KNetLogger : public knet::utils::Singleton<KNetLogger>{
+class KNetLogger : public knet::utils::Singleton<KNetLogger> {
+
+	friend class Singleton<KNetLogger>; 
 public: 
     KNetLogger(){
         logger = std::make_shared<spdlog::logger>("knet");
-	logger->set_level(spdlog::level::trace);  
+		logger->set_level(spdlog::level::trace);  
     }
 
     void add_console(){
@@ -45,7 +47,7 @@ public:
     spdlog::logger & get_logger(){
         return *logger; 
     }
-
+private:
     std::shared_ptr<spdlog::logger> logger; 
 };
 

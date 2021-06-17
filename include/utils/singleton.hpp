@@ -12,14 +12,14 @@ namespace knet
 	namespace utils
 	{
 
-		template <typename T>
+		template <class T>
 		class Singleton
 		{
 
 			Singleton(const Singleton &) = delete;
 			Singleton &operator=(const Singleton &) = delete;
 
-		public:
+		protected:
 			Singleton() {}
 			~Singleton()
 			{
@@ -29,6 +29,8 @@ namespace knet
 					s_ins = nullptr;
 				}
 			}
+		public:
+		
 
 			static T *pointer()
 			{
@@ -41,6 +43,10 @@ namespace knet
 				});
 				return s_ins;
 			}
+
+			//inline T* operator->() const {
+			//	return pointer();
+			//}
 
 			template <class... P>
 			static T &instance(P... args)
@@ -73,9 +79,9 @@ namespace knet
 			static T *s_ins;
 		};
 
-		template <typename T>
+		template <class T>
 		std::once_flag Singleton<T>::s_once;
-		template <typename T>
+		template <class T>
 		T *Singleton<T>::s_ins = nullptr;
 
 	} // namespace utils
