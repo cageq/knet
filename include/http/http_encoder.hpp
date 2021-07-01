@@ -52,12 +52,12 @@ public:
                
         fmt::memory_buffer msgBuf;
         
-        fmt::format_to(msgBuf, "{} {} {}\r\n", http_method_string(http_method),http_url, http_version_1_1);      
+        fmt::format_to(std::back_inserter(msgBuf), "{} {} {}\r\n", http_method_string(http_method),http_url, http_version_1_1);      
 
         for (const auto& h : http_headers) {
 			if (!h.first.empty() )
 			{
-				fmt::format_to(msgBuf, "{}: {}\r\n", h.first, h.second);
+				fmt::format_to(std::back_inserter(msgBuf), "{}: {}\r\n", h.first, h.second);
 			}
 			
 		}
@@ -67,17 +67,17 @@ public:
 			set_content_type(mime_types::to_mime(type)) ;     
 		}
         
-		fmt::format_to(msgBuf, "\r\n{}", content); 
+		fmt::format_to(std::back_inserter(msgBuf), "\r\n{}", content); 
         return fmt::to_string(msgBuf);
     }
 
     std::string encode_response(){
         fmt::memory_buffer msgBuf;
         
-        fmt::format_to(msgBuf, "{}\r\n", status_strings::to_string(status_code));
+        fmt::format_to(std::back_inserter(msgBuf), "{}\r\n", status_strings::to_string(status_code));
 
         for (const auto& h : http_headers) {
-			fmt::format_to(msgBuf, "{}: {}\r\n", h.first, h.second);
+			fmt::format_to(std::back_inserter(msgBuf), "{}: {}\r\n", h.first, h.second);
 		}
 
 		
@@ -86,7 +86,7 @@ public:
 			set_content_type(mime_types::to_mime(context_type)) ;     
 		}
 		 
-		fmt::format_to(msgBuf, "\r\n{}", content);  
+		fmt::format_to(std::back_inserter(msgBuf), "\r\n{}", content);  
         
         return fmt::to_string(msgBuf);
     }
@@ -95,16 +95,16 @@ public:
         fmt::memory_buffer msgBuf;
         if (status_code > 0)
         {
-            fmt::format_to(msgBuf, "{}\r\n", status_strings::to_string(status_code));
+            fmt::format_to(std::back_inserter(msgBuf), "{}\r\n", status_strings::to_string(status_code));
         }else {
-            fmt::format_to(msgBuf, "{} {} {}\r\n", http_method_string(http_method),http_url, http_version_1_1);
+            fmt::format_to(std::back_inserter(msgBuf), "{} {} {}\r\n", http_method_string(http_method),http_url, http_version_1_1);
         }
         set_agent("GHttp v0.1"); 
         
           for (const auto& h : http_headers) {
 			if (!h.first.empty() )
 			{
-				fmt::format_to(msgBuf, "{}: {}\r\n", h.first, h.second);
+				fmt::format_to(std::back_inserter(msgBuf), "{}: {}\r\n", h.first, h.second);
 			}			
 		}
         //add_time(); 
@@ -114,7 +114,7 @@ public:
 			set_content_type(mime_types::to_mime(context_type)) ;     
 		}
 		 	
-		fmt::format_to(msgBuf, "\r\n{}", content); 
+		fmt::format_to(std::back_inserter(msgBuf), "\r\n{}", content); 
 	 
         
         return fmt::to_string(msgBuf);
