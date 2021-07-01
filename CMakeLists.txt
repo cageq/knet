@@ -38,6 +38,7 @@ endif()
 
 add_subdirectory(opt/fmt EXCLUDE_FROM_ALL) 
 
+ADD_DEFINITIONS(-DFMT_DEPRECATED)
 ADD_DEFINITIONS(-DASIO_STANDALONE)
 
 #add the executable
