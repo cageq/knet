@@ -186,6 +186,7 @@ namespace knet
 									self->connect();
 								}
 							}
+							return true; 
 						},
 						interval);
 				}
@@ -298,7 +299,7 @@ namespace knet
 
 			bool process_event(NetEvent evt){
 
-				dlog("process event {}", evt);
+				//dlog("process event {}", evt);
 				bool ret = true; 
 				if (event_handler)
 				{

@@ -46,7 +46,7 @@ int main(int argc, char * argv[]){
 		std::string msg = fmt::format("msg from server {}" , obid++); 
 		//mySession->transfer(pMsg, strlen(pMsg)); 
 		
-		mySession->send(obid , msg ); 
+//		mySession->send(obid , msg ); 
 		//spipe.broadcast("message from serever"); 
 	}; 
 

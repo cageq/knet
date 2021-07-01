@@ -152,6 +152,7 @@ private:
  
 							ikcp_update(kcp, duration.count());
 						}
+						return true; 
 					},
 					100);
 			}
@@ -246,6 +247,7 @@ private:
 					}
 
 					ilog("check heartbeat timer {}", elapseTime.count());
+					return true; 
 				},
 				1000000);
 		}
@@ -279,6 +281,7 @@ private:
 					}
 
 					ilog("check heartbeat timer {}", elapseTime.count());
+					return true; 
 				},
 				1000000);
 			status = CONN_OPEN;

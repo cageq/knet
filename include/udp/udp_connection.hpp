@@ -239,7 +239,8 @@ namespace knet {
 							if (elapseTime.count() > 3) {
 							 
 								this->release(); 
-							}					
+							}			
+							return true; 		
 						},
 						4000000);
 					m.status = CONN_OPEN;

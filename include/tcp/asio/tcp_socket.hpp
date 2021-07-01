@@ -89,7 +89,7 @@ namespace knet {
 						tcp_sock.async_read_some(
 							buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
 								if (!ec) {
-									dlog("received data length {}", bytes_transferred);								 
+									//dlog("received data length {}", bytes_transferred);								 
 									process_data(bytes_transferred);
 									self->do_read();
 								}
@@ -197,7 +197,7 @@ namespace knet {
 
 			bool do_async_write() {
 
-				dlog("start async write"); 
+				//dlog("start async write"); 
 				if (m.cache_buffer.empty())
 				{
 					if (m.mutex.try_lock()) {

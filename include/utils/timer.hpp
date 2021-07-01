@@ -9,7 +9,7 @@ namespace knet
 	namespace utils
 	{
 
-		using TimerHandler = std::function<void()>;
+		using TimerHandler = std::function<bool()>;
 		class Timer 
 		{
 		public:
@@ -24,6 +24,7 @@ namespace knet
 				uint64_t id;
 				bool loop = true;
 			};
+			using TimerNodePtr = std::shared_ptr<TimerNode>; 
 
 
 			Timer(asio::io_context &ctx)
@@ -38,15 +39,20 @@ namespace knet
 				timers.clear();
 			}
 
-			void handle_timeout(TimerNode *node)
+			void handle_timeout(TimerNodePtr node)
 			{
-
 				if (node->alive)
 				{
-
 					if (node->handler)
 					{
-						node->handler();
+						bool ret = node->handler();
+						if (!ret){ 
+							node->alive = false; 
+							node->timer.cancel(); 
+							timers.erase(node->id);
+			 
+							return; 
+						}
 					}
 					if (node->loop)
 					{
@@ -59,8 +65,7 @@ namespace knet
 				}
 				else
 				{
-					timers.erase(node->id);
-					delete node;
+					timers.erase(node->id);					 
 				}
 			}
 
@@ -69,7 +74,7 @@ namespace knet
 			{
 				static uint64_t timer_index = 1;
 
-				TimerNode *node = new TimerNode(context);
+				auto node = std::make_shared<TimerNode>(context);
 				node->handler = handler;
 				node->interval = interval;
 				node->alive = true;
@@ -99,7 +104,7 @@ namespace knet
 			}
 
 		private:
-			std::unordered_map<uint64_t, TimerNode *> timers;
+			std::unordered_map<uint64_t, TimerNodePtr> timers;
 			asio::io_context &context;
 		};
 

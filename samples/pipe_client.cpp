@@ -45,7 +45,7 @@ int main(int argc, char * argv[]){
 //		cpipe.broadcast("welcome to 2020");  
      	std::string msg = fmt::format("index: {} , ",index ++); 
 		//mySession->msend_with_obdata(index , msg, std::string("msg from client "),std::string("msend"));
-		mySession->transfer(msg); 
+//		mySession->transfer(msg); 
 	}; 
 	return 0; 
 };

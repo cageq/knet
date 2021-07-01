@@ -60,7 +60,7 @@ namespace knet
 				PipeMsgHead *msg = (PipeMsgHead *)buf.data();
 				if (msg->length + sizeof(PipeMsgHead) > buf.length())
 				{
-					elog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
+					wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
 				dlog("pipe message type {}", msg->type);
@@ -76,6 +76,13 @@ namespace knet
 						process_client_handshake(conn, msg);
 					}
 					return true;
+				}else if (msg->type == PIPE_MSG_HEART_BEAT){
+					dlog("handle pipe heartbeat message"); 
+					if (!conn->is_passive())
+					{
+						send_heartbeat(conn, ""); 
+					}					
+					return true; 
 				}
 
 				auto session = conn->get_session();
@@ -96,7 +103,7 @@ namespace knet
 				return true;
 			}
 
-			std::string generate_id()
+			inline std::string generate_id()
 			{
 				static uint64_t pid_index = 0;
 				return fmt::format("pid{}", pid_index++);
@@ -117,16 +124,17 @@ namespace knet
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
 						conn->msend(std::string((const char *)&shakeMsg, sizeof(PipeMsgHead)), pipeId);
 						pipe->handle_event(NetEvent::EVT_CONNECT);
+						pipe->on_ready(); 
 					}
 					else
 					{
-						wlog("pipe id not found {}", pipeId);
+						wlog("pipe id not found {}, close connection", pipeId);
 						conn->close();
 					}
 				}
 				else
 				{
-					//create a pipeid to client
+					//create a pipeid for client
 					auto pipeId = this->generate_id();
 					auto session = find_unbind_pipe(conn->get_cid());
 		 
@@ -136,7 +144,7 @@ namespace knet
 					}
 					else
 					{
-						dlog("create and bind session success {}", pipeId);
+						//dlog("create and bind session success {}", pipeId);
 						session = std::make_shared<PipeSession>();
 						session->bind(conn);
 						add_unbind_pipe(conn->get_cid(), session);
@@ -156,19 +164,17 @@ namespace knet
 
 				if (msg->length > 0)
 				{
-					std::string pipeId = std::string((const char *)msg + sizeof(PipeMsgHead), msg->length);
-					dlog("get handshake from server,  pipeid is {}", pipeId);
+					std::string pipeId = std::string((const char *)msg + sizeof(PipeMsgHead), msg->length);		
 					PipeSessionPtr session = find_bind_pipe(pipeId);
 					if (session)
 					{					 
 						session->bind(conn);
 						session->update_pipeid(pipeId);
-						dlog("bind pipe session success {}", pipeId);
+						dlog("bind pipe session success, {}", pipeId);
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 					else
-					{
-						dlog("try to find pipe by cid {} size is {}", conn->get_cid(), unbind_pipes.size());
+					{						
 						session = find_unbind_pipe(conn->get_cid());
 
 						if (session)
@@ -176,12 +182,11 @@ namespace knet
 							session->bind(conn);
 							session->update_pipeid(pipeId);
 
-							dlog("bind session success");
-							session->handle_event(NetEvent::EVT_CONNECT);
-
+							dlog("rebind pipe session success, {}",pipeId);		
 							add_bind_pipe(pipeId, session);
-
 							remove_unbind_pipe(conn->get_cid());
+							session->handle_event(NetEvent::EVT_CONNECT);
+							session->on_ready(); 
 						}
 						else
 						{
@@ -192,11 +197,18 @@ namespace knet
 				}
 				else
 				{
-
 					send_shakehand(conn, conn->get_pipeid());
 					wlog("handshake from server is empty, resend client shakehand {}", conn->get_cid());
 				}
 			}
+
+			int32_t send_heartbeat(TPtr conn, const std::string &msg)
+			{
+				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());
+			 
+				return conn->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);		  
+			}
+
 
 			void add_unbind_pipe(uint64_t cid, PipeSessionPtr pipe)
 			{
@@ -286,7 +298,6 @@ namespace knet
 					else
 					{
 						dlog("add normal pipe {}", pipe->get_pipeid());
-
 						add_bind_pipe(pipe->get_pipeid(), pipe);
 					}
 				}
@@ -328,13 +339,12 @@ namespace knet
 				}
 			}
 
-			PipeMode get_mode() { return pipe_mode; }
+			inline PipeMode get_mode()const  { return pipe_mode; }
 
 		private:
 			PipeMode pipe_mode;
 			std::mutex bind_mutex;
 			std::unordered_map<std::string, PipeSessionPtr> bind_pipes;
-
 			std::mutex unbind_mutex;
 			std::unordered_map<uint64_t, PipeSessionPtr> unbind_pipes;
 		};
