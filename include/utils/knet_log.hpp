@@ -24,11 +24,13 @@ ifndef KNET_LOG_FLUSH_TIME
  
 #define dout  std::cout 
 
-class KNetLogger : public knet::utils::Singleton<KNetLogger>{
+class KNetLogger : public knet::utils::Singleton<KNetLogger> {
+
+	friend class Singleton<KNetLogger>; 
 public: 
     KNetLogger(){
         logger = std::make_shared<spdlog::logger>("knet");
-	logger->set_level(spdlog::level::trace);  
+		logger->set_level(spdlog::level::trace);  
     }
 
     void add_console(){
@@ -36,7 +38,7 @@ public:
         logger->sinks().emplace_back(console_sink);       
     }
 
-    void add_file(const std::string & filePath, uint32_t hour = 0, uint32_t minute = 1){
+    void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
         auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filePath, hour, minute);
         logger->sinks().emplace_back(file_sink); 
     }
@@ -48,7 +50,7 @@ public:
     spdlog::logger & get_logger(){
         return *logger; 
     }
-
+private:
     std::shared_ptr<spdlog::logger> logger; 
 };
 
@@ -79,10 +81,10 @@ class KNetLogger : public knet::utils::Singleton<KNetLogger>{
         kLogIns.add_sink<klog::ConsoleSink<std::mutex, true> >(); 
      }
 
-     void add_file(const std::string & filePath, uint32_t hour=0 , uint32_t minute =1 ){
-		 kLogIns.add_sink<klog::FileSink<> >(filePath);
-		 spdlog::flush_every(std::chrono::seconds(KNET_LOG_FLUSH_TIME));
-	 }
+     void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
+
+             kLogIns.add_sink<klog::FileSink<> >(filePath);
+     }
 }; 
 
 
@@ -105,7 +107,7 @@ class KNetLogger : public knet::utils::Singleton<KNetLogger>{
      inline void add_console(){
      }
 
-     inline void add_file(const std::string & filePath, uint32_t hour = 0 , uint32_t minute = 1){
+     inline void add_file(const std::string & filePath, uint32_t hour, uint32_t minute ){
      }
 }; 
 
