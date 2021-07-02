@@ -42,7 +42,7 @@ public:
 		return true;
 	}
 
-	void register_router(const std::string& path, HttpHandler handler) {
+	void register_router(const std::string& path, const HttpHandler & handler) {
 		dlog("register path {}", path);
 		if (http_factory) {
 			http_factory->http_routers[path] = handler;
