@@ -22,8 +22,7 @@ namespace knet
 			if (ctx == nullptr) {
 				io_context = std::make_shared<asio::io_context>(); 
 				self_context = io_context; //hold self context
-			}
-			else {
+			}else {
 				io_context = ctx;
 			}
 			this->user_data = udata;
@@ -57,18 +56,14 @@ namespace knet
 			{
 
 				for (uint32_t i = 0;i < thrds;i++) {
-
 					//	wlog("real start event work here {}", std::this_thread::get_id());
-
 					work_threads.emplace_back(std::thread(&KNetWorker::run, this));
 				}
-			}
-			else {
+			}else {
 				//it's outer context, user should start it in other place 
 			}
 
-			if (work_starter)
-			{
+			if (work_starter){
 				asio::dispatch(*io_context, work_starter);
 			}
 		}
@@ -89,7 +84,7 @@ namespace knet
 		virtual void deinit() {};
 
 		template <class Func>
-		void post(Func fn)
+		void post(const Func &  fn)
 		{
 			if (io_context)
 			{
@@ -100,7 +95,7 @@ namespace knet
 		inline asio::io_context& context() { return *io_context; }
 		inline std::thread::id thread_id() const { return work_threads[0].get_id(); }
 
-		uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
+		uint64_t start_timer(const TimerHandler& handler, uint64_t interval, bool bLoop = true)
 		{
 			return event_timer->start_timer(handler, interval, bLoop);
 		}
