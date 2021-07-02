@@ -137,7 +137,7 @@ namespace knet
 				}
 				else
 				{
-					elog("no event worker, please create worker");
+					elog("no event worker, please create at least one worker");
 					return nullptr;
 				}
 			}

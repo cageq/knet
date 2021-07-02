@@ -105,7 +105,7 @@ namespace knet
 					tcp_socket->close();
 				}
 			}
-			bool post(std::function<void()> handler)
+			bool post(const std::function<void()> & handler)
 			{
 				if (tcp_socket)
 				{
@@ -120,23 +120,23 @@ namespace knet
 			}
 
 			
-			inline void bind_package_handler(PackageHandler handler) { package_handler = handler; }
-			void bind_package_handler(SelfPackageHandler handler)
+			inline void bind_package_handler(const PackageHandler & handler) { package_handler = handler; }
+			void bind_package_handler(const SelfPackageHandler & handler)
 			{
 				T *child = static_cast<T *>(this);
 				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
 
 
-			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
-			void bind_data_handler(SelfDataHandler handler)
+			inline void bind_data_handler(const DataHandler & handler) { data_handler = handler; }
+			void bind_data_handler(const SelfDataHandler & handler)
 			{
 				T *child = static_cast<T *>(this);
 				data_handler = std::bind(handler, child, std::placeholders::_1);
 			}
 
-			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
-			void bind_event_handler(SelfEventHandler handler)
+			inline void bind_event_handler(const EventHandler & handler) { event_handler = handler; }
+			void bind_event_handler(const SelfEventHandler & handler)
 			{
 				T *child = static_cast<T *>(this);
 				event_handler = std::bind(handler, child, std::placeholders::_1);
@@ -230,7 +230,7 @@ namespace knet
 				return true; 
 			}
 
-			uint64_t start_timer(TimerHandler handler, uint64_t interval, bool bLoop = true)
+			uint64_t start_timer(const TimerHandler &  handler, uint64_t interval, bool bLoop = true)
 			{
 				if (event_worker)
 				{
