@@ -16,7 +16,8 @@ public:
 		http_encoder->content = rsp;
 		http_encoder->status_code = c;
 	}
-	HttpResponse(uint32_t c, const std::string rsp = "") {
+
+	HttpResponse(uint32_t c, const std::string & rsp = "") {
 		this->status_code = c;
 		http_encoder = std::make_unique<HttpEncoder<HttpResponse>>(*this);
 		http_encoder->content = rsp;
@@ -39,9 +40,9 @@ public:
 		}
 	}
 
-	uint32_t code() const { return status_code; }
+	inline uint32_t code() const { return status_code; }
 
-	 inline std::string to_string() const { return http_encoder->encode(); }
+	inline std::string to_string() const { return http_encoder->encode(); }
 
 	bool is_websocket() const {
 		if (http_decoder) {
@@ -50,11 +51,14 @@ public:
 		return false;
 	};
 
-	std::string body() { return http_encoder->content; }
-	std::string content;
-	uint32_t status_code = 200;
+	inline std::string body() const  { return http_encoder->content; }
 	std::string uri;
 
+
+	std::string content;
+	uint32_t status_code = 200;
+
+	private: 
 	std::unique_ptr<HttpDecoder<HttpResponse>> http_decoder;
 	std::unique_ptr<HttpEncoder<HttpResponse>> http_encoder;
 };

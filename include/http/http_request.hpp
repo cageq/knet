@@ -74,9 +74,9 @@ public:
 	}
 
 	// std::string url() const { return http_decoder->request_url; }
-	std::string url() const { return uri; }
+	inline std::string url() const { return uri; }
 
-	uint32_t code() const { return http_decoder->status_code; }
+	inline uint32_t code() const { return http_decoder->status_code; }
 
 	std::string to_string() const {
 		if (http_encoder) {
@@ -84,6 +84,7 @@ public:
 		}
 		return "";
 	}
+	
 	bool is_websocket() const {
 		if (http_decoder) {
 			return http_decoder->is_websocket();

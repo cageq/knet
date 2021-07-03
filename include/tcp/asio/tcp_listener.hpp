@@ -4,6 +4,7 @@
 //***************************************************************
 
 #pragma once
+#include <cstddef>
 #include <tuple>
 #include <memory>
 #include <vector>
@@ -27,38 +28,37 @@ namespace knet
 			using SocketPtr = std::shared_ptr<TcpSocket<T>>;
 
 			TcpListener(
-				FactoryPtr fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>())
+				FactoryPtr fac = nullptr, WorkerPtr lisWorker = nullptr)
 			{
-				m.listen_worker = lisWorker;
-				m.factory = fac;
-				if (m.listen_worker)
-				{
+				if (lisWorker == nullptr){
+					m.listen_worker = std::make_shared<Worker>(); 
 					m.listen_worker->start();
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
+				}else {
+					m.listen_worker = lisWorker;
 				}
-				else
-				{
-					elog("can't live without listen worker");
-				}
+				
+				m.factory = fac;
 				if (fac != nullptr)
 				{					
 					add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
 				}
+				 
+				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 			}
 
 			TcpListener(WorkerPtr lisWorker)
 			{
-				m.listen_worker = lisWorker;				
-				m.factory = nullptr;
-				if (m.listen_worker)
-				{
+
+				if (lisWorker == nullptr){
+					m.listen_worker = std::make_shared<Worker>(); 
 					m.listen_worker->start();
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
+				}else {
+					m.listen_worker = lisWorker;
 				}
-				else
-				{
-					elog("can't live without listen worker");
-				}
+ 
+				m.factory = nullptr; 
+				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
+			 
 			}
 
 			void add_worker(WorkerPtr worker)
