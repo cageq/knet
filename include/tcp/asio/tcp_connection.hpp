@@ -72,7 +72,7 @@ namespace knet
 				}
 			}
 
-			void init( SocketPtr sock = nullptr,const  EventWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
+			void init( SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
 				static uint64_t index = 1024;
 				event_worker = worker;			 
@@ -202,7 +202,7 @@ namespace knet
 				}
 			}		 
 
-			inline EventWorkerPtr get_worker() { return event_worker; }
+			inline KNetWorkerPtr get_worker() { return event_worker; }
 
 			asio::io_context *get_context()
 			{
@@ -330,7 +330,7 @@ namespace knet
 
 			std::string remote_host ;
 			uint16_t remote_port; 
-			EventWorkerPtr event_worker = nullptr;
+			KNetWorkerPtr event_worker = nullptr;
 			KNetHandler<T>* user_event_handler = nullptr;
 		};
 

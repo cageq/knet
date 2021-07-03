@@ -44,7 +44,7 @@ namespace knet {
 			using DataHandler = std::function<bool(const std::string & )>;	
 
 
-			void init(UdpSocketPtr socket = nullptr, EventWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
 			{
 				udp_socket = socket;
 				static uint64_t index = 1024;				
@@ -295,7 +295,7 @@ namespace knet {
 
 			struct {
 				KNetHandler<T>* user_event_handler = nullptr;
-				EventWorkerPtr event_worker = nullptr;
+				KNetWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
 				std::unique_ptr<Timer> timer = nullptr;
 			} m;

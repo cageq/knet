@@ -132,5 +132,5 @@ namespace knet
 		IOContextPtr self_context = nullptr;
         std::unique_ptr<Timer> event_timer;
 	};
-	using EventWorkerPtr = std::shared_ptr<KNetWorker>;
+	using KNetWorkerPtr = std::shared_ptr<KNetWorker>;
 } // namespace knet

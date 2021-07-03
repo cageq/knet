@@ -46,7 +46,7 @@ public:
 		PACKAGE_USER,
 	};
 
-	void init(EventWorkerPtr w){
+	void init(KNetWorkerPtr w){
 		event_worker = w;  
 		shakehand_request_.cmd = KCP_SHAKEHAND_REQUEST;
 		shakehand_response_.cmd = KCP_SHAKEHAND_RESPONSE;
@@ -504,7 +504,7 @@ private:
 	KcpHeartbeat heartbeat_message_;
  	bool passive = false; 
 
-	EventWorkerPtr event_worker; 
+	KNetWorkerPtr event_worker; 
 
 	 
 	std::set<uint64_t> conn_timers;
