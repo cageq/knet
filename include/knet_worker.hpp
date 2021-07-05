@@ -8,6 +8,7 @@
 #include "utils/c11patch.hpp"
 #include "utils/timer.hpp"
 #include <mutex>
+#include <thread>
 using namespace knet::utils;
 namespace knet
 {
@@ -54,7 +55,6 @@ namespace knet
 			work_starter = starter;
 			if (self_context != nullptr)
 			{
-
 				for (uint32_t i = 0;i < thrds;i++) {
 					//	wlog("real start event work here {}", std::this_thread::get_id());
 					work_threads.emplace_back(std::thread(&KNetWorker::run, this));
@@ -93,7 +93,13 @@ namespace knet
 		}
 
 		inline asio::io_context& context() { return *io_context; }
-		inline std::thread::id thread_id() const { return work_threads[0].get_id(); }
+		inline std::thread::id thread_id() const { 
+			if (!work_threads.empty()){
+				return work_threads[0].get_id(); 
+			}
+			assert(false); 
+			return std::thread::id(); 
+		}
 
 		uint64_t start_timer(const TimerHandler& handler, uint64_t interval, bool bLoop = true)
 		{

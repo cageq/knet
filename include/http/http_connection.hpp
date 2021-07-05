@@ -10,8 +10,9 @@ namespace knet
 {
 	namespace http
 	{
+ 
 
-		using HttpHandler = std::function<HttpResponse(HttpRequestPtr)>;
+		using HttpHandler = std::function<HttpResponse( HttpRequestPtr)>;
 		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>;
 
 		class RegexOrderable : public std::regex
@@ -70,7 +71,6 @@ namespace knet
 			// }
 
 			// void handle_path(const std::string& path) {
-
 			// 	request_url = path;
 			// 	dlog("request path is {}", path);
 			// }
@@ -82,7 +82,6 @@ namespace knet
 
 			void reply(const HttpResponse &rsp)
 			{
-
 				this->send(rsp.to_string());
 
 				if (rsp.status_code != 100)
@@ -105,7 +104,7 @@ namespace knet
 				}
 			}
 
-			void release() { this->close(); }
+			inline void release() { this->close(); }
 
 			HttpRequestPtr first_request;
 

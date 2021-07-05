@@ -10,7 +10,7 @@
 
 namespace knet {
 namespace http {
-
+ 
 struct HttpRequest {
 public:
 	HttpRequest() {}
@@ -84,6 +84,12 @@ public:
 		}
 		return "";
 	}
+	void reply(const std::string &msg, uint32_t code = 200){
+		if(replier){
+			replier(HttpResponse(msg, code )); 
+		}
+	}
+
 	
 	bool is_websocket() const {
 		if (http_decoder) {
@@ -91,6 +97,7 @@ public:
 		}
 		return false;
 	};
+	
 	std::function<void(const HttpResponse&)> replier;
 
 	std::string method;

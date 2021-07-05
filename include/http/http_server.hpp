@@ -4,6 +4,7 @@
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_factory.hpp"
+#include <cstddef>
 
 namespace knet {
 namespace http {
@@ -11,14 +12,10 @@ template <class Worker = knet::KNetWorker, class Factory = HttpFactory< HttpConn
 class HttpServer  {
 public:
 	using WorkerPtr = std::shared_ptr<Worker>;
-	HttpServer(Factory* fac = nullptr, WorkerPtr lisWorker = std::make_shared<Worker>(), uint32_t workerNum = 4 )
+	HttpServer(Factory* fac = nullptr, WorkerPtr lisWorker = nullptr, uint32_t workerNum = 4 )
 		: http_factory(fac == nullptr?&default_factory:fac)
 		, http_listener(http_factory   , lisWorker) {
-
-			if (lisWorker == nullptr) {
-				lisWorker = std::make_shared<Worker>(); 
-			}
-			http_listener.add_worker(lisWorker); // also as default worker
+	
 
 		for (uint32_t i = 0;i < workerNum ; i++){
 			add_worker(); 

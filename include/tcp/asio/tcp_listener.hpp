@@ -57,8 +57,7 @@ namespace knet
 				}
  
 				m.factory = nullptr; 
-				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context());
-			 
+				tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 			}
 
 			void add_worker(WorkerPtr worker)
