@@ -82,7 +82,9 @@ namespace knet
 
 			void reply(const HttpResponse &rsp)
 			{
+
 				this->send(rsp.to_string());
+				dlog("rsp code is {}", rsp.status_code); 
 
 				if (rsp.status_code != 100)
 				{
@@ -92,8 +94,8 @@ namespace knet
 
 			void reply(const std::string &msg, uint32_t code = 200, bool fin = true)
 			{
+				dlog("reply to client , {} ", code ); 
 				HttpResponse rsp(msg, code);
-
 				if (this->is_connected())
 				{
 					this->send(rsp.to_string());
