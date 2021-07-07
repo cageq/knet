@@ -7,6 +7,7 @@
 #include "udp/udp_connection.hpp"
 #include "knet_factory.hpp"
 #include "knet_handler.hpp"
+#include <cstddef>
 
 using asio::ip::udp;
 
@@ -49,6 +50,10 @@ namespace knet
 			TPtr connect(const std::string& host, uint32_t port, uint32_t localPort = 0,
 				const std::string& localAddr = "0.0.0.0")
 			{
+				if (!m.worker){
+					elog("should init worker first"); 
+					return nullptr; 
+				}
 
 				TPtr conn = nullptr;
 					

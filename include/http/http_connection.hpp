@@ -10,9 +10,8 @@ namespace knet
 {
 	namespace http
 	{
- 
 
-		using HttpHandler = std::function<HttpResponse( HttpRequestPtr)>;
+		using HttpHandler = std::function<HttpResponse(const HttpRequestPtr & )>;
 		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>;
 
 		class RegexOrderable : public std::regex
