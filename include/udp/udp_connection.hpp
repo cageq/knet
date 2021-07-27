@@ -56,11 +56,7 @@ namespace knet {
 
 
 			int32_t send(const char* data, std::size_t length) {
-				if (udp_socket) {
-					dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
-						remote_point.port());
-
-					//dlog("send thread id is {}", std::this_thread::get_id());
+				if (udp_socket) { 
 
 					auto buffer = std::make_shared<std::string>(data, length);
 					udp_socket->async_send_to(asio::buffer(*buffer), remote_point, [ buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
@@ -108,8 +104,7 @@ namespace knet {
 			}
 
 			int32_t send(const std::string& msg) {
-				dlog("send message to remote {}:{}", remote_point.address().to_string(),
-					remote_point.port());
+				
 				if (udp_socket) {
 					auto buffer = std::make_shared<std::string>(std::move(msg));
 					udp_socket->async_send_to(asio::buffer(*buffer), remote_point,
