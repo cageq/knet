@@ -75,12 +75,14 @@ public:
 		HttpDecoder* self = static_cast<HttpDecoder*>(parser->data);
 		dlog("handle url callback {} ", std::string(pos, length));
 		if (self) {
-			//self->request_url = std::string(pos, length);
-
-				self->http_message.uri = std::string(pos, length);
+			self->request_url = std::string(pos, length);
+			dlog("parsed request url is {}", self->request_url); 
+			self->http_message.uri = std::string(pos, length);
 		}
 		return 0;
 	}
+
+ 
 
 	static int parse_field(http_parser* hp, const char* at, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)hp->data;
@@ -105,29 +107,30 @@ public:
 	}
 
 	static int parse_header_complete(http_parser* hp) {
-		//HttpDecoder* self = (HttpDecoder*)hp->data;
-		//struct http_parser_url urlInfo;
+		HttpDecoder* self = (HttpDecoder*)hp->data;
+		struct http_parser_url urlInfo;
 
-		// const int result =
-		// 	http_parser_parse_url(self->request_url.data(), self->request_url.size(), 0, &urlInfo);
-		// if (result != 0) {
-		// 	elog("parser url failed"); 
-		// 	return 0;
-		// }
+		const int result =
+			http_parser_parse_url(self->request_url.data(), self->request_url.size(), 0, &urlInfo);
+		if (result != 0) {
+			elog("parser url failed"); 
+			return 0;
+		}
 
-		// if (!(urlInfo.field_set & (1 << UF_PATH))) {
-		// 	elog("parse path failed");
-		// 	return -1;
-		// }
+		if (!(urlInfo.field_set & (1 << UF_PATH))) {
+			elog("parse path failed");
+			return -1;
+		}
 
-		// self->http_path =
-		// 	std::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
-		// 		urlInfo.field_data[UF_PATH].len);
-		// if (urlInfo.field_set & (1 << UF_QUERY)) {
-		// 	self->http_query =
-		// 		std::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
-		// 			urlInfo.field_data[UF_QUERY].len);
-		// }
+		self->http_path =  std::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
+				urlInfo.field_data[UF_PATH].len);
+
+		dlog("http request path is {}", self->http_path); 
+
+		if (urlInfo.field_set & (1 << UF_QUERY)) {
+			self->http_query = std::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
+					urlInfo.field_data[UF_QUERY].len);
+		}
 
 		return 0;
 	}

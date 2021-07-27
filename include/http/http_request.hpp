@@ -76,6 +76,17 @@ public:
 	// std::string url() const { return http_decoder->request_url; }
 	inline std::string url() const { return uri; }
 
+	inline std::string path() const { 
+		std::string_view p = http_decoder->http_path; 
+		return std::string(p.data(), p.size()); 
+ 	}
+
+	inline std::string query() const { 
+		
+		std::string_view q = http_decoder->http_query; 
+		return std::string(q.data(), 	q.size());
+	}
+
 	inline uint32_t code() const { return http_decoder->status_code; }
 
 	std::string to_string() const {

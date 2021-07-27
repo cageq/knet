@@ -77,7 +77,7 @@ public:
 			//	conn->reply(HttpResponse(404));
 			//}
 
-			 auto itr = http_routers.find(req->url());
+			 auto itr = http_routers.find(req->path());
 			 if (itr != http_routers.end()) {
 			 	if (itr->second) {
 			 		//dlog("handle data in thread id {}", std::this_thread::get_id());
