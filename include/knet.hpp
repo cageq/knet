@@ -22,7 +22,7 @@ namespace knet
 		std::string host = "0.0.0.0"; 
 	
 		uint32_t backlogs = 512;								// listening queue size
-		uint32_t threads = std::thread::hardware_concurrency(); // iocp/epoll worker threads number
+		uint32_t threads = std::thread::hardware_concurrency()  ; // iocp/epoll worker threads number
 		uint32_t send_buffer_size = 16 * 1024;
 		uint32_t recv_buffer_size = 14 * 1024;
 		uint32_t recv_size = 8 * 1024;
