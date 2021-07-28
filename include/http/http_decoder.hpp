@@ -1,6 +1,13 @@
 #pragma once
 #include "utils/knet_log.hpp"
+
+#ifdef USE_LLHTTP_PRASER 
+#include "llhttp.h" 
+using http_parser = llhttp_t; 
+using  http_parser_settings  = llhttp_settings_t; 
+#else 
 #include "http_parser.hpp"
+#endif 
 
  
 
@@ -35,32 +42,45 @@ public:
 	}
 
 	uint32_t parse_request(const char* data, uint32_t len, bool inplace = false) {
-		init_parser(); 
-		http_parser_init(&parser_, HTTP_REQUEST);
+		init_parser(HTTP_REQUEST); 
+		//http_parser_init(&parser_, HTTP_REQUEST);
 		parser_.data = this;
 
 		if (inplace) {
-			return http_parser_execute(&parser_, &parser_setting, data, len);
+			return parser_execute( data, len);
 		} else {
 			raw_data = std::string(data, len);
-			size_t msgLen = http_parser_execute(&parser_, &parser_setting, raw_data.data(), len);
+			size_t msgLen = parser_execute( raw_data.data(), len);
 			raw_data.resize(msgLen);
 			return msgLen;
 		}
 	}
 
 	uint32_t parse_response(const char* data, uint32_t len, bool inplace = false) {
-		init_parser(); 
-		http_parser_init(&parser_, HTTP_RESPONSE);
+		init_parser(HTTP_RESPONSE); 
+		//http_parser_init(&parser_, HTTP_RESPONSE);
 		parser_.data = this;
 		if (inplace) {
-			return http_parser_execute(&parser_, &parser_setting, data, len);
+			return parser_execute(data, len);
 		} else {
 			raw_data = std::string(data, len);
-			size_t msgLen = http_parser_execute(&parser_, &parser_setting, data, len);
+			size_t msgLen = parser_execute( data, len);
 			raw_data.resize(msgLen);
 			return msgLen;
 		}
+	}
+
+	int32_t parser_execute(const char * data, uint32_t len) {
+
+#ifdef USE_LLHTTP_PRASER 
+		enum llhttp_errno err  = llhttp_execute(&parser_, data , len );
+		if (err == HPE_OK){
+			return strlen(data) ; 
+		}
+		return 0; 
+#else 
+		return http_parser_execute(&parser_, &parser_setting, data, len);
+#endif 
 	}
 
 	static int parse_status(http_parser* parser, const char* pos, size_t len) {
@@ -76,6 +96,7 @@ public:
 		dlog("handle url callback {} ", std::string(pos, length));
 		if (self) {
 			self->request_url = std::string(pos, length);
+			self->http_path = self->request_url; 
 			dlog("parsed request url is {}", self->request_url); 
 			self->http_message.uri = std::string(pos, length);
 		}
@@ -108,29 +129,29 @@ public:
 
 	static int parse_header_complete(http_parser* hp) {
 		HttpDecoder* self = (HttpDecoder*)hp->data;
-		struct http_parser_url urlInfo;
-
-		const int result =
-			http_parser_parse_url(self->request_url.data(), self->request_url.size(), 0, &urlInfo);
-		if (result != 0) {
-			elog("parser url failed"); 
-			return 0;
-		}
-
-		if (!(urlInfo.field_set & (1 << UF_PATH))) {
-			elog("parse path failed");
-			return -1;
-		}
-
-		self->http_path =  std::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
-				urlInfo.field_data[UF_PATH].len);
-
-		dlog("http request path is {}", self->http_path); 
-
-		if (urlInfo.field_set & (1 << UF_QUERY)) {
-			self->http_query = std::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
-					urlInfo.field_data[UF_QUERY].len);
-		}
+		//struct llhttp_url_t urlInfo;
+//
+//		const int result =
+//			http_parser_parse_url(self->request_url.data(), self->request_url.size(), 0, &urlInfo);
+//		if (result != 0) {
+//			elog("parser url failed"); 
+//			return 0;
+//		}
+//
+//		if (!(urlInfo.field_set & (1 << UF_PATH))) {
+//			elog("parse path failed");
+//			return -1;
+//		}
+//
+//		self->http_path =  std::string_view(self->request_url.data() + urlInfo.field_data[UF_PATH].off,
+//				urlInfo.field_data[UF_PATH].len);
+//
+//		dlog("http request path is {}", self->http_path); 
+//
+//		if (urlInfo.field_set & (1 << UF_QUERY)) {
+//			self->http_query = std::string_view(self->request_url.data() + urlInfo.field_data[UF_QUERY].off,
+//					urlInfo.field_data[UF_QUERY].len);
+//		}
 
 		return 0;
 	}
@@ -180,8 +201,12 @@ public:
 protected:
 
 
-	void init_parser() {
+	void init_parser(int msgType ) {
+#ifdef USE_LLHTTP_PRASER 
+		llhttp_settings_init(&parser_setting);
+#else 
 		http_parser_settings_init(&parser_setting);
+#endif 
 		parser_setting.on_url = &HttpDecoder::parse_url;
 		parser_setting.on_status = parse_status;
 		parser_setting.on_body = parse_body;
@@ -192,6 +217,13 @@ protected:
 		parser_setting.on_message_complete = parse_message_complete;
 		parser_setting.on_chunk_header = parse_chunk_header;
 		parser_setting.on_chunk_complete = parse_chunk_complete;
+
+
+#ifdef USE_LLHTTP_PRASER 
+		llhttp_init(&parser_, HTTP_BOTH, &parser_setting);
+#else 
+		http_parser_init(&parser_, HTTP_REQUEST);
+#endif 
 	}
 	std::string raw_data;
 	Header parse_header;

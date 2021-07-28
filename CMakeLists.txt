@@ -37,8 +37,11 @@ elseif(WIN32)
 endif()
 
 add_subdirectory(opt/fmt EXCLUDE_FROM_ALL) 
-
 ADD_DEFINITIONS(-DASIO_STANDALONE)
+
+include_directories(opt/llhttp/include) 
+ADD_DEFINITIONS(-D USE_LLHTTP_PRASER ) 
+
 
 #add the executable
 #add_executable(server samples/server.cpp  )
@@ -58,21 +61,21 @@ target_link_libraries(fserver fmt)
 # target_link_libraries(tlsserver fmt ssl crypto)
  
 
-add_executable(webserver samples/webserver.cpp   )
+add_executable(webserver samples/webserver.cpp opt/llhttp/src/api.c opt/llhttp/src/http.c  opt/llhttp/src/llhttp.c )
 target_link_libraries(webserver fmt  dl)
 
-add_executable(webclient samples/webclient.cpp   )
+add_executable(webclient samples/webclient.cpp opt/llhttp/src/api.c  opt/llhttp/src/http.c opt/llhttp/src/llhttp.c )
 target_link_libraries(webclient fmt)
 
 
 # add_executable(websslserver samples/websslserver.cpp   )
 # target_link_libraries(websslserver fmt ssl crypto)
 
-add_executable(wsclient samples/wsclient.cpp    )
-target_link_libraries(wsclient fmt   )
+#add_executable(wsclient samples/wsclient.cpp    )
+#target_link_libraries(wsclient fmt   )
 
-add_executable(wsserver samples/wsserver.cpp    )
-target_link_libraries(wsserver fmt )
+#add_executable(wsserver samples/wsserver.cpp    )
+#target_link_libraries(wsserver fmt )
 
 
 # add_executable(wssclient samples/wssclient.cpp    )
