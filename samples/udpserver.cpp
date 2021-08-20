@@ -14,7 +14,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	public:
 	virtual ~MyConnection(){}
  
-	virtual PackageType on_package(const std::string& msg) {
+	virtual PackageType on_message(const std::string& msg) {
 	    total ++; 
 
 	    if (total %20000 == 0){

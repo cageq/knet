@@ -6,8 +6,8 @@
 #include <fmt/chrono.h>
 
 
-#define KNET_LOG_SWITCH 1
-//#define KNET_LOG_SPDLOG  1 
+#define KNET_LOG_SWITCH 0
+#define KNET_LOG_SPDLOG  1 
 
 #ifndef KNET_LOG_FLUSH_TIME 
 #define KNET_LOG_FLUSH_TIME  1 // seconds 
