@@ -38,6 +38,9 @@ public:
 		http_listener.start(port, host);
 		return true;
 	}
+	void stop(){
+		http_listener.stop(); 
+	}
 
 	void register_router(const std::string& path, const HttpHandler & handler) {
 		dlog("register path {}", path);
