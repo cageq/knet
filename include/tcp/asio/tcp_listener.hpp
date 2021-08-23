@@ -133,7 +133,11 @@ namespace knet
 					{
 						m.is_running = false;
 						tcp_acceptor->close();
+						for(auto & worker : m.user_workers){
+							worker->stop(); 
+						}
 						m.user_workers.clear();
+
 						m.listen_worker->stop();
 					}
 				}
