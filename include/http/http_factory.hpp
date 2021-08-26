@@ -42,6 +42,10 @@ public:
 		return true; 
 	}
 
+	void set_global_routers(const HttpHandler & router){
+		user_routers = router; 
+	}
+
 	virtual bool handle_data(TPtr conn, const std::string & msg ) {
 
 		auto req = std::make_shared<HttpRequest>();
@@ -72,24 +76,33 @@ public:
 			//	conn->reply(HttpResponse(404));
 			//}
 
-			 auto itr = http_routers.find(req->path());
-			 if (itr != http_routers.end()) {
-			 	if (itr->second) {
-			 		auto rsp = itr->second(req);
-			 		if (rsp->status_code != 0) {
-			 			conn->reply(*rsp);
-			 		}
-			 	} else {
-			 		conn->reply(HttpResponse(501));
-			 	}
-			 } else {
-			 	conn->reply(HttpResponse(404));
-			 }
+			if (user_routers) {
+				auto rsp = user_routers(req); 
+				if (rsp->status_code != 0){
+					conn->reply(*rsp); 
+				}
+			} else {
+				auto itr = http_routers.find(req->path());
+				if (itr != http_routers.end()) {
+					if (itr->second) {
+						auto rsp = itr->second(req);
+						if (rsp->status_code != 0) {
+							conn->reply(*rsp);
+						}
+					} else {
+						conn->reply(HttpResponse(501));
+					}
+				} else {
+					conn->reply(HttpResponse(404));
+				}
+
+			}
 		}
 
 		return true;
 	}
 
+	HttpHandler  user_routers; 
 
 	HttpRouteMap http_routers;
 };
