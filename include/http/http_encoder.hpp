@@ -78,6 +78,8 @@ namespace knet {
 								fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 							}			
 						}
+						fmt::format_to(std::back_inserter(msgBuf), "GHttp v1.0");
+
 						time_t now = std::time(0);
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("%a, %d %b %Y %H:%M:%S %Z\r\n"), fmt::localtime(now));
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content);  
@@ -99,7 +101,7 @@ namespace knet {
 								fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 							}			
 						}
-						//add_time(); 
+
 						time_t now = std::time(0);
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("%a, %d %b %Y %H:%M:%S %Z\r\n"), fmt::localtime(now));
 
