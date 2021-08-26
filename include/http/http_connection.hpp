@@ -33,16 +33,8 @@ namespace knet
 		public:
 			HttpConnection()
 			{
-
-				thrdid = std::this_thread::get_id();
-
-				// http_parser_settings_init(&settings_);
-				// settings_.on_url = &HttpConnection::handle_url_callback;
-
-				// http_parser_init(&parser_, HTTP_REQUEST);
-				// parser_.data = this;
-
-				//	bind_package_handler(&HttpConnection::handle_package);
+			}
+			HttpConnection(HttpRequestPtr req):first_request(req) {
 			}
 
 			~HttpConnection() { wlog("destroy session"); }
@@ -82,36 +74,30 @@ namespace knet
 			void reply(const HttpResponse &rsp)
 			{
 				this->send(rsp.to_string());
-				dlog("rsp code is {}", rsp.status_code); 
-				if (rsp.status_code != 100)
+				if (rsp.status_code > 100)
 				{
 					this->close();
 				}
 			}
 
-			void reply(const std::string &msg, uint32_t code = 200, bool fin = true)
+			void reply(const std::string &msg, uint32_t code = 200)
 			{
-				dlog("reply to client , {} ", code ); 
 				HttpResponse rsp(msg, code);
 				if (this->is_connected())
 				{
 					this->send(rsp.to_string());
 				}
-				if (fin)
+				if (code > 100 )
 				{
 					this->close();
 				}
 			}
 
-			inline void release() { this->close(); }
 
 			HttpRequestPtr first_request;
 
 		private:
-			std::thread::id thrdid;
 
-			// http_parser parser_ = {0};
-			// http_parser_settings settings_;
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;
 

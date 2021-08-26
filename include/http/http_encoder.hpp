@@ -10,7 +10,6 @@ namespace knet {
 			class HttpEncoder {
 				public:
 
-
 					struct Header {
 						std::string key;
 						std::string value;
@@ -18,7 +17,6 @@ namespace knet {
 
 
 					HttpEncoder(T * msg = nullptr):http_message(msg){
-
 					}
 					void init_http_message(T* msg){
 						http_message = msg; 
@@ -91,6 +89,9 @@ namespace knet {
 							}			
 						}
 						//add_time(); 
+						time_t now = std::time(0);
+						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("%a, %d %b %Y %H:%M:%S %Z\r\n"), fmt::localtime(now));
+
 
 						//if (!content.empty())
 						//{		 
