@@ -2,7 +2,6 @@
 #include "knet.hpp"
 #include <iostream>
 
-#include "console_sink.hpp"
 
 // #include "co/coevent_worker.hpp"
 using namespace knet::tcp;
