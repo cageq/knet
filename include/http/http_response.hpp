@@ -53,6 +53,7 @@ public:
 	HttpDecoder<HttpResponse> http_decoder;
 	HttpEncoder<HttpResponse> http_encoder;
 };
+		using HttpResponsePtr = std::shared_ptr<HttpResponse>;
 
 } // namespace http
 } // namespace knet

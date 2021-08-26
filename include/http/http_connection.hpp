@@ -11,7 +11,7 @@ namespace knet
 	namespace http
 	{
 
-		using HttpHandler = std::function<HttpResponse(const HttpRequestPtr & )>;
+		using HttpHandler = std::function<HttpResponsePtr (const HttpRequestPtr & )>;
 		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>;
 
 		class RegexOrderable : public std::regex
@@ -31,40 +31,11 @@ namespace knet
 		{
 
 		public:
-			HttpConnection()
-			{
-			}
+			HttpConnection() { }
 			HttpConnection(HttpRequestPtr req):first_request(req) {
 			}
 
-			~HttpConnection() { wlog("destroy session"); }
-
-			// int32_t handle_package(char* data, uint32_t len) {
-
-			// 	auto req = std::make_shared<HttpRequest>();
-			// 	uint32_t parsedLen = req->parse_request(data,len);
-			// 	if (parsedLen > 0 )
-			// 	{
-			// 		http_request = req;
-			// 	}
-			// 	return parsedLen;
-			// }
-
-			// static int handle_url_callback(http_parser* parser, const char* pos, size_t length) {
-
-			// 	HttpConnection* self = static_cast<HttpConnection*>(parser->data);
-			// 	dlog("handle url callback {} ", std::string(pos, length));
-			// 	if (self) {
-			// 		self->request_url = std::string(pos, length);
-			// 	}
-
-			// 	return 0;
-			// }
-
-			// void handle_path(const std::string& path) {
-			// 	request_url = path;
-			// 	dlog("request path is {}", path);
-			// }
+			~HttpConnection() { wlog("destroy http connection"); }
 
 			void request(const HttpRequest &req)
 			{
@@ -93,10 +64,15 @@ namespace knet
 				}
 			}
 
-
-			HttpRequestPtr first_request;
+			int send_first_request(){
+				if (first_request){
+					return send(first_request->encode());
+				}
+				return -1; 
+			}
 
 		private:
+			HttpRequestPtr first_request;
 
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;

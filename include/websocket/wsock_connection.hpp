@@ -284,8 +284,15 @@ public:
 		return false;
 	}
 
+	void reply(const HttpResponsePtr rsp) {
+		this->send(rsp->to_string());
+
+		if (rsp->status_code >= 200) {
+			this->close();
+		}
+	}
+
 	void reply(const HttpResponse& rsp) {
-		dlog("send reply :{}", rsp.to_string());
 		this->send(rsp.to_string());
 
 		if (rsp.status_code >= 200) {

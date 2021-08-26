@@ -24,10 +24,9 @@ public:
 	}
 
 	virtual void handle_event(TPtr conn, NetEvent evt) {
-		dlog("handle http factory event {}", evt);
 		switch (evt) {
 		case NetEvent::EVT_CONNECT:
-			conn->send(conn->first_request->encode());
+			conn->send_first_request() ;
 			break;
 		case NetEvent::EVT_DISCONNECT:
 			connections.erase(conn->get_cid());
