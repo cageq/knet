@@ -1,10 +1,7 @@
 
 #include <chrono>
 #include "knet.hpp"
- 
-
 #include "udp/udp_listener.hpp"
-#include "console_sink.hpp"
 
 using namespace knet::udp;
 bool running = true; 

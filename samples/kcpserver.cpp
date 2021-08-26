@@ -3,7 +3,6 @@
 #include "knet.hpp"
 
 #include "kcp/kcp_listener.hpp"
-#include "console_sink.hpp"
 
 using namespace knet::kcp;
 
