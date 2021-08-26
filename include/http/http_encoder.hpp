@@ -73,7 +73,7 @@ namespace knet
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 					}
 				}
-				fmt::format_to(std::back_inserter(msgBuf), "Server: GHttp Server v0.1\r\n");
+				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Server: GHttp Server v0.1\r\n"));
 
 				time_t now = std::time(0);
 				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Date: {:%a, %d %b %Y %H:%M:%S %Z}\r\n"), fmt::localtime(now));
