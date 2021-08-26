@@ -38,9 +38,9 @@ public:
 
 	inline std::string to_string() const { return http_encoder.encode(); }
 
-	bool is_websocket() const {
+	inline bool is_websocket() const {
 		return http_decoder.is_websocket();
-	};
+	}
 
 	inline std::string body() const  { return http_encoder.content; }
 

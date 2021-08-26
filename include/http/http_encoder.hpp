@@ -65,10 +65,21 @@ namespace knet {
 
 					std::string encode_response()const {
 						fmt::memory_buffer msgBuf;
-						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(status_code));
-						for (const auto& h : http_headers) {
-							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
+						if (status_code > 0)
+						{
+							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(status_code));
+						}else {
+							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(http_method),http_url, http_version_1_1);
 						}
+
+						for (const auto& h : http_headers) {
+							if (!h.first.empty() )
+							{
+								fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
+							}			
+						}
+						time_t now = std::time(0);
+						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("%a, %d %b %Y %H:%M:%S %Z\r\n"), fmt::localtime(now));
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content);  
 						return fmt::to_string(msgBuf);
 					}
