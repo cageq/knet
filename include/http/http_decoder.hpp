@@ -24,14 +24,7 @@ namespace knet
 
 			static int parse_url(http_parser *parser, const char *pos, size_t length)
 			{
-				XCoder *self = static_cast<XCoder *>(parser->data);
-				dlog("handle url callback {} ", std::string(pos, length));
-				if (self)
-				{
-					self->request_url = std::string(pos, length);
-					dlog("parsed request url is {}", self->request_url);
-					self->http_message->uri = std::string(pos, length);
-				}
+			 
 				return 0;
 			}
 		};
@@ -54,7 +47,7 @@ namespace knet
 				{
 					self->request_url = std::string(pos, length);
 					dlog("parsed request url is {}", self->request_url);
-					self->http_message->uri = std::string(pos, length);
+					self->http_message->http_url = std::string(pos, length);
 				}
 				return 0;
 			}

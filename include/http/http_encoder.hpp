@@ -35,7 +35,7 @@ namespace knet
 			std::string encode() const
 			{
 				fmt::memory_buffer msgBuf;
-				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(coder->http_method), coder->http_url, http_version_1_1);
+				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(coder->http_message->http_method), coder->http_message->http_url, http_version_1_1);
 
 				for (const auto &h : coder->http_headers)
 				{
@@ -102,16 +102,15 @@ namespace knet
 				http_message = msg;
 			}
 
-			void set_method(HttpMethod protocol) { http_method = protocol; }
-		 
-
+			//void set_method(HttpMethod protocol) { http_method = protocol; }
+		  
 			void set_cookie(const std::string &v) { add_header("Cookie", v); }
 
 			void set_content_type(const std::string &v) { add_header("Content-Type", v); }
 
 			void set_host(const std::string &host) { add_header("Host", host); }
 
-			void set_url(const std::string &url) { http_url = url; }
+ 
 
 			void set_content(const std::string &body, const std::string &type = "txt")
 			{
@@ -129,45 +128,7 @@ namespace knet
 
 			void add_header(const std::string &key, const std::string &value) { http_headers[key] = value; }
 
-			// std::string encode_request() const
-			// {
-			// 	fmt::memory_buffer msgBuf;
-			// 	fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(http_method), http_url, http_version_1_1);
-
-			// 	for (const auto &h : http_headers)
-			// 	{
-			// 		if (!h.first.empty())
-			// 		{
-			// 			fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
-			// 		}
-			// 	}
-
-			// 	fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content);
-			// 	return fmt::to_string(msgBuf);
-			// }
-
-			// std::string encode_response() const
-			// {
-			// 	fmt::memory_buffer msgBuf;
- 
-			// 	fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(http_message->status_code));
 		  
-			// 	// for (const auto &h : http_headers)
-			// 	// {
-			// 	// 	if (!h.first.empty())
-			// 	// 	{
-			// 	// 		fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
-			// 	// 	}
-			// 	// }
-			// 	fmt::format_to(std::back_inserter(msgBuf), "Server: GHttp Server v0.1\r\n");
-
-			// 	time_t now = std::time(0);
-			// 	fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Date: {:%a, %d %b %Y %H:%M:%S %Z}\r\n"), fmt::localtime(now));
-
-			// 	fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content);
-			// 	return fmt::to_string(msgBuf);
-			// }
-
 
 			std::string encode()  const {
 				return encode_helper.encode(); 
@@ -249,8 +210,7 @@ namespace knet
 			std::string context_type;
 			std::string content;
  
-			HttpMethod http_method;
-			std::string http_url;
+ 
 			HttpEncoderHelper<HttpEncoder<T> , T > encode_helper; 
 
 			std::map<std::string, std::string> http_headers;

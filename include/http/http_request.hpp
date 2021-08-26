@@ -17,14 +17,15 @@ namespace knet {
 				HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
 						const std::string& type = "txt") {
 					http_encoder.init_http_message(this); 
-					http_encoder.set_method(method);
-					http_encoder.set_url(url);
+			 		http_method = method; 
+
+					http_url = url;
 					http_encoder.set_content(content, type); 
 				}
 
 				HttpRequest(const std::string& url, const std::string& query = "") {
 					http_encoder.init_http_message(this); 
-					http_encoder.http_url = url;
+					http_url = url;
 				}
 
 				HttpRequest(const char* data, uint32_t len, bool inplace = false) {
@@ -51,7 +52,7 @@ namespace knet {
 				}
 
 				// std::string url() const { return http_decoder->request_url; }
-				inline std::string url() const { return uri; }
+				inline std::string url() const { return http_url; }
 
 				inline std::string path() const { 
 					std::string_view p = http_decoder.http_path; 
@@ -82,10 +83,12 @@ namespace knet {
 				}
 
 				std::function<void(const HttpResponse&)> replier;
-
+				HttpMethod http_method;
 				enum  http_method method_value; 
 				std::string method;
-				std::string uri;
+		 
+
+				std::string http_url;
 		 
 				int http_version_major = 1;
 				int http_version_minor = 0;
