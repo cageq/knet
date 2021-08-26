@@ -9,119 +9,88 @@
 #include <functional>
 
 namespace knet {
-namespace http {
- 
-struct HttpRequest {
-public:
-	HttpRequest() {}
-	HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
-		const std::string& type = "txt") {
-		if (!http_encoder) {
-			http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-		}
-		http_encoder->set_method(method);
-		http_encoder->set_url(url);
-		if (!content.empty())
-		{
-			http_encoder->set_content(content);
-			http_encoder->set_content_type(mime_types::to_mime(type));
-		}
-		
-	}
-	HttpRequest(const std::string& url, const std::string& query = "") {
-		if (!http_encoder) {
-			http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-		}
-		http_encoder->http_url = url;
-	}
+	namespace http {
 
-	HttpRequest(const char* data, uint32_t len, bool inplace = false) {
-		http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-	}
+		struct HttpRequest {
+			public:
+				HttpRequest() {}
+				HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
+						const std::string& type = "txt") {
+					http_encoder.init_http_message(this); 
+					http_encoder.set_method(method);
+					http_encoder.set_url(url);
+					http_encoder.set_content(content, type); 
 
-	uint32_t parse_request(const char* data, uint32_t len, bool inplace = false) {
-		if (!http_decoder) {
-			http_decoder = std::make_unique<HttpDecoder<HttpRequest>>(*this);
-		}
+				}
+				HttpRequest(const std::string& url, const std::string& query = "") {
+					http_encoder.init_http_message(this); 
+					http_encoder.http_url = url;
+				}
 
-		return http_decoder->parse_request(data, len, inplace);
-	}
-	std::string encode() {
-		if (!http_encoder) {
-			http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-		}
-		return http_encoder->encode();
-	}
-	std::string encode(HttpMethod method, const std::string& url, const std::string& body,
-		const std::string& type = "txt") {
-		if (!http_encoder) {
-			http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-		}
-		return http_encoder->encode_request(method, url, body, type);
-	}
+				HttpRequest(const char* data, uint32_t len, bool inplace = false) {
+					http_encoder.init_http_message(this); 
+				}
 
-	void add_header(const std::string& key, const std::string& value) {
-		if (!http_encoder) {
-			http_encoder = std::make_unique<HttpEncoder<HttpRequest>>(*this);
-		}
-		http_encoder->add_header(key, value);
-	}
-	std::string_view get_header(const std::string& key) {
-		if (http_decoder) {
-			return http_decoder->get_header(key);
-		}
-		return std::string_view();
-	}
+				inline std::string encode() const {
+					return http_encoder.encode();
+				}
 
-	// std::string url() const { return http_decoder->request_url; }
-	inline std::string url() const { return uri; }
+				uint32_t parse(const char* data, uint32_t len, bool inplace = false) {
+					http_decoder.init_http_message(this); 
+					return http_decoder.parse_request(data, len, inplace);
+				}
 
-	inline std::string path() const { 
-		std::string_view p = http_decoder->http_path; 
-		return std::string(p.data(), p.size()); 
- 	}
+				void add_header(const std::string& key, const std::string& value) {
+					http_encoder.add_header(key, value);
+				}
+				std::string_view get_header(const std::string& key) {
+					return http_decoder.get_header(key);
+				}
 
-	inline std::string query() const { 
-		
-		std::string_view q = http_decoder->http_query; 
-		return std::string(q.data(), 	q.size());
-	}
+				// std::string url() const { return http_decoder->request_url; }
+				inline std::string url() const { return uri; }
 
-	inline uint32_t code() const { return http_decoder->status_code; }
+				inline std::string path() const { 
+					std::string_view p = http_decoder.http_path; 
+					return std::string(p.data(), p.size()); 
+				}
 
-	std::string to_string() const {
-		if (http_encoder) {
-			return http_encoder->encode();
-		}
-		return "";
-	}
-	void reply(const std::string &msg, uint32_t code = 200){
-		if(replier){
-			replier(HttpResponse(msg, code )); 
-		}
-	}
+				inline std::string query() const { 
+					std::string_view q = http_decoder.http_query; 
+					return std::string(q.data(),q.size());
+				}
 
-	
-	bool is_websocket() const {
-		if (http_decoder) {
-			return http_decoder->is_websocket();
-		}
-		return false;
-	};
-	
-	std::function<void(const HttpResponse&)> replier;
+				inline uint32_t code() const { return http_decoder.status_code; }
 
-	std::string method;
-	std::string uri;
+				inline std::string to_string() const {
+					return http_encoder.encode();
+				}
+				void reply(const std::string &msg, uint32_t code = 200){
+					if(replier){
+						replier(HttpResponse(msg, code )); 
+					}
+				}
 
-	int http_version_major = 1;
-	int http_version_minor = 0;
 
-	std::unique_ptr<HttpDecoder<HttpRequest>> http_decoder;
-	std::unique_ptr<HttpEncoder<HttpRequest>> http_encoder;
-};
+				bool is_websocket() const {
+					return http_decoder.is_websocket();
+				}
 
-using HttpRequestPtr = std::shared_ptr<HttpRequest>;
+				std::function<void(const HttpResponse&)> replier;
 
-} // namespace http
+				std::string method;
+				std::string uri;
+
+				int http_version_major = 1;
+				int http_version_minor = 0;
+
+
+				HttpDecoder<HttpRequest> http_decoder;
+				HttpEncoder<HttpRequest> http_encoder;
+
+		};
+
+		using HttpRequestPtr = std::shared_ptr<HttpRequest>;
+
+	} // namespace http
 } // namespace knet

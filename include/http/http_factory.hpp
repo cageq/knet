@@ -49,7 +49,7 @@ public:
 	virtual bool handle_data(TPtr conn, const std::string & msg ) {
 
 		auto req = std::make_shared<HttpRequest>();
-		auto msgLen = req->parse_request(msg.data(), msg.length());
+		auto msgLen = req->parse(msg.data(), msg.length());
 		if (msgLen > 0) {
 			//	req->conn = conn;
 			req->replier = [conn](const HttpResponse& rsp) { conn->reply(rsp); };

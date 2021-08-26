@@ -61,7 +61,7 @@ public:
 			
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
 				auto req = std::make_shared<HttpRequest>();
-				auto msgLen = req->parse_request(data, len, true);
+				auto msgLen = req->parse(data, len, true);
 				if (msgLen > 0) {
 
 					HttpUrl urlInfo(req->url());
@@ -110,7 +110,7 @@ public:
 				return true;
 			} else if (conn->is_status(WSockStatus::WSOCK_CONNECTING)) {
 				HttpResponse rsp;
-				auto msgLen = rsp.parse_response(data, len);
+				auto msgLen = rsp.parse(data, len);
 				if (msgLen > 0) {
 					dlog("parse response len is {},  {}", len, msgLen);
 					if (rsp.is_websocket()) {

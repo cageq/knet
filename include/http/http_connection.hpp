@@ -81,10 +81,8 @@ namespace knet
 
 			void reply(const HttpResponse &rsp)
 			{
-
 				this->send(rsp.to_string());
 				dlog("rsp code is {}", rsp.status_code); 
-
 				if (rsp.status_code != 100)
 				{
 					this->close();

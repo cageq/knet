@@ -17,9 +17,13 @@ namespace knet {
 					};
 
 
-					HttpEncoder(T & msg):http_message(msg){
+					HttpEncoder(T * msg = nullptr):http_message(msg){
 
 					}
+					void init_http_message(T* msg){
+						http_message = msg; 
+					}
+
 					void set_method(HttpMethod protocol) { http_method = protocol; }
 					void set_status(uint32_t status ){
 						status_code = status ; 
@@ -34,9 +38,11 @@ namespace knet {
 					void set_url(const std::string& url) { http_url = url; }
 
 					void set_content(const std::string& body, const std::string & type = "txt") {
-						context_type = type; 
-						http_body = body;
-						add_header("Content-Length", std::to_string(http_body.size()));
+						if (!body.empty()){
+							context_type = mime_types::to_mime(type); 
+							content = body;
+							add_header("Content-Length", std::to_string(content.size()));
+						}
 					}
 					void set_agent(const std::string& agent){
 						add_header("User-Agent",agent); 
@@ -44,14 +50,8 @@ namespace knet {
 
 					void add_header(const std::string& key, const std::string& value) { http_headers[key] = value; }
 
-					std::string encode_request(HttpMethod method, const std::string & url ,const std::string & body , const std::string & type = "txt" ){
-
-						set_method(method); 
-						set_url(url); 
-						context_type = type; 
-
+					std::string encode_request()const {
 						fmt::memory_buffer msgBuf;
-
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(http_method),http_url, http_version_1_1);      
 
 						for (const auto& h : http_headers) {
@@ -59,39 +59,23 @@ namespace knet {
 							{
 								fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 							}
-
-						}
-
-						if (!content.empty())
-						{		 
-							set_content_type(mime_types::to_mime(type)) ;     
 						}
 
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content); 
 						return fmt::to_string(msgBuf);
 					}
 
-					std::string encode_response(){
+					std::string encode_response()const {
 						fmt::memory_buffer msgBuf;
-
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(status_code));
-
 						for (const auto& h : http_headers) {
 							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 						}
-
-
-						if (!content.empty())
-						{		 
-							set_content_type(mime_types::to_mime(context_type)) ;     
-						}
-
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content);  
-
 						return fmt::to_string(msgBuf);
 					}
 
-					std::string  encode(){
+					std::string  encode()  const {
 						fmt::memory_buffer msgBuf;
 						if (status_code > 0)
 						{
@@ -99,7 +83,6 @@ namespace knet {
 						}else {
 							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(http_method),http_url, http_version_1_1);
 						}
-						set_agent("GHttp v0.1"); 
 
 						for (const auto& h : http_headers) {
 							if (!h.first.empty() )
@@ -109,14 +92,12 @@ namespace knet {
 						}
 						//add_time(); 
 
-						if (!content.empty())
-						{		 
-							set_content_type(mime_types::to_mime(context_type)) ;     
-						}
+						//if (!content.empty())
+						//{		 
+						//	set_content_type(mime_types::to_mime(context_type)) ;     
+						//}
 
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), content); 
-
-
 						return fmt::to_string(msgBuf);
 					}
 
@@ -160,11 +141,10 @@ namespace knet {
 						add_header("Date",szBuf); 
 					}
 
-					T & http_message; 
+					T * http_message; 
 					std::string context_type; 
 					std::string content; 
 					uint32_t status_code = 0;
-					std::string http_body;
 					HttpMethod http_method;
 					std::string http_url;
 					std::map<std::string, std::string> http_headers;

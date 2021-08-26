@@ -12,53 +12,52 @@ class HttpDecoder {
 
 public:
 
-
 	struct Header {
 		std::string_view key;
 		std::string_view value;
 	};
 	
-	HttpDecoder(T & msg):http_message(msg) {}
+	HttpDecoder(T * msg = nullptr):http_message(msg),input_data(nullptr), input_len(0) {}
 
-	HttpDecoder(T & msg , const char* data, uint32_t len, bool inplace = false):http_message(msg) {
-
-		input_data = data; 
-		input_len = len; 
-		inplace_flag = inplace; 
-	}
-
-	uint32_t parse_request(){ 
-		return parse_request(input_data, input_len, inplace_flag); 
-	}
-	uint32_t parse_response(){ 
-		return parse_response(input_data, input_len, inplace_flag); 
+	void init_http_message(T * msg){
+		http_message = msg; 
 	}
 
 	uint32_t parse_request(const char* data, uint32_t len, bool inplace = false) {
+		inplace_flag = inplace; 
+		input_data = data; 
+		input_len = len; 
 		init_parser(); 
-		http_parser_init(&parser_, HTTP_REQUEST);
-		parser_.data = this;
+		http_parser_init(&msg_parser, HTTP_REQUEST);
+		msg_parser.data = this;
 
 		if (inplace) {
-			return http_parser_execute(&parser_, &parser_setting, data, len);
+			return http_parser_execute(&msg_parser, &parser_setting, data, len);
 		} else {
-			raw_data = std::string(data, len);
-			size_t msgLen = http_parser_execute(&parser_, &parser_setting, raw_data.data(), len);
-			raw_data.resize(msgLen);
+			raw_data = std::string(data, len );
+			size_t msgLen = http_parser_execute(&msg_parser, &parser_setting, raw_data.data(), len);
+			if (msgLen < len) {
+				raw_data.resize(msgLen);
+			}
 			return msgLen;
 		}
 	}
 
 	uint32_t parse_response(const char* data, uint32_t len, bool inplace = false) {
+		inplace_flag = inplace; 
+		input_data = data; 
+		input_len = len; 
 		init_parser(); 
-		http_parser_init(&parser_, HTTP_RESPONSE);
-		parser_.data = this;
+		http_parser_init(&msg_parser, HTTP_RESPONSE);
+		msg_parser.data = this;
 		if (inplace) {
-			return http_parser_execute(&parser_, &parser_setting, data, len);
+			return http_parser_execute(&msg_parser, &parser_setting, data, len);
 		} else {
 			raw_data = std::string(data, len);
-			size_t msgLen = http_parser_execute(&parser_, &parser_setting, data, len);
-			raw_data.resize(msgLen);
+			size_t msgLen = http_parser_execute(&msg_parser, &parser_setting, raw_data.data(), len);
+			if (msgLen < len){
+				raw_data.resize(msgLen);
+			}
 			return msgLen;
 		}
 	}
@@ -77,7 +76,7 @@ public:
 		if (self) {
 			self->request_url = std::string(pos, length);
 			dlog("parsed request url is {}", self->request_url); 
-			self->http_message.uri = std::string(pos, length);
+			self->http_message->uri = std::string(pos, length);
 		}
 		return 0;
 	}
@@ -152,8 +151,8 @@ public:
 	static int parse_chunk_complete(http_parser* hp) { return 0; }
 
 
-	bool is_websocket(){ 
-		return parser_.upgrade; 
+	bool is_websocket()const { 
+		return msg_parser.upgrade; 
 	} 
 	std::string_view get_header(const std::string &  key){
 		for(auto & item :headers)
@@ -176,10 +175,8 @@ public:
 	std::string_view http_query;
 	std::vector<Header> headers;
 
-	T  & http_message; 
+	T  * http_message; 
 protected:
-
-
 	void init_parser() {
 		http_parser_settings_init(&parser_setting);
 		parser_setting.on_url = &HttpDecoder::parse_url;
@@ -196,11 +193,11 @@ protected:
 	std::string raw_data;
 	Header parse_header;
 
-	const char* input_data = nullptr; 
-	uint32_t  input_len = 0; 
+	const char* input_data ; 
+	uint32_t  input_len ; 
 	bool inplace_flag = false; 
 
-	http_parser parser_ = {0};
+	http_parser msg_parser = {0};
 	http_parser_settings parser_setting;
 };
 
