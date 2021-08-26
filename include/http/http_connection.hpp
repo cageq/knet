@@ -45,7 +45,7 @@ namespace knet
 			void reply(const HttpResponse &rsp)
 			{
 				this->send(rsp.to_string());
-				if (rsp.status_code > 100)
+				if (rsp.code() >= 200)
 				{
 					this->close();
 				}
@@ -58,7 +58,7 @@ namespace knet
 				{
 					this->send(rsp.to_string());
 				}
-				if (code > 100 )
+				if (code >= 200 )
 				{
 					this->close();
 				}

@@ -65,7 +65,7 @@ public:
 	static int parse_status(http_parser* parser, const char* pos, size_t len) {
 		HttpDecoder* self = (HttpDecoder*)parser->data;
 		self->http_status = std::string_view(pos, len);
-		self->status_code = parser->status_code;
+		self->http_message->status_code = parser->status_code;
 		return 0;
 	}
 
@@ -168,7 +168,7 @@ public:
 
 	std::string request_url;
 
-	uint32_t status_code = 200;
+
 	std::string_view http_status;
 	std::string_view http_body;
 	std::string_view http_path;
@@ -179,7 +179,7 @@ public:
 protected:
 	void init_parser() {
 		http_parser_settings_init(&parser_setting);
-		parser_setting.on_url = &HttpDecoder::parse_url;
+		parser_setting.on_url = parse_url;
 		parser_setting.on_status = parse_status;
 		parser_setting.on_body = parse_body;
 		parser_setting.on_header_field = parse_field;

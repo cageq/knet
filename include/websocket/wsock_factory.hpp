@@ -94,7 +94,7 @@ public:
 							if (itr->second) {
 								//dlog("handle data in thread id {}", std::this_thread::get_id());
 								auto rsp = itr->second( req);
-								if (rsp->status_code != 0) {
+								if (rsp->code() != 0) {
 									conn->reply(*rsp);
 								}
 							} else {

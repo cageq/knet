@@ -78,7 +78,7 @@ public:
 
 			if (user_routers) {
 				auto rsp = user_routers(req); 
-				if (rsp && rsp->status_code != 0){
+				if (rsp && rsp->code() != 0){
 					conn->reply(*rsp); 
 				}
 			} else {
@@ -86,7 +86,7 @@ public:
 				if (itr != http_routers.end()) {
 					if (itr->second) {
 						auto rsp = itr->second(req);
-						if (rsp->status_code != 0) {
+						if (rsp->code() != 0) {
 							conn->reply(*rsp);
 						}
 					} else {

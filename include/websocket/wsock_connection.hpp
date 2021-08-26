@@ -287,7 +287,7 @@ public:
 	void reply(const HttpResponsePtr rsp) {
 		this->send(rsp->to_string());
 
-		if (rsp->status_code >= 200) {
+		if (rsp->code() >= 200) {
 			this->close();
 		}
 	}
@@ -295,7 +295,7 @@ public:
 	void reply(const HttpResponse& rsp) {
 		this->send(rsp.to_string());
 
-		if (rsp.status_code >= 200) {
+		if (rsp.code() >= 200) {
 			this->close();
 		}
 	}

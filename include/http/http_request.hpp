@@ -20,8 +20,8 @@ namespace knet {
 					http_encoder.set_method(method);
 					http_encoder.set_url(url);
 					http_encoder.set_content(content, type); 
-
 				}
+
 				HttpRequest(const std::string& url, const std::string& query = "") {
 					http_encoder.init_http_message(this); 
 					http_encoder.http_url = url;
@@ -63,7 +63,7 @@ namespace knet {
 					std::string_view q = http_decoder.http_body; 
 					return std::string(q.data(),q.size());
 				}
-				inline uint32_t code() const { return http_decoder.status_code; }
+				//inline uint32_t code() const { return http_decoder.status_code; }
 
 				inline std::string to_string() const {
 					return http_encoder.encode();
@@ -74,8 +74,6 @@ namespace knet {
 					}
 				}
 
-				
-
 				inline bool is_websocket() const {
 					return http_decoder.is_websocket();
 				}
@@ -84,6 +82,7 @@ namespace knet {
 
 				std::string method;
 				std::string uri;
+				uint32_t status_code = 0; 
 
 				int http_version_major = 1;
 				int http_version_minor = 0;
