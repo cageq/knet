@@ -59,7 +59,10 @@ namespace knet {
 					std::string_view q = http_decoder.http_query; 
 					return std::string(q.data(),q.size());
 				}
-
+				inline std::string body()  const {
+					std::string_view q = http_decoder.http_body; 
+					return std::string(q.data(),q.size());
+				}
 				inline uint32_t code() const { return http_decoder.status_code; }
 
 				inline std::string to_string() const {
@@ -71,6 +74,7 @@ namespace knet {
 					}
 				}
 
+				
 
 				inline bool is_websocket() const {
 					return http_decoder.is_websocket();
