@@ -35,8 +35,6 @@ public:
 		case EVT_RECV:
 			break;
 		case EVT_SEND:
-
-			//	conn->close();
 			break;
 		default:;
 		}

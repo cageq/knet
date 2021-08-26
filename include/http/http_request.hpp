@@ -72,7 +72,7 @@ namespace knet {
 				}
 
 
-				bool is_websocket() const {
+				inline bool is_websocket() const {
 					return http_decoder.is_websocket();
 				}
 
@@ -84,10 +84,8 @@ namespace knet {
 				int http_version_major = 1;
 				int http_version_minor = 0;
 
-
 				HttpDecoder<HttpRequest> http_decoder;
 				HttpEncoder<HttpRequest> http_encoder;
-
 		};
 
 		using HttpRequestPtr = std::shared_ptr<HttpRequest>;
