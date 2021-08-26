@@ -11,7 +11,7 @@
 namespace knet {
 	namespace http {
 
-		struct HttpRequest {
+		class HttpRequest {
 			public:
 				HttpRequest() {}
 				HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
