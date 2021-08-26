@@ -46,7 +46,7 @@ namespace knet
 			{
 				if (this->is_connected())
 				{
-					dlog("response message is \n{}", rsp.to_string());
+				 
 					this->send(rsp.to_string());
 				}
 				if (rsp.code() >= 200)
@@ -60,7 +60,7 @@ namespace knet
 				HttpResponse rsp(msg, code);
 				if (this->is_connected())
 				{
-					dlog("response message is \n{}", rsp.to_string());
+				 
 					this->send(rsp.to_string());
 				}
 				if (code >= 200 )
