@@ -35,14 +35,17 @@ namespace knet {
 					return http_encoder.encode();
 				}
 
+		
+				void add_header(const std::string& key, const std::string& value) {
+					http_encoder.add_header(key, value);
+				}
+
+
 				uint32_t parse(const char* data, uint32_t len, bool inplace = false) {
 					http_decoder.init_http_message(this); 
 					return http_decoder.parse_request(data, len, inplace);
 				}
 
-				void add_header(const std::string& key, const std::string& value) {
-					http_encoder.add_header(key, value);
-				}
 				std::string_view get_header(const std::string& key) {
 					return http_decoder.get_header(key);
 				}
@@ -63,7 +66,7 @@ namespace knet {
 					std::string_view q = http_decoder.http_body; 
 					return std::string(q.data(),q.size());
 				}
-				//inline uint32_t code() const { return http_decoder.status_code; }
+		 
 
 				inline std::string to_string() const {
 					return http_encoder.encode();
@@ -80,10 +83,10 @@ namespace knet {
 
 				std::function<void(const HttpResponse&)> replier;
 
+				enum  http_method method_value; 
 				std::string method;
 				std::string uri;
-				uint32_t status_code = 0; 
-
+		 
 				int http_version_major = 1;
 				int http_version_minor = 0;
 

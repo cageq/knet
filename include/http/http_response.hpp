@@ -15,12 +15,13 @@ namespace knet
 
 			friend class HttpDecoder<HttpResponse>;
 			friend class HttpEncoder<HttpResponse>;
+
 			HttpResponse() {}
-			HttpResponse(const std::string &rsp, uint32_t c = 200)
+			HttpResponse(const std::string &rsp, uint32_t c = 200,  const std::string &type = "txt")
 			{
 				http_encoder.init_http_message(this);
 				status_code = c;
-				http_encoder.set_content(rsp, "txt");
+				http_encoder.set_content(rsp, type);
 			}
 
 			HttpResponse(uint32_t c, const std::string &rsp = "", const std::string &type = "txt")
@@ -54,9 +55,9 @@ namespace knet
 
 			std::string uri;
 			std::string content;
-
-		private:
 			uint32_t status_code = 0;
+		private:
+			
 			HttpDecoder<HttpResponse> http_decoder;
 			HttpEncoder<HttpResponse> http_encoder;
 		};

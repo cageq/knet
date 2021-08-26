@@ -87,6 +87,8 @@ public:
 					if (itr->second) {
 						auto rsp = itr->second(req);
 						if (rsp->code() != 0) {
+
+							dlog("response code is {}", rsp->code());
 							conn->reply(*rsp);
 						}
 					} else {
