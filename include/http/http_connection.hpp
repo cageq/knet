@@ -35,7 +35,7 @@ namespace knet
 			HttpConnection(HttpRequestPtr req):first_request(req) {
 			}
 
-			~HttpConnection() { wlog("destroy http connection"); }
+			~HttpConnection() { dlog("destroy http connection"); }
 
 			void request(const HttpRequest &req)
 			{

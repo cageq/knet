@@ -42,7 +42,7 @@ public:
 		return true; 
 	}
 
-	void set_global_routers(const HttpHandler & router){
+	inline void set_global_routers(const HttpHandler & router){
 		user_routers = router; 
 	}
 
@@ -78,7 +78,7 @@ public:
 
 			if (user_routers) {
 				auto rsp = user_routers(req); 
-				if (rsp->status_code != 0){
+				if (rsp && rsp->status_code != 0){
 					conn->reply(*rsp); 
 				}
 			} else {

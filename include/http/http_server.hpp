@@ -39,6 +39,12 @@ public:
 		http_listener.stop(); 
 	}
 
+	inline void set_global_routers(const HttpHandler & router){
+		if (http_factory){
+			http_factory->set_global_routers(router); 
+		}
+	}
+
 	void register_router(const std::string& path, const HttpHandler & handler) {
 		if (http_factory) {
 			http_factory->http_routers[path] = handler;
