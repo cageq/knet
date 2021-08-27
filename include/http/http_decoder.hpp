@@ -134,8 +134,6 @@ namespace knet
 				input_len = len;
 				init_parser(HTTP_REQUEST);
  
-
-
 				if (inplace)
 				{
 					return http_parser_execute(&msg_parser, &parser_setting, data, len);
@@ -294,7 +292,7 @@ namespace knet
 			T *http_message;
 
 		protected:
-			void init_parser(int msgType )
+			void init_parser(enum http_parser_type msgType )
 			{
 				http_parser_settings_init(&parser_setting);
 				parser_setting.on_url = &HttpParseHelper<HttpCoder, T>::parse_url;
