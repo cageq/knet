@@ -4,15 +4,8 @@ project (knet)
 set(CMAKE_CXX_STANDARD 11)
 
 include_directories("include")
-include_directories("opt/klog/include")
-#include_directories("include/tcp")
-#include_directories("include/udp")
-#include_directories("include/pipe")
-#include_directories("include/utils")
-include_directories("opt/asio/asio/include")
-#include_directories("opt/asio-1.19.2/include")
-include_directories("opt/spdlog/include")
- 
+include_directories(opt/asio-1.19.2/include)
+include_directories(opt/spdlog-1.9.2/include)
 include_directories("kcp")
 
 link_directories("/usr/local/lib") 
@@ -37,9 +30,10 @@ elseif(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -D NDEBUG")
 endif()
 
-add_subdirectory(opt/fmt EXCLUDE_FROM_ALL) 
+add_subdirectory(opt/fmt-8.0.1 EXCLUDE_FROM_ALL) 
 ADD_DEFINITIONS(-DASIO_STANDALONE)
 
+add_subdirectory(opt/llhttp-v6.0.5 EXCLUDE_FROM_ALL) 
 include_directories(opt/llhttp/include) 
 ADD_DEFINITIONS(-D USE_LLHTTP_PRASER ) 
 
@@ -62,11 +56,11 @@ target_link_libraries(fserver fmt)
 # target_link_libraries(tlsserver fmt ssl crypto)
  
 
-add_executable(webserver samples/webserver.cpp opt/llhttp/src/api.c opt/llhttp/src/http.c  opt/llhttp/src/llhttp.c )
-target_link_libraries(webserver fmt  dl)
+add_executable(webserver samples/webserver.cpp )
+target_link_libraries(webserver fmt  dl llhttp )
 
-add_executable(webclient samples/webclient.cpp opt/llhttp/src/api.c  opt/llhttp/src/http.c opt/llhttp/src/llhttp.c )
-target_link_libraries(webclient fmt)
+add_executable(webclient samples/webclient.cpp )
+target_link_libraries(webclient fmt llhttp )
 
 
 # add_executable(websslserver samples/websslserver.cpp   )

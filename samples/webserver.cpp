@@ -5,7 +5,7 @@ using namespace knet::http;
 
 int main(int argc, char* argv[]) {
 
- 	KNetLogIns.add_console(); 
+// 	KNetLogIns.add_console(); 
 	HttpServer<> webSrv;
 
 	webSrv.register_router("/", [](  HttpRequestPtr req) {

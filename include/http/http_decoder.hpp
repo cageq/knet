@@ -50,8 +50,6 @@ namespace knet {
 					// dlog("handle url callback {} ", std::string(pos, length));
 					if (self)
 					{
-						self->request_url = std::string(pos, length);
-						// dlog("parsed request url is {}", self->request_url);
 						self->http_message->http_url = std::string(pos, length);
 					}
 					return 0;
@@ -196,19 +194,6 @@ namespace knet {
 						return 0;
 					}
 
-					static int parse_url(http_parser* parser, const char* pos, size_t length) {
-
-						HttpDecoder* self = static_cast<HttpDecoder*>(parser->data);
-						dlog("handle url callback {} ", std::string(pos, length));
-						if (self) {
-							self->request_url = std::string(pos, length);
-							self->http_path = self->request_url; 
-							dlog("parsed request url is {}", self->request_url); 
-							self->http_message.uri = std::string(pos, length);
-						}
-						return 0;
-					}
-
 
 
 					static int parse_field(http_parser* hp, const char* at, size_t len) {
@@ -297,11 +282,10 @@ namespace knet {
 						return std::string_view();
 					}
 
-					std::string request_url;
 
 					std::string_view http_status;
 					std::string_view http_body;
-					std::string_view http_path;
+					//std::string_view http_path;
 					std::string_view http_query;
 					std::vector<Header> headers;
 
@@ -330,7 +314,7 @@ namespace knet {
 #ifdef USE_LLHTTP_PRASER 
 						llhttp_init(&msg_parser, HTTP_BOTH, &parser_setting);
 #else 
-						http_parser_init(&msg_parser, msgType);
+						http_parser_init(&msg_parser, (enum http_parser_type) msgType);
 #endif 
 						msg_parser.data = this;
 					}

@@ -55,8 +55,7 @@ namespace knet {
 				inline std::string url() const { return http_url; }
 
 				inline std::string path() const { 
-					std::string_view p = http_decoder.http_path; 
-					return std::string(p.data(), p.size()); 
+					return http_url ; 
 				}
 
 				inline std::string query() const { 
