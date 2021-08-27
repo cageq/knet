@@ -132,9 +132,9 @@ namespace knet
 				inplace_flag = inplace;
 				input_data = data;
 				input_len = len;
-				init_parser();
-				http_parser_init(&msg_parser, HTTP_REQUEST);
-				msg_parser.data = this;
+				init_parser(HTTP_REQUEST);
+ 
+
 
 				if (inplace)
 				{
@@ -157,9 +157,9 @@ namespace knet
 				inplace_flag = inplace;
 				input_data = data;
 				input_len = len;
-				init_parser();
-				http_parser_init(&msg_parser, HTTP_RESPONSE);
-				msg_parser.data = this;
+				init_parser(HTTP_RESPONSE);
+ 
+
 				if (inplace)
 				{
 					return http_parser_execute(&msg_parser, &parser_setting, data, len);
@@ -294,7 +294,7 @@ namespace knet
 			T *http_message;
 
 		protected:
-			void init_parser()
+			void init_parser(int msgType )
 			{
 				http_parser_settings_init(&parser_setting);
 				parser_setting.on_url = &HttpParseHelper<HttpCoder, T>::parse_url;
@@ -307,6 +307,8 @@ namespace knet
 				parser_setting.on_message_complete = parse_message_complete;
 				parser_setting.on_chunk_header = parse_chunk_header;
 				parser_setting.on_chunk_complete = parse_chunk_complete;
+				http_parser_init(&msg_parser, msgType);
+				msg_parser.data = this;
 			}
 			std::string raw_data;
 			Header parse_header;
