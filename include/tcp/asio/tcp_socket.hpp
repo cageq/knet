@@ -35,8 +35,8 @@ namespace knet {
 				, tcp_sock(ctx) {
 				worker_tid = tid;
 				m.status = SocketStatus::SOCKET_INIT; 
-				m.send_buffer.reserve(1024); 
-				m.cache_buffer.reserve(1024); 
+				m.send_buffer.reserve(2000); 
+				m.cache_buffer.reserve(2000); 
 			}
 
 			void init(TPtr conn) {
