@@ -11,7 +11,7 @@ namespace knet
 	namespace http
 	{
 
-		using HttpHandler = std::function<HttpResponse(const HttpRequestPtr & )>;
+		using HttpHandler = std::function<HttpResponsePtr (const HttpRequestPtr & )>;
 		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>;
 
 		class RegexOrderable : public std::regex
@@ -31,48 +31,11 @@ namespace knet
 		{
 
 		public:
-			HttpConnection()
-			{
-
-				thrdid = std::this_thread::get_id();
-
-				// http_parser_settings_init(&settings_);
-				// settings_.on_url = &HttpConnection::handle_url_callback;
-
-				// http_parser_init(&parser_, HTTP_REQUEST);
-				// parser_.data = this;
-
-				//	bind_package_handler(&HttpConnection::handle_package);
+			HttpConnection() { }
+			HttpConnection(HttpRequestPtr req):first_request(req) {
 			}
 
-			~HttpConnection() { wlog("destroy session"); }
-
-			// int32_t handle_package(char* data, uint32_t len) {
-
-			// 	auto req = std::make_shared<HttpRequest>();
-			// 	uint32_t parsedLen = req->parse_request(data,len);
-			// 	if (parsedLen > 0 )
-			// 	{
-			// 		http_request = req;
-			// 	}
-			// 	return parsedLen;
-			// }
-
-			// static int handle_url_callback(http_parser* parser, const char* pos, size_t length) {
-
-			// 	HttpConnection* self = static_cast<HttpConnection*>(parser->data);
-			// 	dlog("handle url callback {} ", std::string(pos, length));
-			// 	if (self) {
-			// 		self->request_url = std::string(pos, length);
-			// 	}
-
-			// 	return 0;
-			// }
-
-			// void handle_path(const std::string& path) {
-			// 	request_url = path;
-			// 	dlog("request path is {}", path);
-			// }
+			~HttpConnection() { dlog("destroy http connection"); }
 
 			void request(const HttpRequest &req)
 			{
@@ -81,39 +44,41 @@ namespace knet
 
 			void reply(const HttpResponse &rsp)
 			{
-
-				this->send(rsp.to_string());
-				dlog("rsp code is {}", rsp.status_code); 
-
-				if (rsp.status_code != 100)
+				if (this->is_connected())
+				{
+				 
+					this->send(rsp.to_string());
+				}
+				if (rsp.code() >= 200)
 				{
 					this->close();
 				}
 			}
 
-			void reply(const std::string &msg, uint32_t code = 200, bool fin = true)
+			void reply(const std::string &msg, uint32_t code = 200)
 			{
-				dlog("reply to client , {} ", code ); 
 				HttpResponse rsp(msg, code);
 				if (this->is_connected())
 				{
+				 
 					this->send(rsp.to_string());
 				}
-				if (fin)
+				if (code >= 200 )
 				{
 					this->close();
 				}
 			}
 
-			inline void release() { this->close(); }
-
-			HttpRequestPtr first_request;
+			int send_first_request(){
+				if (first_request){
+					return send(first_request->encode());
+				}
+				return -1; 
+			}
 
 		private:
-			std::thread::id thrdid;
+			HttpRequestPtr first_request;
 
-			// http_parser parser_ = {0};
-			// http_parser_settings settings_;
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;
 

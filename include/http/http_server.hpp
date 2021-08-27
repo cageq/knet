@@ -4,7 +4,6 @@
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_factory.hpp"
-#include <cstddef>
 
 namespace knet {
 namespace http {
@@ -14,9 +13,7 @@ public:
 	using WorkerPtr = std::shared_ptr<Worker>;
 	HttpServer(Factory* fac = nullptr, WorkerPtr lisWorker = nullptr, uint32_t workerNum = 4 )
 		: http_factory(fac == nullptr?&default_factory:fac)
-		, http_listener(http_factory   , lisWorker) {
-	
-
+		, http_listener(http_factory , lisWorker) {
 		for (uint32_t i = 0;i < workerNum ; i++){
 			add_worker(); 
 		}
@@ -38,16 +35,23 @@ public:
 		http_listener.start(port, host);
 		return true;
 	}
+	void stop(){
+		http_listener.stop(); 
+	}
+
+	inline void set_global_routers(const HttpHandler & router){
+		if (http_factory){
+			http_factory->set_global_routers(router); 
+		}
+	}
 
 	void register_router(const std::string& path, const HttpHandler & handler) {
-		dlog("register path {}", path);
 		if (http_factory) {
 			http_factory->http_routers[path] = handler;
 		}  
 	}
 
 private:
-	// HttpRouteMap http_routers;
 	Factory default_factory ; 
 	Factory* http_factory = nullptr;
 

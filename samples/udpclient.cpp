@@ -2,7 +2,6 @@
 
 #include "udp/udp_connector.hpp"
 #include <chrono>
-#include "console_sink.hpp"
 
 using namespace knet::udp; 
 

@@ -1,10 +1,7 @@
 
 #include <chrono>
 #include "knet.hpp"
- 
-
 #include "udp/udp_listener.hpp"
-#include "console_sink.hpp"
 
 using namespace knet::udp;
 bool running = true; 
@@ -14,7 +11,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	public:
 	virtual ~MyConnection(){}
  
-	virtual PackageType on_package(const std::string& msg) {
+	virtual PackageType on_message(const std::string& msg) {
 	    total ++; 
 
 	    if (total %20000 == 0){

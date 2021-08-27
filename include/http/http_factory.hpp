@@ -2,7 +2,6 @@
  
 #include "http_connection.hpp"
 #include "http_response.hpp"
-// #include "http_worker.hpp"
 
 using namespace knet::tcp;
 
@@ -13,14 +12,13 @@ class HttpFactory : public KNetFactory<T> , public KNetHandler<T> {
 
 public:
 	using TPtr = std::shared_ptr<T>;
+	HttpFactory() {  }
 
-	HttpFactory() { dlog("init http factory"); }
-
-	virtual void destroy(TPtr conn) { dlog("connection factory destroy connection in factory "); }
+	virtual void destroy(TPtr conn) { dlog("destroy connection in factory "); }
 
 	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
-		ilog("handle event in http factory ", evt);
+	//	dlog("handle event in http factory ", evt);
 		switch (evt) {
 		case EVT_THREAD_INIT:
 			//dlog("handle thread init event {}", std::this_thread::get_id());
@@ -37,8 +35,6 @@ public:
 		case EVT_RECV:
 			break;
 		case EVT_SEND:
-
-			//	conn->close();
 			break;
 		default:;
 		}
@@ -46,12 +42,15 @@ public:
 		return true; 
 	}
 
+	inline void set_global_routers(const HttpHandler & router){
+		user_routers = router; 
+	}
+
 	virtual bool handle_data(TPtr conn, const std::string & msg ) {
 
 		auto req = std::make_shared<HttpRequest>();
-		auto msgLen = req->parse_request(msg.data(), msg.length());
+		auto msgLen = req->parse(msg.data(), msg.length());
 		if (msgLen > 0) {
-			//	req->conn = conn;
 			req->replier = [conn](const HttpResponse& rsp) { conn->reply(rsp); };
 
 			//bool hasHandler = false; 
@@ -77,52 +76,35 @@ public:
 			//	conn->reply(HttpResponse(404));
 			//}
 
-			 auto itr = http_routers.find(req->path());
-			 if (itr != http_routers.end()) {
-			 	if (itr->second) {
-			 		//dlog("handle data in thread id {}", std::this_thread::get_id());
-			 		auto rsp = itr->second(req);
-			 		if (rsp.status_code != 0) {
-			 			conn->reply(rsp);
-			 		}
-			 	} else {
-			 		conn->reply(HttpResponse(501));
-			 	}
-			 } else {
-			 	conn->reply(HttpResponse(404));
-			 }
+			if (user_routers) {
+				auto rsp = user_routers(req); 
+				if (rsp && rsp->code() != 0){
+					conn->reply(*rsp); 
+				}
+			} else {
+				auto itr = http_routers.find(req->path());
+				if (itr != http_routers.end()) {
+					if (itr->second) {
+						auto rsp = itr->second(req);
+						if (rsp->code() != 0) {
+
+							dlog("response code is {}", rsp->code());
+							conn->reply(*rsp);
+						}
+					} else {
+						conn->reply(HttpResponse(501));
+					}
+				} else {
+					conn->reply(HttpResponse(404));
+				}
+
+			}
 		}
 
 		return true;
 	}
 
-	// virtual int32_t handle_data(TPtr conn, const char* data, uint32_t len) {
-		// dlog("handle data in http factory  {}", data);
-
-		// auto req = std::make_shared<HttpRequest>();
-
-		// dlog("http request url is {}", conn->request_url);
-
-		// auto itr = http_routers.find(conn->request_url);
-		// if (itr != http_routers.end()) {
-		// 	if (itr->second) {
-		// 		dlog("handle data in thread id {}", std::this_thread::get_id());
-		// 		auto req = std::make_shared<HttpRequest>();
-		// 		req->conn = conn;
-
-		// 		req->data = std::string(data, len);
-		// 		auto rsp = itr->second(req);
-		// 		if (rsp.code != 0) {
-		// 			conn->reply(rsp);
-		// 		}
-		// 		conn->request_url = "";
-		// 	}
-		// } else {
-		// 	conn->reply(HttpResponse(404));
-		// }
-
-	// 	return len;
-	// };
+	HttpHandler  user_routers; 
 
 	HttpRouteMap http_routers;
 };

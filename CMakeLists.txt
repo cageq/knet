@@ -10,6 +10,7 @@ include_directories("opt/klog/include")
 #include_directories("include/pipe")
 #include_directories("include/utils")
 include_directories("opt/asio/asio/include")
+#include_directories("opt/asio-1.19.2/include")
 include_directories("opt/spdlog/include")
  
 include_directories("kcp")

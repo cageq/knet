@@ -3,65 +3,65 @@
 #include "http_message.hpp"
 #include "http_decoder.hpp"
 
-namespace knet {
-namespace http {
-
-class HttpResponse {
-
-public:
-	HttpResponse(const std::string& rsp = "", uint32_t c = 200) {
-
-		this->status_code = c;
-		http_encoder = std::make_unique<HttpEncoder<HttpResponse>>(*this);
-		http_encoder->content = rsp;
-		http_encoder->status_code = c;
-	}
-
-	HttpResponse(uint32_t c, const std::string & rsp = "") {
-		this->status_code = c;
-		http_encoder = std::make_unique<HttpEncoder<HttpResponse>>(*this);
-		http_encoder->content = rsp;
-		http_encoder->status_code = c;
-	}
-
-	inline uint32_t parse_response(const char* data, uint32_t len, bool inplace = false) {
-		if (!http_decoder)
-		{
-			http_decoder =  std::make_unique<HttpDecoder<HttpResponse>>(*this);
-		}
-		return http_decoder->parse_response(data, len, inplace);
-	}
-
-	void add_header(const std::string& key, const std::string& value)
+namespace knet
+{
+	namespace http
 	{
-		if (http_encoder)
+
+		class HttpResponse
 		{
-			http_encoder->add_header(key,value); 
-		}
-	}
 
-	inline uint32_t code() const { return status_code; }
+		public:
 
-	inline std::string to_string() const { return http_encoder->encode(); }
+			friend class HttpDecoder<HttpResponse>;
+			friend class HttpEncoder<HttpResponse>;
 
-	bool is_websocket() const {
-		if (http_decoder) {
-			return http_decoder->is_websocket();
-		}
-		return false;
-	};
+			HttpResponse() {}
+			HttpResponse(const std::string &rsp, uint32_t c = 200,  const std::string &type = "txt")
+			{
+				http_encoder.init_http_message(this);
+				status_code = c;
+				http_encoder.set_content(rsp, type);
+			}
 
-	inline std::string body() const  { return http_encoder->content; }
-	std::string uri;
+			HttpResponse(uint32_t c, const std::string &rsp = "", const std::string &type = "txt")
+			{
+				http_encoder.init_http_message(this);
+				status_code = c;
+				http_encoder.set_content(rsp, type);
+			}
 
+			inline uint32_t parse(const char *data, uint32_t len, bool inplace = false)
+			{
+				http_decoder.init_http_message(this);
+				return http_decoder.parse_response(data, len, inplace);
+			}
 
-	std::string content;
-	uint32_t status_code = 200;
+			void add_header(const std::string &key, const std::string &value)
+			{
+				http_encoder.add_header(key, value);
+			}
 
-	private: 
-	std::unique_ptr<HttpDecoder<HttpResponse>> http_decoder;
-	std::unique_ptr<HttpEncoder<HttpResponse>> http_encoder;
-};
+			inline uint32_t code() const { return status_code; }
 
-} // namespace http
+			inline std::string to_string() const { return http_encoder.encode(); }
+
+			inline bool is_websocket() const
+			{
+				return http_decoder.is_websocket();
+			}
+
+			inline std::string body() const { return http_encoder.content; }
+
+			std::string uri;
+			std::string content;
+			uint32_t status_code = 0;
+		private:
+			
+			HttpDecoder<HttpResponse> http_decoder;
+			HttpEncoder<HttpResponse> http_encoder;
+		};
+		using HttpResponsePtr = std::shared_ptr<HttpResponse>;
+
+	} // namespace http
 } // namespace knet

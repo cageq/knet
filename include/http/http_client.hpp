@@ -24,10 +24,9 @@ public:
 	}
 
 	virtual void handle_event(TPtr conn, NetEvent evt) {
-		dlog("handle http factory event {}", evt);
 		switch (evt) {
 		case NetEvent::EVT_CONNECT:
-			conn->send(conn->first_request->encode());
+			conn->send_first_request() ;
 			break;
 		case NetEvent::EVT_DISCONNECT:
 			connections.erase(conn->get_cid());
@@ -43,9 +42,8 @@ public:
 
 		std::cout << urlInfo << std::endl;
 
-		auto conn = connector.add_connection(ConnectionInfo(urlInfo.host(), urlInfo.port()));
-
-		conn->first_request = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
+		auto req = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
+		auto conn = connector.add_connection(ConnectionInfo(urlInfo.host(), urlInfo.port()), req );
 
 		connections[conn->get_cid()] = conn;
 		return true;
