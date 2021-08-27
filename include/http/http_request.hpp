@@ -84,7 +84,7 @@ namespace knet {
 
 				std::function<void(const HttpResponse&)> replier;
 				HttpMethod http_method;
-				enum  http_method method_value; 
+				//enum  http_method method_value; 
 				std::string method;
 		 
 

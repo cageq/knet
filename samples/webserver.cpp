@@ -18,7 +18,6 @@ int main(int argc, char* argv[]) {
 
 	webSrv.start(8888, "0.0.0.0");
 
-	//co_sched.Start();
 
 
 	char c = getchar();
