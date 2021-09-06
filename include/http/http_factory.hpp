@@ -104,7 +104,7 @@ public:
 		return true;
 	}
 
-	HttpHandler  user_routers; 
+	HttpHandler  user_routers = nullptr; 
 
 	HttpRouteMap http_routers;
 };
