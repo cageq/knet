@@ -46,16 +46,14 @@ namespace knet
 				}
 
 				TcpListener(WorkerPtr lisWorker)
-				{
-
+				{  
 					if (lisWorker == nullptr){
 						m.listen_worker = std::make_shared<Worker>(); 
 						m.listen_worker->start();
 					}else {
 						m.listen_worker = lisWorker;
-					}
-
-					m.factory = nullptr; 
+					} 
+				 
 					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 				}
 

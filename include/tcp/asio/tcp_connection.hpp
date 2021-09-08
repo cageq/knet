@@ -79,7 +79,6 @@ namespace knet
 				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->init(this->shared_from_this()); 
-				
 				user_event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
 			}
@@ -251,7 +250,7 @@ namespace knet
 			}
 	
 			void release(){
-				handle_event(EVT_RELEASE); 
+				process_event(EVT_RELEASE); 
 			} 
 
 			void set_remote_addr(const std::string &host, uint32_t port)
