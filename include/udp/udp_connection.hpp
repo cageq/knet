@@ -292,7 +292,7 @@ namespace knet {
 				KNetHandler<T>* user_event_handler = nullptr;
 				KNetWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
-				std::unique_ptr<Timer> timer = nullptr;
+				std::unique_ptr<knet::utils::Timer> timer = nullptr;
 			} m;
 		};
 

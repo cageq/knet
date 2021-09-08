@@ -27,7 +27,7 @@ namespace knet
 				io_context = ctx;
 			}
 			this->user_data = udata;
-			event_timer = std::make_unique<Timer>(*io_context);
+			event_timer = std::make_unique<utils::Timer>(*io_context);
 		}
 
 
@@ -101,7 +101,7 @@ namespace knet
 			return std::thread::id(); 
 		}
 
-		uint64_t start_timer(const TimerHandler& handler, uint64_t interval, bool bLoop = true)
+		uint64_t start_timer(const utils::Timer::TimerHandler& handler, uint64_t interval, bool bLoop = true)
 		{
 			return event_timer->start_timer(handler, interval, bLoop);
 		}
@@ -136,7 +136,7 @@ namespace knet
 
 		IOContextPtr io_context = nullptr;
 		IOContextPtr self_context = nullptr;
-        std::unique_ptr<Timer> event_timer;
+        std::unique_ptr<utils::Timer> event_timer;
 	};
 	using KNetWorkerPtr = std::shared_ptr<KNetWorker>;
 } // namespace knet

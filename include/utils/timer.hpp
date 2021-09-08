@@ -9,10 +9,11 @@ namespace knet
 	namespace utils
 	{
 
-		using TimerHandler = std::function<bool()>;
+		
 		class Timer 
 		{
 		public:
+			using TimerHandler = std::function<bool()>;
 			struct TimerNode
 			{
 				TimerNode(asio::io_context &ctx)

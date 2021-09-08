@@ -230,7 +230,7 @@ namespace knet
 				return true; 
 			}
 
-			uint64_t start_timer(const TimerHandler &  handler, uint64_t interval, bool bLoop = true)
+			uint64_t start_timer(const utils::Timer::TimerHandler &  handler, uint64_t interval, bool bLoop = true)
 			{
 				if (event_worker)
 				{
