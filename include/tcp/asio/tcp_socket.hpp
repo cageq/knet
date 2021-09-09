@@ -267,7 +267,7 @@ namespace knet {
 
 						int32_t readPos = 0;
 						while (pkgLen > 0) {
-							dlog("process data size {} ,read buffer pos {}  readPos {}", pkgLen, read_buffer_pos, readPos);
+							//dlog("process data size {} ,read buffer pos {}  readPos {}", pkgLen, read_buffer_pos, readPos);
 							if (readPos + pkgLen <= read_buffer_pos) {
 								char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 								char endChar = *pkgEnd;

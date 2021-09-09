@@ -23,8 +23,18 @@ class MyFactory: public knet::KNetFactory<TcpSession>, public knet::KNetHandler<
 	public:
 
 		virtual void destroy(TPtr conn) {
-			dlog("connection factory destroy connection in my factory "); 
 		}	
+
+		virtual void on_create(TPtr ptr) {
+
+			dlog("connection created event in my factory "); 
+		}
+
+		virtual void on_release(TPtr ptr) { 
+			dlog("connection release event in my factory "); 
+		}
+
+
 
 		virtual bool handle_event(TPtr conn, knet::NetEvent evt) {
 			ilog("handle event in connection my factory {}", evt ); 

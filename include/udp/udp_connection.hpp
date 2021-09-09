@@ -223,7 +223,7 @@ namespace knet {
 						udp_socket->bind(lisPoint);
 					}
 
-					m.timer = std::unique_ptr<Timer>(new Timer(m.event_worker->context()));
+					m.timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(m.event_worker->context()));
 					m.timer->start_timer(
 						[this]() {
 							std::chrono::steady_clock::time_point nowPoint =
@@ -292,7 +292,7 @@ namespace knet {
 				KNetHandler<T>* user_event_handler = nullptr;
 				KNetWorkerPtr event_worker = nullptr;
 				ConnectionStatus status;
-				std::unique_ptr<Timer> timer = nullptr;
+				std::unique_ptr<knet::utils::Timer> timer = nullptr;
 			} m;
 		};
 
