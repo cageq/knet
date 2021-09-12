@@ -26,7 +26,7 @@
 
 class KNetLogger : public knet::utils::Singleton<KNetLogger> {
 
-	friend class Singleton<KNetLogger>; 
+	friend class knet::utils::Singleton<KNetLogger>; 
 	public: 
 	KNetLogger(){
 		logger = std::make_shared<spdlog::logger>("knet");
