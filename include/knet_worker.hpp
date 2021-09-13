@@ -101,7 +101,7 @@ namespace knet
 			return std::thread::id(); 
 		}
 
-		uint64_t start_timer(const utils::Timer::TimerHandler& handler, uint64_t interval, bool bLoop = true)
+		uint64_t start_timer(const knet::utils::Timer::TimerHandler& handler, uint64_t interval, bool bLoop = true)
 		{
 			return event_timer->start_timer(handler, interval, bLoop);
 		}
