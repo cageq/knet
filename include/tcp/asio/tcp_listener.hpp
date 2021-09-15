@@ -9,7 +9,6 @@
 #include <memory>
 #include <vector>
 #include "tcp_connection.hpp"
-#include "utils/c11patch.hpp"
 #include "knet_factory.hpp"
 
 namespace knet
