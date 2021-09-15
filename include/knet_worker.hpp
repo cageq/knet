@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "utils/c11patch.hpp"
 #include "utils/timer.hpp"
 #include <mutex>
 #include <thread>

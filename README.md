@@ -1,13 +1,13 @@
 ![C/C++ CI](https://github.com/cageq/knet/workflows/C/C++%20CI/badge.svg)
 
 # KNet 
-Simple morden c++ network library wrapper based on asio standalone version, provide very simple APIs to build your network applications. 
+Simple morden c++ network library wrapper based on asio standalone version, provide simple APIs to build your network applications. 
 
 
 ## Build 
-need c++11 to compile it. 
+need c++17 supported compiler to compile it. 
 
-It is a headonly library, basically you can copy all files to you project and use it. (except fmt lib, you can alse set LOG_LEVEL to 0 in klog.hpp to get rid of the dependence ) 
+It is a headonly library, basically you can copy all files to you project and use it. (need fmt lib or use headless version) 
 
 
 ## build samples
@@ -115,9 +115,6 @@ you can create a factory, then handle all sessions' event in the factory instanc
 class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
 	public:
-		virtual void destroy(TPtr conn) {
-			dlog("connection factory destroy connection in my factory "); 
-		}	
 
 		virtual void handle_event(TPtr conn, knet::NetEvent evt) {
 			ilog("handle event in connection my factory"); 
@@ -149,13 +146,12 @@ class MyFactory: public KNetFactory<TcpSession> {
 
 ## Backends 
 
-​	There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple api for user to build your network components.  Will it can help.
+​	There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple apis for user to build network components.  Will it can help.
 
 
 
 ## Performance 
-
-   I have not test the performance of this library, but it's a very thin wrapper over the asio, I think the performace will be close to asio. 
+   I have not test it, but it's a very thin wrapper over the asio, I think the performace will be close to asio. 
 
 
 
@@ -170,29 +166,6 @@ https://gitee.com/cageq/knet
 ## welcome to contribute
 
   If you think it's a little useful,  welcome all of you to make it better. 
-
-
-
-## Thinking about coding style
-
-​	I prefer good coding style , but not must-be coding style. code is also a language , it expresses your ideas, your thinking about it work for. basically I follow these rules to make code clear. 
-
-1. class name will be camel name , with the first capitalize letter  : 
-	TcpConnection , TcpServer , TcpListener
-2. method name will lower case with "_" connects all words together  
-3. class members are hard to name, google add postfix "_" , some add prefix "m_" to the word . I don't like them all.  
-
-
-
-​	All members are part of the class, inner the class, it also a world to express something, I wish it be naturally.  In this library, I didn't add any prefix or postfix to members, sometimes it mix with the methods' name or other names, It's not a good naming style. 
-
-​	I start a new branch to put some members into a "m" struct of the class.  so all access to the members should using "m." , it looks like a namespace, but namespace can't be used inner class. 
-It works and looks better, but there are insufficient that can't init members in class initialization list, and the performace will be lower? I have not  test it. If you have better ideas for naming, we can have a discuss. 
-
-
-
-
-
 
 
 

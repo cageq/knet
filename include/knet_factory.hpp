@@ -5,7 +5,6 @@
 
 #pragma once 
 #include <functional>
-#include "utils/c11patch.hpp"
 
 namespace knet {
 
