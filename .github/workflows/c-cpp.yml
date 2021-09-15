@@ -19,5 +19,5 @@ jobs:
     - name: Init Submodules 
       run:  git submodule init && git submodule update --recursive   && git submodule sync
     - name: Build
-      run: cmake . && make 
+      run: ./build.sh
  
