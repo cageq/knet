@@ -30,13 +30,10 @@ namespace knet
 		class HttpConnection : public TcpConnection<HttpConnection>
 		{
 
-		public:
-			
-
+		public: 
 			HttpConnection(HttpRequestPtr req  = nullptr) : first_request(req) 
-			{
-				 
-			}
+			{				 
+			} 
 
 			~HttpConnection() {}
 
@@ -44,8 +41,7 @@ namespace knet
 			{ 
 				global_router = router; 
 				http_routers = routers; 
-			}
-
+			} 
 
 			inline void request(const HttpRequest &req)
 			{
@@ -86,7 +82,7 @@ namespace knet
 				return -1;
 			}
 
-			virtual bool handle_data(const std::string &msg)
+			virtual bool handle_data(const std::string_view &msg)
 			{
 				auto req = std::make_shared<HttpRequest>();
 				auto msgLen = req->parse(msg.data(), msg.length());
@@ -148,6 +144,8 @@ namespace knet
 						{
 							conn->reply(HttpResponse(404));
 						}
+					}else { 
+						conn->reply(HttpResponse(404));
 					}
 				}
 
@@ -158,7 +156,7 @@ namespace knet
 			HttpRequestPtr first_request;
 
 			HttpHandler  global_router; 
-			HttpRouteMap * http_routers; 
+			HttpRouteMap * http_routers{}; 
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;
 

@@ -177,7 +177,7 @@ namespace knet
 			inline void add_factory_event_handler(std::false_type, FactoryPtr fac)
 			{
 			}
-			virtual bool handle_data(std::shared_ptr<T> conn, const std::string &msg)
+			virtual bool handle_data(std::shared_ptr<T> conn, const std::string_view &msg)
 			{
 
 				return invoke_data_chain(conn, msg);
@@ -200,7 +200,7 @@ namespace knet
 				return ret;
 			}
 
-			bool invoke_data_chain(TPtr conn, const std::string &msg)
+			bool invoke_data_chain(TPtr conn, const std::string_view &msg)
 			{
 				bool ret = true;
 				for (auto handler : m.event_handler_chain)

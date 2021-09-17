@@ -41,7 +41,7 @@ class MyFactory: public knet::KNetFactory<TcpSession>, public knet::KNetHandler<
 			return true; 
 		}
 
-		virtual bool handle_data(TPtr conn, const std::string & msg ) { 
+		virtual bool handle_data(TPtr conn, const std::string_view & msg ) { 
 			conn->send(msg); 
 			return msg.length() ;
 		}; 

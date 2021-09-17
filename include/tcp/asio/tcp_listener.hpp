@@ -139,7 +139,7 @@ namespace knet
 					}
 				}
 
-				virtual bool handle_data(TPtr conn, const std::string &msg)
+				virtual bool handle_data(TPtr conn, const std::string_view &msg)
 				{
 					return invoke_data_chain(conn, msg);
 				}
@@ -190,7 +190,7 @@ namespace knet
 				{
 				}
 
-				bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
+				bool invoke_data_chain(const TPtr &  conn, const std::string_view &msg)
 				{
 					bool ret = true;
 					for (auto &handler : m.event_handler_chain)

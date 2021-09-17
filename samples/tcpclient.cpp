@@ -18,7 +18,7 @@ public:
 		return len;
 	}
 
-	virtual bool handle_data(const std::string& msg)
+	virtual bool handle_data(const std::string_view& msg)
 	{
 
 		dlog("received data   {} ", msg );

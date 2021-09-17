@@ -120,7 +120,7 @@ namespace knet {
 
 		private:
 
-			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg) {
+			virtual bool handle_data(std::shared_ptr<T>, const std::string_view& msg) {
 
 				return true;
 			}

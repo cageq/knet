@@ -55,7 +55,7 @@ namespace knet
 				return false;
 			}
 
-			virtual bool handle_data(TPtr conn, const std::string &buf)
+			virtual bool handle_data(TPtr conn, const std::string_view &buf)
 			{
 				PipeMsgHead *msg = (PipeMsgHead *)buf.data();
 				if (msg->length + sizeof(PipeMsgHead) > buf.length())

@@ -6,8 +6,8 @@
 #pragma once
 #include <vector>
 #include <set>
+#include <string_view>
 #include <unordered_map>
-
 #include "tcp_socket.hpp"
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
@@ -44,15 +44,14 @@ namespace knet
 			using PackageHandler = std::function<int32_t(const char *  &, uint32_t len  )>;
 			using SelfPackageHandler = int32_t (T::*)(const char *  &, uint32_t len  );
 
-			using DataHandler = std::function<bool(const std::string & )>;
-			using SelfDataHandler = bool (T::*)(const std::string & );
+			using DataHandler = std::function<bool(const std::string_view & )>;
+			using SelfDataHandler = bool (T::*)(const std::string_view & );
 
 			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
 
 			// for passive connection 
 			template <class ... Args>
-			TcpConnection(Args ... args){ }
-		 
+			TcpConnection(Args ... args){ } 
 
 			virtual ~TcpConnection()
 			{
@@ -218,7 +217,7 @@ namespace knet
 			}
 
 	
-			virtual bool handle_data(const std::string &msg )
+			virtual bool handle_data(const std::string_view &msg )
 			{
 				return true; 
 			}
@@ -260,7 +259,7 @@ namespace knet
 				 return handle_package(data, len); 
 			}
 
-			bool process_data(const std::string &msg ){
+			bool process_data(const std::string_view &msg ){
 				bool ret = true; 
 				if (data_handler)
 				{

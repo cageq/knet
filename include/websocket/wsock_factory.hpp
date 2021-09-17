@@ -50,7 +50,7 @@ public:
 		return true; 
 	}
 
-	virtual bool handle_data(TPtr conn, const std::string& msg ) {  
+	virtual bool handle_data(TPtr conn, const std::string_view& msg ) {  
 			const char * data = msg.data(); 
 			uint32_t len  = msg.length(); 	
 			if (conn->is_websocket) {

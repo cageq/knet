@@ -53,7 +53,7 @@ class MyFactory: public ConnFactory<TcpSession > {
 
 	public:
 
-		virtual void destroy(TPtr conn) 	; 
+ 
 
 		virtual void handle_event(TPtr conn, NetEvent evt) ; 
 

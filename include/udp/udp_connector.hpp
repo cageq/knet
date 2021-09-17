@@ -94,7 +94,7 @@ namespace knet
 			}
 
 
-			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg) {
+			virtual bool handle_data(std::shared_ptr<T>, const std::string_view& msg) {
 
 				return true;
 			}
@@ -107,7 +107,7 @@ namespace knet
 				}
 			}
 		private:
-				bool  invoke_data_chain(TPtr conn, const std::string& msg) {
+				bool  invoke_data_chain(TPtr conn, const std::string_view& msg) {
 				bool ret = true;
 				for (auto handler : m.event_handler_chain) {
 					if (handler) {

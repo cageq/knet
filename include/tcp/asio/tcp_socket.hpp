@@ -277,7 +277,7 @@ namespace knet {
 								char* pkgEnd = (char*)m.read_buffer + readPos + pkgLen + 1;
 								char endChar = *pkgEnd;
 								*pkgEnd = 0;
-								this->m.connection->process_data(std::string((const char*)m.read_buffer + readPos, pkgLen));
+								this->m.connection->process_data(std::string_view((const char*)m.read_buffer + readPos, pkgLen));
 								*pkgEnd = endChar;
 								readPos += pkgLen;
 							} else {

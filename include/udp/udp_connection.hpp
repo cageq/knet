@@ -41,7 +41,7 @@ namespace knet {
 
 			using TPtr = std::shared_ptr<T>;
 			using EventHandler = std::function<bool (knet::NetEvent)>;		
-			using DataHandler = std::function<bool(const std::string & )>;	
+			using DataHandler = std::function<bool(const std::string_view & )>;	
 
 
 			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
@@ -159,7 +159,7 @@ namespace knet {
 			}
 
 
-			virtual bool handle_data(const std::string& msg)
+			virtual bool handle_data(const std::string_view& msg)
 			{
 				return true;
 			}
@@ -168,7 +168,7 @@ namespace knet {
 		private:
 
 
-			bool process_data(const std::string &msg ){
+			bool process_data(const std::string_view &msg ){
 				bool ret = true; 
 				if (data_handler)
 				{
@@ -259,7 +259,7 @@ namespace knet {
 							recv_buffer[bytes_recvd] = 0;
 							auto pkgType = this->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
 							if (pkgType == PACKAGE_USER){
-								process_data(std::string((const char*)recv_buffer, bytes_recvd)); 
+								process_data(std::string_view((const char*)recv_buffer, bytes_recvd)); 
 							}						
 					
 							do_receive();

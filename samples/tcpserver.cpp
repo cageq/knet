@@ -28,7 +28,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
-		virtual bool handle_data(const std::string &msg ) {
+		virtual bool handle_data(const std::string_view &msg ) {
 			dlog("handle data is {}", msg); 
 			  dlog("handle data length {} ", msg.length()  ); 			
 			//this->send(msg);
