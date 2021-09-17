@@ -37,7 +37,7 @@ namespace knet {
 			}
 
 			virtual void on_release(TPtr ptr) { 
-				dlog("factory release"); 
+				 
 			}
 
 
