@@ -148,6 +148,9 @@ namespace knet {
 					inline bool is_empty(const std::string & param) {
 						return param.empty(); 
 					}
+					inline bool is_empty(const std::string_view & param) {
+						return param.empty(); 
+					}
 
 					inline bool is_empty(const char *  param) {
 						return strlen(param) == 0 ; 
@@ -167,13 +170,13 @@ namespace knet {
 					template <typename P >  
 						inline void write_data( const P & data,std::true_type ){
 							m.send_buffer.append(std::string((const char*)&data, sizeof(P)));
-						}
-
+						} 
 
 					template <typename P >  
 						inline void write_data( const P &  data, std::false_type){
 							m.send_buffer.append(data); 
 						}
+
 					inline void write_data(const std::string_view &  data, std::false_type){
 						m.send_buffer.append(data ); 
 					}
@@ -242,7 +245,7 @@ namespace knet {
 
 					void rewind_buffer(int32_t readPos){
 						if (read_buffer_pos >= readPos) {
-							dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
+							//dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
 							memmove(m.read_buffer, (const char*)m.read_buffer + readPos, read_buffer_pos - readPos);
 							read_buffer_pos -= readPos;
 						}
@@ -263,7 +266,7 @@ namespace knet {
 								m.connection->close();
 								return false;
 							}
-							dlog("need more data to get one package"); 
+							//dlog("need more data to get one package"); 
 							return true; 
 						}
 
@@ -362,7 +365,7 @@ namespace knet {
 						return worker_tid == std::this_thread::get_id();
 					}
 
-					inline asio::io_context& context() { return io_context; }
+					inline asio::io_context& get_context() { return io_context; }
 				private:
 					asio::io_context& io_context;
 					tcp::socket tcp_sock;				

@@ -186,16 +186,15 @@ namespace knet
 			{
 
 				bool ret = invoke_event_chain(conn, evt);
-
 				if (evt == EVT_RELEASE)
 				{
-					asio::post(*conn->get_context(), [this, conn]() {
+					conn->post([this, conn]() {
 						conn->disable_reconnect();
 						if (m.factory)
 						{
 							m.factory->release(conn);
 						}
-					});
+					});  
 				}
 
 				return ret;

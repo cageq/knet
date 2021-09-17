@@ -15,8 +15,8 @@
 
 
 
-#ifdef KNET_LOG_SWITCH 
-#ifdef KNET_LOG_SPDLOG 
+#if KNET_LOG_SWITCH 
+#if KNET_LOG_SPDLOG 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/daily_file_sink.h"

@@ -8,18 +8,14 @@ namespace knet
 	namespace http
 	{
 
-
-
 		template <typename XCoder, typename T>
 		struct HttpEncoderHelper
 		{
-				HttpEncoderHelper(   XCoder * c){
-
+			HttpEncoderHelper(XCoder *c)
+			{
 			}
 
-
-			std::string encode() const{ return ""; }
-
+			std::string encode() const { return ""; }
 		}; //
 
 		class HttpRequest;
@@ -28,8 +24,8 @@ namespace knet
 		struct HttpEncoderHelper<XCoder, HttpRequest>
 		{
 
-			HttpEncoderHelper(   XCoder * c):coder(c){
-
+			HttpEncoderHelper(XCoder *c) : coder(c)
+			{
 			}
 
 			std::string encode() const
@@ -49,23 +45,23 @@ namespace knet
 				return fmt::to_string(msgBuf);
 			}
 
-			XCoder * coder; 
-		}; 
+			XCoder *coder;
+		};
 
 		class HttpResponse;
 		template <typename XCoder>
 		struct HttpEncoderHelper<XCoder, HttpResponse>
 		{
-			HttpEncoderHelper(   XCoder * c):coder(c){
-
+			HttpEncoderHelper(XCoder *c) : coder(c)
+			{
 			}
 
 			std::string encode() const
 			{
 				fmt::memory_buffer msgBuf;
- 
+
 				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(coder->http_message->status_code));
-		  
+
 				for (const auto &h : coder->http_headers)
 				{
 					if (!h.first.empty())
@@ -81,8 +77,8 @@ namespace knet
 				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->content);
 				return fmt::to_string(msgBuf);
 			}
-			XCoder * coder; 
-		}; 
+			XCoder *coder;
+		};
 
 		template <class T>
 		class HttpEncoder
@@ -94,7 +90,7 @@ namespace knet
 				std::string value;
 			};
 
-			HttpEncoder(T *msg = nullptr) : http_message(msg),encode_helper(this)
+			HttpEncoder(T *msg = nullptr) : http_message(msg), encode_helper(this)
 			{
 			}
 			void init_http_message(T *msg)
@@ -103,14 +99,12 @@ namespace knet
 			}
 
 			//void set_method(HttpMethod protocol) { http_method = protocol; }
-		  
+
 			void set_cookie(const std::string &v) { add_header("Cookie", v); }
 
 			void set_content_type(const std::string &v) { add_header("Content-Type", v); }
 
 			void set_host(const std::string &host) { add_header("Host", host); }
-
- 
 
 			void set_content(const std::string &body, const std::string &type = "txt")
 			{
@@ -128,10 +122,9 @@ namespace knet
 
 			void add_header(const std::string &key, const std::string &value) { http_headers[key] = value; }
 
-		  
-
-			std::string encode()  const {
-				return encode_helper.encode(); 
+			std::string encode() const
+			{
+				return encode_helper.encode();
 			}
 
 			// std::string encode() const
@@ -209,9 +202,8 @@ namespace knet
 			T *http_message;
 			std::string context_type;
 			std::string content;
- 
- 
-			HttpEncoderHelper<HttpEncoder<T> , T > encode_helper; 
+
+			HttpEncoderHelper<HttpEncoder<T>, T> encode_helper;
 
 			std::map<std::string, std::string> http_headers;
 		};

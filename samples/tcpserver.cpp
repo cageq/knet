@@ -34,7 +34,7 @@ class TcpSession : public TcpConnection<TcpSession>{
 			//this->send(msg);
 			
 			std::string rst= "{\"code\":0, \"msg\":\"success\"}"; 
-			this->send(rst); 
+			this->send(std::string_view(rst)); 
 			return true; 		
 		}
 };

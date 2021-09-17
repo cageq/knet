@@ -26,8 +26,7 @@ public:
 			auto worker = std::make_shared<Worker>(); 
 			worker->start(); 
 			http_listener.add_worker(worker);
-		}
-   
+		}   
 	}
 
 	bool start(uint32_t port = 8888, const std::string& host = "0.0.0.0") {

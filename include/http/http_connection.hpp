@@ -35,9 +35,9 @@ namespace knet
 			HttpConnection(HttpRequestPtr req):first_request(req) {
 			}
 
-			~HttpConnection() { dlog("destroy http connection"); }
+			~HttpConnection() { }
 
-			void request(const HttpRequest &req)
+			inline void request(const HttpRequest &req)
 			{
 				this->send(req.to_string());
 			}
@@ -46,7 +46,6 @@ namespace knet
 			{
 				if (this->is_connected())
 				{
-				 
 					this->send(rsp.to_string());
 				}
 				if (rsp.code() >= 200)
@@ -59,8 +58,7 @@ namespace knet
 			{
 				HttpResponse rsp(msg, code);
 				if (this->is_connected())
-				{
-				 
+				{ 
 					this->send(rsp.to_string());
 				}
 				if (code >= 200 )
@@ -77,8 +75,7 @@ namespace knet
 			}
 
 		private:
-			HttpRequestPtr first_request;
-
+			HttpRequestPtr first_request; 
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;
 

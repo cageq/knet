@@ -52,12 +52,7 @@ namespace knet
 			// for passive connection 
 			template <class ... Args>
 			TcpConnection(Args ... args){ }
-		
-			TcpConnection(const std::string &host, uint16_t port)
-			{
-				remote_host = host;
-				remote_port = port;
-			}
+		 
 
 			virtual ~TcpConnection()
 			{
@@ -83,9 +78,9 @@ namespace knet
 				handle_event(EVT_CREATE);
 			}
 
-			int32_t send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
-
-			int32_t send(const std::string &msg) { return msend(msg); }
+			inline int32_t send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
+			inline int32_t send(const std::string &msg) { return msend(msg); }
+			inline int32_t send(const std::string_view &msg) { return msend(msg); }
 
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &... rest)
@@ -104,6 +99,7 @@ namespace knet
 					tcp_socket->close();
 				}
 			}
+
 			bool post(const std::function<void()> & handler)
 			{
 				if (tcp_socket)
@@ -157,13 +153,22 @@ namespace knet
 
 			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
 
-			tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
+			inline tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
+			inline tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
+  
+			inline std::string get_remote_ip() const{ 
+				if (tcp_socket){
+					return tcp_socket->remote_endpoint().host; 
+				}
+				return "";
+			}
 
-			tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
-
-			// std::string get_remote_ip() const{ return tcp_socket->remote_endpoint().host; }
-
-			// uint16_t get_remote_port() const{ return tcp_socket->remote_endpoint().port; }
+			inline uint16_t get_remote_port() const{ 
+				if (tcp_socket){
+					return tcp_socket->remote_endpoint().port; 
+				}
+				return 0; 				
+			}
 
 			inline uint64_t get_cid() const { return cid; }
 
@@ -173,17 +178,15 @@ namespace knet
 			{
 				if (!reconn_flag)
 				{
-					reconn_flag = true;
-					dlog("start reconnect timer ");
+					reconn_flag = true; 
 					auto self = this->shared_from_this();
 					this->reconn_timer = this->start_timer(
-						[=]() {
-							if (!is_connected())
-							{
-								if (!is_connecting()){
-									dlog("try to reconnect to server ");
-									self->connect();
-								}
+						[self]() {
+							if (self->tcp_socket ){
+								if ( !( self->tcp_socket->is_open() || self->tcp_socket->is_connecting() ))
+								{
+									self->connect();						 
+								}								
 							}
 							return true; 
 						},
@@ -202,15 +205,7 @@ namespace knet
 			}		 
 
 			inline KNetWorkerPtr get_worker() { return event_worker; }
-
-			asio::io_context *get_context()
-			{
-				if (tcp_socket)
-				{
-					return &tcp_socket->context();
-				}
-				return nullptr;
-			}
+ 
 			void *user_data = nullptr;  
  
 			virtual int32_t handle_package(const char * data, uint32_t len ){
@@ -218,8 +213,7 @@ namespace knet
 			}
  
 			virtual bool handle_event(NetEvent evt) 
-			{
-				dlog("handle event in connection {}", evt);
+			{ 
 				return true; 
 			}
 
@@ -253,21 +247,8 @@ namespace knet
 				process_event(EVT_RELEASE); 
 			} 
 
-			void set_remote_addr(const std::string &host, uint32_t port)
-			{
-				remote_host = host;
-				remote_port = port;
-			}
-
-			inline std::string get_remote_host() const
-			{
-				return remote_host;
-			}
-			inline uint16_t get_remote_port() const
-			{
-				return remote_port;
-			} 
-			bool need_reconnect() const {
+	
+			inline bool need_reconnect() const {
 				return reconn_flag && !passive_mode; 
 			}
 		 
