@@ -37,7 +37,7 @@ namespace knet
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
- 
+			friend class TcpSocket<T> ; 
 			using EventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
 
@@ -249,7 +249,7 @@ namespace knet
 				}
 			}
 	
-			void release(){
+			inline void release(){
 				process_event(EVT_RELEASE); 
 			} 
 
@@ -295,7 +295,7 @@ namespace knet
 				}
 		 		return ret; 				
 			}
-
+	private:
 			bool process_event(NetEvent evt){
 
 				//dlog("process event {}", evt);
@@ -315,7 +315,7 @@ namespace knet
 				}	
 				return ret; 				
 			}
-	private:
+
 			bool reconn_flag = false;
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;

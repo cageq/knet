@@ -130,14 +130,14 @@ namespace knet {
 						if (is_inloop()) {
 							return send_inloop(pData, dataLen);
 						}
-						return msend(std::string(pData, dataLen));
+						return msend(std::string_view(pData, dataLen));
 					}
 
-					int32_t send(const std::string& msg) {
+					int32_t send(const std::string_view& msg) {
 						if (is_inloop()) {
 							return send_inloop(msg.data(), msg.length());
 						}
-						return msend(std::string_view(msg.data(), msg.length()));
+						return msend(msg);
 					}
 
 					template <typename P> 
@@ -165,7 +165,7 @@ namespace knet {
 						}
 
 					template <typename P >  
-						inline void write_data  (  const P & data,std::true_type ){
+						inline void write_data( const P & data,std::true_type ){
 							m.send_buffer.append(std::string((const char*)&data, sizeof(P)));
 						}
 
@@ -174,11 +174,11 @@ namespace knet {
 						inline void write_data( const P &  data, std::false_type){
 							m.send_buffer.append(data); 
 						}
-					inline void write_data( const std::string_view &  data, std::false_type){
+					inline void write_data(const std::string_view &  data, std::false_type){
 						m.send_buffer.append(data ); 
 					}
 
-					inline void write_data( const std::string &  data, std::false_type){
+					inline void write_data(const std::string &  data, std::false_type){
 						m.send_buffer.append(data ); 
 					}
 
