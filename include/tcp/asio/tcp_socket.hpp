@@ -10,7 +10,7 @@
 #include <string>
 #include <chrono>
 #include <type_traits>
-
+#include <string_view> 
 
 
 
@@ -137,7 +137,7 @@ namespace knet {
 						if (is_inloop()) {
 							return send_inloop(msg.data(), msg.length());
 						}
-						return msend(std::string(msg.data(), msg.length()));
+						return msend(std::string_view(msg.data(), msg.length()));
 					}
 
 					template <typename P> 
@@ -174,7 +174,9 @@ namespace knet {
 						inline void write_data( const P &  data, std::false_type){
 							m.send_buffer.append(data); 
 						}
-
+					inline void write_data( const std::string_view &  data, std::false_type){
+						m.send_buffer.append(data ); 
+					}
 
 					inline void write_data( const std::string &  data, std::false_type){
 						m.send_buffer.append(data ); 
