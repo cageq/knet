@@ -2,12 +2,13 @@
  
 #include "knet.hpp"
 #include "http_request.hpp"
-#include "http_factory.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <functional>
 #include <iostream>
 #include "http_url.hpp"
+#include "http_connection.hpp"
 
 using namespace knet::tcp;
 namespace knet {
