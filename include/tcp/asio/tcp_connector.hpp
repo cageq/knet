@@ -149,7 +149,7 @@ namespace knet
 				}
 			}
 
-			void add_first(KNetHandler<T> *handler){
+			void push_front(KNetHandler<T> *handler){
 				if (handler)
 				{
 					auto beg = m.event_handler_chain.begin(); 
@@ -157,7 +157,7 @@ namespace knet
 				}
 			}
 			
-			void add_last(KNetHandler<T> *handler){
+			void push_back(KNetHandler<T> *handler){
 				if (handler)
 				{
 					m.event_handler_chain.push_back(handler);

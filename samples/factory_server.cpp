@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	MyFactory factory; 
 	dlog("start server");
 	TcpListener<TcpSession,MyFactory> listener(&factory);
-	int port = 8899;
+	int port = 8888;
 	listener.start(  port); 
 	//	listener->bind_event_handler( [](NetEvent evt, std::shared_ptr<TcpSession>) {
 	//			switch (evt)

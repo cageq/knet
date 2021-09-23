@@ -40,12 +40,12 @@ namespace knet {
 				 
 			}
 
-
+		private:
 			static TPtr create_helper(Params ... params)
 			{
 				return std::make_shared<T> (std::forward<Params>(params)...);				 
 			}
-		private:
+
 			std::tuple<Params ...> init_params; 
 		}; 
 

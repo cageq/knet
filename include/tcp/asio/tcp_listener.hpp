@@ -16,6 +16,7 @@ namespace knet
 	namespace tcp
 	{
 
+	 
 		using asio::ip::tcp;
 		template <class T, class Factory = KNetFactory<T>, class Worker = KNetWorker>
 			class TcpListener final : public KNetHandler<T>
@@ -159,7 +160,7 @@ namespace knet
 						m.event_handler_chain.push_back(handler);
 					}
 				}
-				void add_first(KNetHandler<T> *handler){
+				void push_front(KNetHandler<T> *handler){
 					if (handler)
 					{
 						auto beg = m.event_handler_chain.begin(); 
@@ -167,7 +168,7 @@ namespace knet
 					}
 				}
 
-				void add_last(KNetHandler<T> *handler){
+				void push_back(KNetHandler<T> *handler){
 					if (handler)
 					{
 						m.event_handler_chain.push_back(handler);
@@ -247,9 +248,9 @@ namespace knet
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 							if (!ec)
 							{
-							dlog("accept new connection ");
-							this->init_conn(worker, socket);
-							do_accept();
+								dlog("accept new connection ");
+								this->init_conn(worker, socket);
+								do_accept();
 							}
 							else
 							{
@@ -285,15 +286,14 @@ namespace knet
 
 				TPtr create_connection(SocketPtr sock, WorkerPtr worker)
 				{
+					TPtr  conn = nullptr; 
 					if (m.factory) {
-						auto conn = m.factory->create();
-						conn->init(sock, worker, this);
-						return conn;
+						conn = m.factory->create();						
 					} else {
-						auto conn = std::make_shared<T>(); 
-						conn->init(sock, worker, this);
-						return conn; 
+						conn = std::make_shared<T>(); 						
 					}
+					conn->init(sock, worker, this);
+					return conn; 
 				}
 
 				struct
