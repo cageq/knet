@@ -39,10 +39,7 @@ namespace knet
 					{					
 						m.factory = fac;
 						add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
-					}else {
-						m.factory = & m.default_factory; 
 					}
-
 					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 				}
 
@@ -54,7 +51,6 @@ namespace knet
 					}else {
 						m.listen_worker = lisWorker;
 					} 
-					m.factory = & m.default_factory; 
 					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 				}
 
@@ -228,16 +224,18 @@ namespace knet
 
 				void release(const TPtr &  conn)
 				{
-					asio::post(m.listen_worker->context(), [this, conn]() {
-							if (m.factory)
-							{
-							m.factory->release(conn);
-							}
-							});
+					if (m.factory) 
+					{
+						asio::post(m.listen_worker->context(), [this, conn]() {
+								if (m.factory)
+								{
+								m.factory->release(conn);
+								}
+								});
+					}
 				}
 				void do_accept()
 				{
-					// dlog("accept new connection ");
 					auto worker = this->get_worker();
 					if (!worker)
 					{
@@ -306,7 +304,6 @@ namespace knet
 					bool is_running = false;
 					void *ssl_context = nullptr;
 					FactoryPtr factory = nullptr;
-					Factory  default_factory; 
 					std::vector<KNetHandler<T> *> event_handler_chain;
 					WorkerPtr listen_worker;
 				} m;
