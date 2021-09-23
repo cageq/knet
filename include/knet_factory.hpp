@@ -18,13 +18,13 @@ namespace knet {
 			template <class ... Args> 
 			TPtr create(Args ... args ) {
 				auto session =  std::make_shared<T> (std::forward<Args>(args)...);			
-				on_create(session);
+				this->on_create(session);
 				return session;
 			} 
 		
 			TPtr create() {
 				auto session =  std::apply(&KNetFactory<T, Params...>::create_helper, init_params);
-				on_create(session);
+				this->on_create(session);
 				return session;
 			} 
 

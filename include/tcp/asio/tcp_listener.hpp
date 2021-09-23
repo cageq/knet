@@ -35,10 +35,12 @@ namespace knet
 						m.listen_worker = lisWorker;
 					}
 
-					m.factory = fac;
 					if (fac != nullptr)
 					{					
+						m.factory = fac;
 						add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
+					}else {
+						m.factory = & m.default_factory; 
 					}
 
 					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
@@ -52,7 +54,7 @@ namespace knet
 					}else {
 						m.listen_worker = lisWorker;
 					} 
-				 
+					m.factory = & m.default_factory; 
 					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
 				}
 
@@ -82,7 +84,7 @@ namespace knet
 						if (tcp_acceptor->is_open())
 						{
 							this->tcp_acceptor->set_option(asio::socket_base::reuse_address(true));
-							//	this->tcp_acceptor.set_option(asio::ip::tcp::no_delay(true));
+							//this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
 							this->tcp_acceptor->non_blocking(true);
 
 							asio::socket_base::send_buffer_size SNDBUF(m.options.send_buffer_size);
@@ -285,9 +287,15 @@ namespace knet
 
 				TPtr create_connection(SocketPtr sock, WorkerPtr worker)
 				{
-					auto conn = m.factory->create();
-					conn->init(sock, worker, this);
-					return conn;
+					if (m.factory) {
+						auto conn = m.factory->create();
+						conn->init(sock, worker, this);
+						return conn;
+					} else {
+						auto conn = std::make_shared<T>(); 
+						conn->init(sock, worker, this);
+						return conn; 
+					}
 				}
 
 				struct
@@ -298,6 +306,7 @@ namespace knet
 					bool is_running = false;
 					void *ssl_context = nullptr;
 					FactoryPtr factory = nullptr;
+					Factory  default_factory; 
 					std::vector<KNetHandler<T> *> event_handler_chain;
 					WorkerPtr listen_worker;
 				} m;
