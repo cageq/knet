@@ -36,7 +36,11 @@ namespace knet
 					 user_workers.emplace_back(worker);
 					 worker->start();
 				}
-				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
+				if (m.factory)
+				{
+					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
+				}
+				
 			}
 			virtual ~TcpConnector() {}
 

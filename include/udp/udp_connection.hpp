@@ -67,7 +67,7 @@ namespace knet {
 								//dlog("sent out thread id is {}", std::this_thread::get_id());
 							}
 							else {
-								dlog("sent message error : {}, {}", ec.value(), ec.message());
+								elog("sent message error : {}, {}", ec.value(), ec.message());
 							}
 						});
 
@@ -96,7 +96,7 @@ namespace knet {
 
 				if (!multiHost.empty()) {
 					// Create the socket so that multiple may be bound to the same address.
-					dlog("join multi address {}", multiHost);
+					//dlog("join multi address {}", multiHost);
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
 					udp_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 				}
@@ -115,7 +115,7 @@ namespace knet {
 								// }
 							}
 							else {
-								dlog("sent message error : {}, {}", ec.value(), ec.message());
+								elog("sent message error : {}, {}", ec.value(), ec.message());
 							}
 						});
 				}
@@ -154,7 +154,7 @@ namespace knet {
 
 			virtual bool handle_event(NetEvent evt)
 			{
-				dlog("handle event in connection {}", evt);
+				//dlog("handle event in connection {}", evt);
 				return true;
 			}
 
