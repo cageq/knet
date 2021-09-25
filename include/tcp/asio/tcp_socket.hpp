@@ -317,12 +317,13 @@ namespace knet {
 							dlog("close, already in closing status {}", m.status);
 							return;
 						}
-						m.status = SocketStatus::SOCKET_CLOSING;
+					
 						auto self = this->shared_from_this();
 						if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
 							do_async_write(); //try last write
 						}
 						asio::post(io_context, [this, self]() {
+								self->m.status = SocketStatus::SOCKET_CLOSING;
 								auto & conn = self->m.connection; 
 								if (conn) {
 									conn->process_event(EVT_DISCONNECT); 
