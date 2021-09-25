@@ -319,10 +319,12 @@ namespace knet {
 						}
 					
 						auto self = this->shared_from_this();
-						if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
-							do_async_write(); //try last write
-						}
+						
 						asio::post(io_context, [this, self]() {
+
+								if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
+									do_async_write(); //try last write
+								}
 								self->m.status = SocketStatus::SOCKET_CLOSING;
 								auto & conn = self->m.connection; 
 								if (conn) {
