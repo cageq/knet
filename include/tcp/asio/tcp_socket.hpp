@@ -96,7 +96,7 @@ namespace knet {
 										self->do_read();
 										}
 										else {
-										dlog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+										elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
 										do_close();
 										}
 										});
@@ -311,17 +311,13 @@ namespace knet {
 						return true; 
 					}
 
-					void close() { do_close(true); }
-					void do_close(bool force = false) {			 
+					void close() { 
+
 						if (m.status == SocketStatus::SOCKET_CLOSING || m.status == SocketStatus::SOCKET_CLOSED) {
-							dlog("already in closing status {}", m.status);
+							dlog("close, already in closing status {}", m.status);
 							return;
 						}
-
-						if (force) {
-							m.status = SocketStatus::SOCKET_CLOSING;
-						}
-
+						m.status = SocketStatus::SOCKET_CLOSING;
 						auto self = this->shared_from_this();
 						if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
 							do_async_write(); //try last write
@@ -329,26 +325,51 @@ namespace knet {
 						asio::post(io_context, [this, self]() {
 								auto & conn = self->m.connection; 
 								if (conn) {
-								conn->process_event(EVT_DISCONNECT);					
-								if (conn->need_reconnect()) {
-								self->m.status = SocketStatus::SOCKET_RECONNECT;
+									conn->process_event(EVT_DISCONNECT); 
+									self->m.status = SocketStatus::SOCKET_CLOSED;
+									if (tcp_sock.is_open()) {
+										tcp_sock.close();
+									}
+									conn->release();
+									conn.reset(); 
 								}else {
-								self->m.status = SocketStatus::SOCKET_CLOSED;
-								if (tcp_sock.is_open()) {
-								tcp_sock.close();
-								}
-								conn->release();
-								conn.reset();
-								}
-								}else {
-								self->m.status = SocketStatus::SOCKET_CLOSED;
-								if (tcp_sock.is_open()) {
-								tcp_sock.close();							
-								}
-
+									self->m.status = SocketStatus::SOCKET_CLOSED;
+									if (tcp_sock.is_open()) {
+										tcp_sock.close();							
+									} 
 								}
 								self->read_buffer_pos = 0;
 						});
+
+					}
+
+					void do_close( ) {			 
+						if (m.status == SocketStatus::SOCKET_CLOSING || m.status == SocketStatus::SOCKET_CLOSED) {
+							dlog("do close, already in closing status {}", m.status);
+							return;
+						}  
+						m.status = SocketStatus::SOCKET_CLOSING;   
+						auto & conn = m.connection; 
+						if (conn) {
+							conn->process_event(EVT_DISCONNECT);					
+							if (conn->need_reconnect()) {
+								m.status = SocketStatus::SOCKET_RECONNECT;
+							}else {
+								 m.status = SocketStatus::SOCKET_CLOSED;
+								if (tcp_sock.is_open()) {
+									tcp_sock.close();
+								}
+								conn->release();
+								conn.reset();
+							}
+						}else {
+							m.status = SocketStatus::SOCKET_CLOSED;
+							if (tcp_sock.is_open()) {
+								tcp_sock.close();							
+							} 
+						} 
+
+						read_buffer_pos = 0;
 					}
 
 					inline tcp::endpoint local_endpoint() {
