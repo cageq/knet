@@ -263,7 +263,7 @@ namespace knet {
 						if (pkgLen >  read_buffer_pos){
 							if (pkgLen > kReadBufferSize) {
 								elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
-								m.connection->close();
+								this->do_close(); 
 								return false;
 							}
 							//dlog("need more data to get one package"); 
@@ -295,7 +295,7 @@ namespace knet {
 
 									if (pkgLen > kReadBufferSize) {
 										elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
-										m.connection->close();
+										this->do_close(); 
 										return false; 
 									}
 

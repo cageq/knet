@@ -254,8 +254,8 @@ namespace knet {
 						if (!ec && bytes_recvd > 0) {
 
 							last_msg_time = std::chrono::steady_clock::now();
-							dlog("get message from {}:{}", sender_point.address().to_string(),
-								sender_point.port());
+							//dlog("get message from {}:{}", sender_point.address().to_string(),
+							//	sender_point.port());
 							recv_buffer[bytes_recvd] = 0;
 							auto pkgType = this->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
 							if (pkgType == PACKAGE_USER){
