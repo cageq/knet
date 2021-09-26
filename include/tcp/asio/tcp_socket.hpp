@@ -320,14 +320,14 @@ namespace knet {
 					
 						auto self = this->shared_from_this();
 						
-						asio::post(io_context, [this, self]() {
-
-								if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
-									do_async_write(); //try last write
-								}
+						asio::post(io_context, [this, self]() { 
+							
 								self->m.status = SocketStatus::SOCKET_CLOSING;
 								auto & conn = self->m.connection; 
 								if (conn) {
+									if (m.send_buffer.size() > 0 && !m.send_buffer.empty()) {
+										do_async_write(); //try last write
+									}
 									conn->process_event(EVT_DISCONNECT); 
 									self->m.status = SocketStatus::SOCKET_CLOSED;
 									if (tcp_sock.is_open()) {
