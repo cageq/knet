@@ -35,13 +35,15 @@ namespace knet
 			if (self_context)
 			{
 				io_context = nullptr;
+				self_context->stop();
+                self_context = nullptr;
+				
                 for (auto& thrd : work_threads) {
                     if (thrd.joinable()) {
                         thrd.join();
                     }
                 }
-                self_context->stop();
-                self_context = nullptr;
+                
 			}
 		}
 
@@ -96,7 +98,6 @@ namespace knet
 			if (!work_threads.empty()){
 				return work_threads[0].get_id(); 
 			}
-			assert(false); 
 			return std::thread::id(); 
 		}
 

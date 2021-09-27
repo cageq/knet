@@ -28,11 +28,10 @@ namespace knet
 				if (worker)
 				{
 					user_workers.emplace_back(worker);
-					// worker->start();
 				}
 				else
 				{
-					 worker = std::make_shared<Worker>();
+					 worker = std::make_shared<Worker>(nullptr , this );//use this as worker's owner
 					 user_workers.emplace_back(worker);
 					 worker->start();
 				}
@@ -75,6 +74,13 @@ namespace knet
 				{
 					elem.second->close();
 				}
+				
+				for(auto & worker: user_workers){
+					if (worker->get_user_data() == this){
+						worker->stop(); 
+					}
+				}			
+				user_workers.clear(); 
 			}
 
 			bool remove_connection(uint64_t cid)
