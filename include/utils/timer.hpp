@@ -33,9 +33,13 @@ namespace knet
 				
 			~Timer()
 			{ 
+				clear(); 
+			}
+
+			void clear(){
 				for (auto &item : timers)
 				{
-					stop_timer(item.first);
+					item.second->alive = false; 
 				}
 				timers.clear();
 			}
@@ -91,7 +95,7 @@ namespace knet
 
 			void stop_timer(uint64_t timerId)
 			{ 
-				asio::dispatch(context, [this, timerId]() {
+				asio::post(context, [this, timerId]() {
 					auto itr = timers.find(timerId);
 					if (itr != timers.end())
 					{
