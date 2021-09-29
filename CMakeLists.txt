@@ -22,6 +22,7 @@ elseif(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -D NDEBUG")
 endif()
 
+include_directories(opt/fmt-8.0.1/include) 
 add_subdirectory(opt/fmt-8.0.1 EXCLUDE_FROM_ALL) 
 
 ADD_DEFINITIONS(-DASIO_STANDALONE)
@@ -30,48 +31,48 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
 add_executable(tcpserver samples/tcpserver.cpp  )
-target_link_libraries(tcpserver fmt )
+#target_link_libraries(tcpserver fmt )
 
 add_executable(tcpclient samples/tcpclient.cpp)
-target_link_libraries(tcpclient fmt)
+#target_link_libraries(tcpclient fmt)
 
 add_executable(fserver  samples/factory_server.cpp)
-target_link_libraries(fserver fmt)
+#target_link_libraries(fserver fmt)
  
 
 add_executable(webserver samples/webserver.cpp   )
-target_link_libraries(webserver fmt  dl)
+#target_link_libraries(webserver fmt  dl)
 
 add_executable(webclient samples/webclient.cpp   )
-target_link_libraries(webclient fmt)
+#target_link_libraries(webclient fmt)
 
 add_executable(wsclient samples/wsclient.cpp    )
-target_link_libraries(wsclient fmt   )
+#target_link_libraries(wsclient fmt   )
 
 add_executable(wsserver samples/wsserver.cpp    )
-target_link_libraries(wsserver fmt )
+#target_link_libraries(wsserver fmt )
 
 
 add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
-target_link_libraries(kcpserver fmt )
+#target_link_libraries(kcpserver fmt )
 
 add_executable(kcpclient samples/kcpclient.cpp  kcp/ikcp.c)
-target_link_libraries(kcpclient fmt )
+#target_link_libraries(kcpclient fmt )
  
 add_executable(udpclient samples/udpclient.cpp  )
-target_link_libraries(udpclient fmt)
+#target_link_libraries(udpclient fmt)
 
 add_executable(udpserver samples/udpserver.cpp  )
-target_link_libraries(udpserver fmt)
+#target_link_libraries(udpserver fmt)
 
 add_executable(pipeserver samples/pipe_server.cpp  )
-target_link_libraries(pipeserver fmt)
+#target_link_libraries(pipeserver fmt)
 
 add_executable(pipeclient samples/pipe_client.cpp  )
-target_link_libraries(pipeclient fmt)
+#target_link_libraries(pipeclient fmt)
 
 add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  )
-target_link_libraries(unbindpipeclient fmt)
+#target_link_libraries(unbindpipeclient fmt)
 
 add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  )
-target_link_libraries(unbindpipeserver fmt)
+#target_link_libraries(unbindpipeserver fmt)

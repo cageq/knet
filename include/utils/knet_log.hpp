@@ -1,9 +1,11 @@
 #pragma once
 
 #include "utils/singleton.hpp"
+
+#define FMT_HEADER_ONLY 
 #include <fmt/format.h>
-#include <iostream>
 #include <fmt/chrono.h>
+#include <iostream>
 
 
 #define KNET_LOG_SWITCH 1
