@@ -60,7 +60,7 @@ namespace knet
 				// nothing to do
 				for (uint32_t i = 0; i < thrds; i++)
 				{
-					auto worker = std::make_shared<Worker>();
+					auto worker = std::make_shared<Worker>(nullptr , this );
 					user_workers.emplace_back(worker);
 					worker->start();
 				}

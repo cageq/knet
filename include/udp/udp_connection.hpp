@@ -150,6 +150,10 @@ namespace knet {
 				if (udp_socket && udp_socket->is_open()) {
 					udp_socket->close();
 				}
+				if (udp_socket){
+					udp_socket.reset(); 
+				}
+				
 			}
 
 			virtual bool handle_event(NetEvent evt)

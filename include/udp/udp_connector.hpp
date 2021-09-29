@@ -23,15 +23,14 @@ namespace knet
 		public:
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			using FactoryPtr = Factory*;
-
-	 
+			using FactoryPtr = Factory*; 
 
 			UdpConnector(FactoryPtr fac = nullptr, WorkerPtr w = nullptr) {
 				m.factory = fac;
 				m.worker = w;
-
-				add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory >::value>(), fac);
+				if (fac != nullptr ){
+					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory >::value>(), fac);
+				} 
 			}
 
 
@@ -40,7 +39,7 @@ namespace knet
 				m.factory = fac; 
 				if (m.worker == nullptr)
 				{
-					m.worker = std::make_shared<Worker>();
+					m.worker = std::make_shared<Worker>(nullptr , this );
 					m.worker->start();
 				}
 				return true;
@@ -72,7 +71,7 @@ namespace knet
 				
 				if (remoteAddr.is_multicast())
 				{
-					conn->connect(  remotePoint, localPort, localAddr);
+					conn->connect(remotePoint, localPort, localAddr);
 				}
 				else
 				{
@@ -90,7 +89,10 @@ namespace knet
 				return conn;
 			}
 			void stop() {
-				m.connections.clear();
+				m.connections.clear();  
+				if (m.worker && m.worker->get_user_data() == this){
+					m.worker->stop(); 
+				} 
 			}
 
 
@@ -107,7 +109,7 @@ namespace knet
 				}
 			}
 		private:
-				bool  invoke_data_chain(TPtr conn, const std::string& msg) {
+			bool invoke_data_chain(TPtr conn, const std::string& msg) {
 				bool ret = true;
 				for (auto handler : m.event_handler_chain) {
 					if (handler) {
