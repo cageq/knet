@@ -32,19 +32,7 @@ namespace knet
 
 		virtual ~KNetWorker()
 		{
-			if (self_context)
-			{
-				io_context = nullptr;
-				self_context->stop();
-                self_context = nullptr;
-				
-                for (auto& thrd : work_threads) {
-                    if (thrd.joinable()) {
-                        thrd.join();
-                    }
-                }
-                
-			}
+			 stop(); 
 		}
 
 		KNetWorker(KNetWorker&& rhs) = delete;
@@ -79,6 +67,7 @@ namespace knet
                     thrd.join();
                 }
 			}
+			work_threads.clear(); 
 		}
 
 		virtual void init() {}
