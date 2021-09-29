@@ -147,13 +147,12 @@ namespace knet {
 			bool pong() { return true; }
 			uint32_t cid = 0;
 			void close() {
-				if (udp_socket && udp_socket->is_open()) {
-					udp_socket->close();
-				}
-				if (udp_socket){
+				if (udp_socket ) {
+					if (udp_socket->is_open()){
+						udp_socket->close();
+					}
 					udp_socket.reset(); 
-				}
-				
+				}  
 			}
 
 			virtual bool handle_event(NetEvent evt)

@@ -89,6 +89,10 @@ namespace knet
 				return conn;
 			}
 			void stop() {
+				for(auto & item : m.connections)
+				{
+					item.second->close();
+				}
 				m.connections.clear();  
 				if (m.worker && m.worker->get_user_data() == this){
 					m.worker->stop(); 
