@@ -84,10 +84,7 @@ namespace knet
 
 		inline asio::io_context& context() { return *io_context; }
 		inline std::thread::id thread_id() const { 
-			if (!work_threads.empty()){
-				return work_threads[0].get_id(); 
-			}
-			return std::thread::id(); 
+			return main_thread_id; 
 		}
 
 		uint64_t start_timer(const knet::utils::Timer::TimerHandler& handler, uint64_t interval, bool bLoop = true)
@@ -106,7 +103,7 @@ namespace knet
 			std::call_once(init_flag, [&]() {
 				this->init();
 				});
-
+			main_thread_id = std::this_thread::get_id();
 			io_context->run();
 
 			std::call_once(deinit_flag, [&]() {
@@ -124,6 +121,7 @@ namespace knet
 		std::vector<std::thread> work_threads;
 
 		IOContextPtr io_context = nullptr;
+		std::thread::id main_thread_id;
 		IOContextPtr self_context = nullptr;
         std::unique_ptr<utils::Timer> event_timer;
 	};
