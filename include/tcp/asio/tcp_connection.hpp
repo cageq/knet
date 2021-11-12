@@ -51,7 +51,10 @@ namespace knet
 
 			// for passive connection 
 			template <class ... Args>
-			TcpConnection(Args ... args){ }
+			TcpConnection(Args ... args){ 
+				static uint64_t index = 1024;
+				cid = ++index; 
+			}
 		 
 
 			virtual ~TcpConnection()
@@ -69,9 +72,7 @@ namespace knet
 
 			void init( SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
-				static uint64_t index = 1024;
 				event_worker = worker;			 
-				cid = ++index; 
 				tcp_socket = sock;
 				tcp_socket->init(this->shared_from_this()); 
 				user_event_handler = evtHandler; 
