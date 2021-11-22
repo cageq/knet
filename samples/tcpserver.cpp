@@ -22,19 +22,16 @@ class TcpSession : public TcpConnection<TcpSession>{
 		}
 		virtual bool handle_event(knet::NetEvent evt) {
 
-			dlog("handle my tcp event {}", evt); 
+		//	dlog("handle my tcp event {}", evt); 
 
 			return true; 
 		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 		virtual bool handle_data(const std::string &msg ) {
-			dlog("handle data is {}", msg); 
-			  dlog("handle data length {} ", msg.length()  ); 			
 			//this->send(msg);
 			
-			std::string rst= "{\"code\":0, \"msg\":\"success\"}"; 
-			this->send(std::string_view(rst)); 
+            this->send(msg); 
 			return true; 		
 		}
 };
