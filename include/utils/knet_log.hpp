@@ -21,6 +21,7 @@
 #if KNET_LOG_SWITCH 
 #if KNET_LOG_SPDLOG 
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/bin_to_hex.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
