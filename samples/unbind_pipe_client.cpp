@@ -19,7 +19,7 @@ class MyChannel : public PipeSession{
 			if (evt == knet::NetEvent::EVT_CONNECT){
 
 				std::string testMsg = "hello world from client";
-				this->transfer(testMsg); 
+				this->msend(testMsg); 
 			}
 			return true; 
 			
@@ -28,7 +28,7 @@ class MyChannel : public PipeSession{
 			dlog("---------------{}----------------", msg.size()); 
 			dlog("{}",msg); 
 			dlog("---------------------------------"); 
-//			this->transfer(std::string(msg.data(), msg.length())); 
+//			this->msend(std::string(msg.data(), msg.length())); 
 //
 			return msg.size(); 
 		} 

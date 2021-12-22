@@ -30,7 +30,6 @@ public:
 	virtual bool handle_data(const std::string& msg)
 	{
         TestMsg * tMsg = (TestMsg*) msg.c_str(); 
-
         TestMsg recvMsg; 
         gettimeofday(&recvMsg.time,0); 
         this->send((const char *)&recvMsg, sizeof(TestMsg) );

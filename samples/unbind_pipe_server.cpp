@@ -16,7 +16,7 @@ class MyChannel : public PipeSession{
 			dlog("{}",msg); 
 			dlog("---------------------------------"); 
 
-			//			this->transfer(std::string(msg.data(), msg.length())); 
+			//			this->msend(std::string(msg.data(), msg.length())); 
 			//
 			return msg.size(); 
 		} 

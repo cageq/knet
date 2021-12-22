@@ -30,7 +30,7 @@ namespace knet
 				{
 					if (!conn->is_passive())
 					{
-						send_shakehand(conn, conn->get_pipeid());
+						conn->send_shakehand( conn->get_pipeid());
 					}
 				}
 				break;
@@ -63,7 +63,7 @@ namespace knet
 					wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
-				dlog("pipe message type {}", msg->type);
+				//dlog("pipe message type {}", msg->type);
 				if (msg->type == PIPE_MSG_SHAKE_HAND)
 				{
 					dlog("handle pipe shake hande message ");
@@ -80,7 +80,7 @@ namespace knet
 					dlog("handle pipe heartbeat message"); 
 					if (!conn->is_passive())
 					{
-						send_heartbeat(conn, ""); 
+						conn->send_heartbeat(); 
 					}					
 					return true; 
 				}
@@ -88,16 +88,15 @@ namespace knet
 				auto session = conn->get_session();
 				if (session)
 				{
-					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length), msg->data);
+					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->length), msg->data);
 				}
 				else
 				{
-
 					if (conn->is_passive())
 					{
 						wlog("connection has no session, send shakehand challenge");
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND); //challenge client to send shakehand again
-						conn->msend(std::string((const char *)&shakeMsg, sizeof(PipeMsgHead)));
+						conn->msend(shakeMsg);
 					}
 				}
 				return true;
@@ -115,14 +114,13 @@ namespace knet
 				{
 					std::string pipeId = std::string((const char *)msg + sizeof(PipeMsgHead), msg->length);
 					dlog("get handshake from client,  pipeid is {}", pipeId);
-
 					auto pipe = find_bind_pipe(pipeId);
 					if (pipe)
 					{
 						pipe->bind(conn);
 						ilog("bind pipe {} success", pipeId);
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
-						conn->msend(std::string((const char *)&shakeMsg, sizeof(PipeMsgHead)), pipeId);
+						conn->msend(shakeMsg, pipeId);
 						pipe->handle_event(NetEvent::EVT_CONNECT);
 						pipe->on_ready(); 
 					}
@@ -153,7 +151,7 @@ namespace knet
 					if (session)
 					{
 						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
-						conn->msend(std::string((const char *)&shakeMsg, sizeof(PipeMsgHead)), pipeId);
+						conn->msend(shakeMsg, pipeId);
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
 				}
@@ -181,7 +179,6 @@ namespace knet
 						{
 							session->bind(conn);
 							session->update_pipeid(pipeId);
-
 							dlog("rebind pipe session success, {}",pipeId);		
 							add_bind_pipe(pipeId, session);
 							remove_unbind_pipe(conn->get_cid());
@@ -197,17 +194,11 @@ namespace knet
 				}
 				else
 				{
-					send_shakehand(conn, conn->get_pipeid());
+					conn->send_shakehand(conn->get_pipeid());
 					wlog("handshake from server is empty, resend client shakehand {}", conn->get_cid());
 				}
 			}
 
-			int32_t send_heartbeat(TPtr conn, const std::string &msg)
-			{
-				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());
-			 
-				return conn->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);		  
-			}
 
 
 			void add_unbind_pipe(uint64_t cid, PipeSessionPtr pipe)
@@ -215,6 +206,7 @@ namespace knet
 				std::lock_guard<std::mutex> guard(unbind_mutex);
 				unbind_pipes[cid] = pipe;
 			}
+
 			PipeSessionPtr find_unbind_pipe(uint64_t cid)
 			{
 				std::lock_guard<std::mutex> guard(unbind_mutex);
@@ -252,20 +244,7 @@ namespace knet
 				std::lock_guard<std::mutex> guard(bind_mutex);
 				return bind_pipes.erase(pipeId) > 0;
 			}
-
-			void send_shakehand(TPtr conn, const std::string &pipeId)
-			{
-
-				dlog("shakehande request pipe id {}  ", pipeId);
-				PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
-				conn->msend(std::string((const char *)&shakeMsg, sizeof(PipeMsgHead)), pipeId);
-
-				// if (!pipeId.empty()) {
-
-				// conn->send(shakeMsg.begin(), shakeMsg.length());
-				// }
-			}
-
+ 
 			void broadcast(const char *pData, uint32_t len)
 			{
 				std::lock_guard<std::mutex> guard(bind_mutex);
@@ -273,7 +252,7 @@ namespace knet
 				{
 					if (item.second)
 					{
-						item.second->transfer(pData, len);
+						item.second->msend(std::string_view(pData, len));
 					}
 				}
 
@@ -340,7 +319,6 @@ namespace knet
 			}
 
 			inline PipeMode get_mode()const  { return pipe_mode; }
-
 		private:
 			PipeMode pipe_mode;
 			std::mutex bind_mutex;

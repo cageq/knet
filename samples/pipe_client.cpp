@@ -18,8 +18,7 @@ class MyChannel : public PipeSession{
 			dlog("outband data is {}", obdata); 
 			dlog("{}",msg); 
 			dlog("---------------------------------"); 
-//			this->transfer(std::string(msg.data(), msg.length())); 
-//
+ 
 			return msg.size(); 
 		} 
 }; 

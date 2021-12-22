@@ -160,7 +160,9 @@ namespace knet {
 						int32_t msend(const P& first, const Args&... rest) {
 							if (tcp_sock.is_open()) {
 								if (!is_empty(first) ) {
+									m.mutex.lock(); 
 									this->mpush(first, rest...);					 
+									m.mutex.unlock(); 
 								}
 								return 0;
 							}
@@ -168,28 +170,27 @@ namespace knet {
 						}
 
 					template <typename P >  
-						inline void write_data( const P & data,std::true_type ){
-							m.send_buffer.append(std::string((const char*)&data, sizeof(P)));
+						inline void write_data( const P & data  ){
+							m.send_buffer.append(std::string_view((const char*)&data, sizeof(P)));
 						} 
+ 
 
-					template <typename P >  
-						inline void write_data( const P &  data, std::false_type){
-							m.send_buffer.append(data); 
-						}
-
-					inline void write_data(const std::string_view &  data, std::false_type){
+					inline void write_data(const std::string_view &  data ){
 						m.send_buffer.append(data ); 
 					}
 
-					inline void write_data(const std::string &  data, std::false_type){
+					inline void write_data(const std::string &  data ){
 						m.send_buffer.append(data ); 
 					}
+
+					inline void write_data(const char* data ){
+						m.send_buffer.append(std::string(data) ); 
+					}
+			
 
 					template <typename F, typename ... Args>
-						void mpush(const F &  data, Args... rest) {  
-							m.mutex.lock(); 
-							this->write_data<F>(data, std::is_integral<F> () );  
-							m.mutex.unlock(); 
+						void mpush(const F &  data, Args... rest) { 					
+							this->write_data(data  );  					
 							mpush(rest...);
 						}
 
@@ -198,7 +199,7 @@ namespace knet {
 						asio::post(io_context, [this, self]() {
 								if (tcp_sock.is_open()) {
 								if (m.cache_buffer.empty()) {
-								do_async_write();
+									do_async_write();
 								}
 								}
 								});

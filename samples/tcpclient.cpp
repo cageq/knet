@@ -14,15 +14,15 @@ public:
 
 	}
 	virtual int32_t handle_package(const char* data, uint32_t len) {
-//		dlog("received package length is {}", len);
+		dlog("received package length is {}", len);
 		return len;
 	}
 
 	virtual bool handle_data(const std::string& msg)
 	{
 
-//		dlog("received data   {} ", msg );
-//		std::string mymsg("hello world");
+		dlog("received data   {} ", msg );
+		std::string mymsg("hello world");
 		//this->send(mymsg);
 
 		return true;

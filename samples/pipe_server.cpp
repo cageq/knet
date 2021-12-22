@@ -18,7 +18,7 @@ class MyChannel : public PipeSession{
 			
 			dlog("---------------------------------"); 
 
-			//			this->transfer(std::string(msg.data(), msg.length())); 
+			//			this->msend(std::string(msg.data(), msg.length())); 
 			//
 			return msg.size(); 
 		} 
@@ -45,8 +45,7 @@ int main(int argc, char * argv[]){
  
 		std::string msg = fmt::format("msg from server {}" , obid++); 
 		//mySession->transfer(pMsg, strlen(pMsg)); 
-		
-//		mySession->send(obid , msg ); 
+		mySession->send( msg ,obid); 
 		//spipe.broadcast("message from serever"); 
 	}; 
 

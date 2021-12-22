@@ -29,74 +29,28 @@ namespace knet
 
 			virtual ~PipeSession() {}
 			virtual bool handle_event(NetEvent evt)
-			{
-				dlog("handle net event {}", evt);
+			{				
 				return true;
 			}
-			virtual int32_t handle_message(const std::string &msg, uint64_t obdata = 0)
-			{
-				dlog("handle pipe message : {}", msg);
+			virtual int32_t handle_message(const std::string_view &msg, uint64_t obdata = 0)
+			{				 
 				return 0;
-			}
+			} 
 
-			int32_t transfer(const std::string &msg)
-			{
-				if (is_ready())
-				{
-					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
-					dlog("transfer data to pipe {} , length {} type {}", m.pipeid, msg.length(), head.type);
-					//dlog("send head length {}, type is {}", head.length, head.type);
-					return connection->msend(
-						std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
-				}
-				else
-				{
-					wlog("pipe has no ready connection {}", m.pipeid);
-				}
-				return -1;
-				
-			}
-
-			int32_t transfer(const char *pData, uint32_t len)
-			{
-				if (is_ready())
-				{
-					PipeMsgHead head(PIPE_MSG_DATA, len);
-					dlog("transfer data to pipe {}, length {} type {}", m.pipeid, len, head.type);
-					//dlog("send head length {}, type is {}", head.length, head.type);
-					return connection->msend(
-						std::string((const char *)&head, sizeof(PipeMsgHead)), std::string(pData, len));
-				}
-				else
-				{
-					wlog("pipe has no ready connection {}", m.pipeid);
-				}
-				return -1;
-			}
-
-			int32_t send(uint64_t obdata, const std::string &msg)
+			int32_t send(const std::string &msg, uint64_t obdata = 0 )
 			{
 				if (is_ready())
 				{
 					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
 					head.data = obdata;
-					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
+					return connection->msend(head, msg);
 				}
 				return -1;
 			}
 
-			int32_t send(const std::string &msg)
-			{
-				if (is_ready())
-				{
-					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
-					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
-				}
-				return -1;
-			}
 			bool is_ready()
 			{
-				if (ready_flag.load(std::memory_order_acquire) && connection)
+				if (ready_flag  && connection)
 				{
 					return connection->is_connected();
 				}else {
@@ -105,52 +59,34 @@ namespace knet
 				return false;
 			}
 
-			int32_t send(const char *pData, uint32_t len)
+			int32_t send(const std::string_view & msg )
 			{
 				if (is_ready())
 				{
-					PipeMsgHead head(PIPE_MSG_DATA, len);
-					return connection->msend(
-						std::string((const char *)&head, sizeof(PipeMsgHead)), std::string(pData, len));
+					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
+					return connection->msend(head, msg);
 				}
 				return -1;
 			}
-
-			int32_t send_heartbeat(const std::string &msg)
-			{
-				PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());
-				if (is_ready())
-				{
-					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), msg);
-				}
-				return -1;
-			}
+ 
 
 			template <class P, class... Args>
 			int32_t msend_with_obdata(uint64_t obdata, const P &first, const Args &...rest)
 			{
 				if (is_ready())
 				{
-					uint32_t bodyLen = pipe_data_length(first, rest...);
-					// dlog("msend body length is {}", bodyLen);
+					uint32_t bodyLen = pipe_data_length(first, rest...);					
 					PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
 					head.data = obdata;
-					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), first, rest...);
+					return connection->msend(head, first, rest...);
 				}
 				return -1;
 			}
 
 			template <class P, class... Args>
-			int32_t msend(const P &first, const Args &...rest)
+			inline int32_t msend(const P &first, const Args &...rest)
 			{
-				if (is_ready())
-				{
-					uint32_t bodyLen = pipe_data_length(first, rest...);
-					// dlog("msend body length is {}", bodyLen);
-					PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
-					return connection->msend(std::string((const char *)&head, sizeof(PipeMsgHead)), first, rest...);
-				}
-				return -1;
+				return msend_with_obdata(0,first ,  rest ...); 			
 			}
 
 			void bind(const PipeConnectionPtr &  conn)
@@ -158,9 +94,9 @@ namespace knet
 				this->connection = conn;
 				conn->pipeid = m.pipeid;
 				conn->session = this->shared_from_this();
-				ready_flag  = true;
-				 
+				ready_flag  = true;				 
 			}
+
 			void unbind()
 			{ 
 				ready_flag = false; 
@@ -207,17 +143,15 @@ namespace knet
 				if (connection && connection->is_connected() ){
 					if (connection->is_passive())
 					{
-						m.hb_timerid = connection->start_timer([this](){
-
+						m.hb_timerid = connection->start_timer([this](){ 
 							if (connection->is_connected()){
-								send_heartbeat(m.pipeid); 
+								connection->send_heartbeat(m.pipeid); 
 								return true; 
 							} 
 							return false; 
 						}, 3000000); 	
 					}
-				}
-				
+				}				
 			}
 		private:
 			struct
