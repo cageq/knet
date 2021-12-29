@@ -110,6 +110,7 @@ namespace knet {
             template <class P, class... Args>
                 int32_t msend(const P &first, const Args &...rest)
                 {
+                    mutex.lock(); 
                     send_buffer.clear(); 
                     return mpush(first, rest...);
                 }
@@ -123,6 +124,8 @@ namespace knet {
 
             int32_t mpush()
             {
+
+                mutex.unlock(); 
 				if (!udp_socket) { 
                     return -1; 
                 }

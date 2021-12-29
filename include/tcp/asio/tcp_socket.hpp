@@ -162,7 +162,6 @@ namespace knet {
 								if (!is_empty(first) ) {
 									m.mutex.lock(); 
 									this->mpush(first, rest...);					 
-									m.mutex.unlock(); 
 								}
 								return 0;
 							}
@@ -195,6 +194,7 @@ namespace knet {
 						}
 
 					void mpush() {
+                        m.mutex.unlock(); 
 						auto self = this->shared_from_this();
 						asio::post(io_context, [this, self]() {
 								if (tcp_sock.is_open()) {
