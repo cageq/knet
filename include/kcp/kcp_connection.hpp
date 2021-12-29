@@ -118,7 +118,18 @@ public:
 
     int32_t mpush()
     {
-        return ikcp_send(kcp, send_buffer.c_str(), send_buffer.length());
+        if (status == CONN_KCP_READY)
+        {
+            if (kcp)
+            {
+                return ikcp_send(kcp, send_buffer.c_str(), send_buffer.length());
+            }
+        }
+        else
+        {
+            this->shakehand_request();
+        }
+        return -1;
     }
 
 
