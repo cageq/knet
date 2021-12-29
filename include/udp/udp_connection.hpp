@@ -56,42 +56,12 @@ namespace knet {
 
 
 			int32_t send(const char* data, std::size_t length) {
-				if (udp_socket) { 
-
-					auto buffer = std::make_shared<std::string>(data, length);
-					udp_socket->async_send_to(asio::buffer(*buffer), remote_point, [ buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
-							if (!ec) {
-								// if (event_handler) {
-								// 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
-								// }
-								//dlog("sent out thread id is {}", std::this_thread::get_id());
-							}
-							else {
-								elog("sent message error : {}, {}", ec.value(), ec.message());
-							}
-						});
-
-					// udp_socket->async_send_to(asio::buffer(data, length), remote_point,
-					// 	[this](std::error_code ec, std::size_t len /*bytes_sent*/) {
-					// 		if (!ec) {
-					// 			if (event_handler) {
-					// 				event_handler(this->shared_from_this(), EVT_SEND, {nullptr, len});
-					// 			}
-					// 			dlog("sent out thread id is {}", std::this_thread::get_id());
-					// 		} else {
-					// 			dlog("sent message error : {}, {}", ec.value(), ec.message());
-					// 		}
-					// 	});
-
-					return 0;
-				}
-				else {
-
-					elog("no valid socket");
-				}
-				return -1;
+                return msend(std::string(data, length)); 
 			}
 
+			int32_t send(const std::string& msg) {
+                return msend(msg); 
+            }
 			bool join_group(const std::string& multiHost) {
 
 				if (!multiHost.empty()) {
@@ -103,25 +73,6 @@ namespace knet {
 				return true;
 			}
 
-			int32_t send(const std::string& msg) {
-				
-				if (udp_socket) {
-					auto buffer = std::make_shared<std::string>(std::move(msg));
-					udp_socket->async_send_to(asio::buffer(*buffer), remote_point,
-						[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
-							if (!ec) {
-								// if (event_handler) {
-								// 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
-								// }
-							}
-							else {
-								elog("sent message error : {}, {}", ec.value(), ec.message());
-							}
-						});
-				}
-
-				return 0;
-			}
 
 			int32_t sync_send(const std::string& msg) {
 				if (udp_socket) {
@@ -134,7 +85,77 @@ namespace knet {
 				return -1;
 			}
 
-			
+
+            template <typename P>
+                inline void write_data(const P &data)
+                {
+                    send_buffer.append(std::string_view((const char *)&data, sizeof(P)));
+                }
+
+            inline void write_data(const std::string_view &data)
+            {
+                send_buffer.append(data);
+            }
+
+            inline void write_data(const std::string &data)
+            {
+                send_buffer.append(data);
+            }
+
+            inline void write_data(const char *data)
+            {
+                send_buffer.append(std::string(data));
+            }
+
+            template <class P, class... Args>
+                int32_t msend(const P &first, const Args &...rest)
+                {
+                    send_buffer.clear(); 
+                    return mpush(first, rest...);
+                }
+
+            template <typename F, typename... Args>
+                int32_t mpush(const F &data, Args... rest)
+                {
+                    this->write_data(data);
+                    return mpush(rest...);
+                }
+
+            int32_t mpush()
+            {
+				if (!udp_socket) { 
+                    return -1; 
+                }
+
+                if (cache_buffer.empty())
+                {
+                    if (mutex.try_lock()) {
+                        send_buffer.swap(cache_buffer);
+                        mutex.unlock();
+                    }
+                }
+
+                if (!cache_buffer.empty())
+                {
+                    udp_socket->async_send_to(asio::buffer(cache_buffer), remote_point, [ this](std::error_code ec, std::size_t len /*bytes_sent*/) {
+                            cache_buffer.clear(); 
+                            if (!ec) {
+                            // if (event_handler) {
+                            // 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
+                            // }
+                            //dlog("sent out thread id is {}", std::this_thread::get_id());
+                            }
+                            else {
+                            elog("sent message error : {}, {}", ec.value(), ec.message());
+                            }
+                            });
+
+                }
+
+                return cache_buffer.length() ; 
+            }
+
+
 			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
 		
 			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
@@ -288,6 +309,9 @@ namespace knet {
 
 			
 		private:
+            std::mutex mutex;
+            std::string send_buffer;
+            std::string cache_buffer;
 			UdpSocketPtr udp_socket;
 			std::chrono::steady_clock::time_point last_msg_time;
 
