@@ -198,6 +198,8 @@ namespace knet {
 					void mpush() {
                         write_mutex.unlock(); 
 						auto self = this->shared_from_this();
+
+						//so cache_buffer is safe in network loop thread only
 						asio::post(io_context, [this, self]() {
 								if (tcp_sock.is_open()) {
 									if (cache_buffer.empty())
@@ -208,6 +210,19 @@ namespace knet {
 										} 
 									}   
 							 		if (!cache_buffer.empty()){
+										//One or more buffers containing the data to be written. Although the buffers object may be copied as necessary, 
+										//ownership of the underlying memory blocks is retained by the caller, 
+										//which must guarantee that they remain valid until the handler is called.
+										// asio::async_write(tcp_sock, asio::const_buffer(cache_buffer.data(), cache_buffer.length()), [this](std::error_code ec, std::size_t length) {
+										//		if (!ec){
+										//      	cache_buffer.clear(); 
+										//		}else 
+										// 		{
+										// 			//elog("send in loop error : {} , {}", ec, ec.message());
+										// 			this->do_close();
+										// 		}
+										// 		});
+
 										 //Write all of the supplied data to a stream before returning.
 										 asio::write(self->tcp_sock, asio::const_buffer(cache_buffer.data(), cache_buffer.size()));
 										 cache_buffer.clear(); 
