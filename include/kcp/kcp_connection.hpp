@@ -81,48 +81,48 @@ public:
  
 
 
-    template <typename P>
-        inline void write_data(const P &data)
-        {
-            send_buffer.append(std::string_view((const char *)&data, sizeof(P)));
-        }
+   	template <typename P>
+	inline void write_data(std::string &sndBuf, const P &data)
+	{
+		sndBuf.append(std::string_view((const char *)&data, sizeof(P)));
+	}
 
-    inline void write_data(const std::string_view &data)
-    {
-        send_buffer.append(data);
-    }
+	inline void write_data(std::string &sndBuf, const std::string_view &data)
+	{
+		sndBuf.append(data);
+	}
 
-    inline void write_data(const std::string &data)
-    {
-        send_buffer.append(data);
-    }
+	inline void write_data(std::string &sndBuf, const std::string &data)
+	{
+		sndBuf.append(data);
+	}
 
-    inline void write_data(const char *data)
-    {
-        send_buffer.append(std::string(data));
-    }
+	inline void write_data(std::string &sndBuf, const char *data)
+	{
+		sndBuf.append(std::string(data));
+	}
 
     template <class P, class... Args>
         int32_t msend(const P &first, const Args &...rest)
         {
-            send_buffer.clear(); 
-            return mpush(first, rest...);
+            std::string sendBuffer; // calc all params size 
+            return mpush(sendBuffer, first, rest...);
         }
 
     template <typename F, typename... Args>
-        int32_t mpush(const F &data, Args... rest)
+        int32_t mpush(std::string & sndBuf, const F &data, Args... rest)
         {
-            this->write_data(data);
-            return mpush(rest...);
+            this->write_data(sndBuf, data);
+            return mpush(sndBuf, rest...);
         }
 
-    int32_t mpush()
+    int32_t mpush(std::string  &sndBuf)
     {
         if (status == CONN_KCP_READY)
         {
             if (kcp)
             {
-                return ikcp_send(kcp, send_buffer.c_str(), send_buffer.length());
+                return ikcp_send(kcp, sndBuf.data(), sndBuf.length());
             }
         }
         else
@@ -564,7 +564,7 @@ private:
 	ikcpcb* kcp = nullptr;
 	uint64_t kcp_timerid = 0;
 	uint64_t heartbeat_timerid = 0;
-    std::string send_buffer; 
+    
 };
 
 } // namespace udp

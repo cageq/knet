@@ -12,26 +12,37 @@
 #include "utils/timer.hpp"
 #include "knet_worker.hpp"
 
-
 using namespace knet::utils;
 using namespace std::chrono;
 
-
-namespace knet {
-	namespace udp {
+namespace knet
+{
+	namespace udp
+	{
 		using asio::ip::udp;
 
 		using UdpSocketPtr = std::shared_ptr<udp::socket>;
 
-		inline std::string addrstr(udp::endpoint pt) {
+		using SendBufferPtr = std::shared_ptr<std::string>;
+
+		inline std::string addrstr(udp::endpoint pt)
+		{
 			return pt.address().to_string() + ":" + std::to_string(pt.port());
 		}
 
 		template <typename T>
-		class UdpConnection : public std::enable_shared_from_this<T> {
+		class UdpConnection : public std::enable_shared_from_this<T>
+		{
 		public:
-			enum ConnectionStatus { CONN_IDLE, CONN_OPEN, CONN_CLOSING, CONN_CLOSED };
-			enum PackageType {
+			enum ConnectionStatus
+			{
+				CONN_IDLE,
+				CONN_OPEN,
+				CONN_CLOSING,
+				CONN_CLOSED
+			};
+			enum PackageType
+			{
 				PACKAGE_PING,
 				PACKAGE_PONG,
 				PACKAGE_USER,
@@ -40,31 +51,33 @@ namespace knet {
 			UdpConnection() { m.status = CONN_IDLE; }
 
 			using TPtr = std::shared_ptr<T>;
-			using EventHandler = std::function<bool (knet::NetEvent)>;		
-			using DataHandler = std::function<bool(const std::string & )>;	
+			using EventHandler = std::function<bool(knet::NetEvent)>;
+			using DataHandler = std::function<bool(const std::string &)>;
 
-
-			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T>* evtHandler = nullptr)
+			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T> *evtHandler = nullptr)
 			{
 				udp_socket = socket;
-				static uint64_t index = 1024;				
+				static uint64_t index = 1024;
 				cid = ++index;
 				m.event_worker = worker;
 				m.user_event_handler = evtHandler;
 				handle_event(EVT_CREATE);
 			}
 
-
-			int32_t send(const char* data, std::size_t length) {
-                return msend(std::string(data, length)); 
+			int32_t send(const char *data, std::size_t length)
+			{
+				return msend(std::string(data, length));
 			}
 
-			int32_t send(const std::string& msg) {
-                return msend(msg); 
-            }
-			bool join_group(const std::string& multiHost) {
+			int32_t send(const std::string &msg)
+			{
+				return msend(msg);
+			}
+			bool join_group(const std::string &multiHost)
+			{
 
-				if (!multiHost.empty()) {
+				if (!multiHost.empty())
+				{
 					// Create the socket so that multiple may be bound to the same address.
 					//dlog("join multi address {}", multiHost);
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
@@ -73,122 +86,122 @@ namespace knet {
 				return true;
 			}
 
-
-			int32_t sync_send(const std::string& msg) {
-				if (udp_socket) {
+			int32_t sync_send(const std::string &msg)
+			{
+				if (udp_socket)
+				{
 					asio::error_code ec;
 					auto ret = udp_socket->send_to(asio::buffer(msg), remote_point, 0, ec);
-					if (!ec) {
+					if (!ec)
+					{
 						return ret;
 					}
 				}
 				return -1;
 			}
 
-
-            template <typename P>
-                inline void write_data(const P &data)
-                {
-                    send_buffer.append(std::string_view((const char *)&data, sizeof(P)));
-                }
-
-            inline void write_data(const std::string_view &data)
-            {
-                send_buffer.append(data);
-            }
-
-            inline void write_data(const std::string &data)
-            {
-                send_buffer.append(data);
-            }
-
-            inline void write_data(const char *data)
-            {
-                send_buffer.append(std::string(data));
-            }
-
-            template <class P, class... Args>
-                int32_t msend(const P &first, const Args &...rest)
-                {
-                    mutex.lock(); 
-                    send_buffer.clear(); 
-                    return mpush(first, rest...);
-                }
-
-            template <typename F, typename... Args>
-                int32_t mpush(const F &data, Args... rest)
-                {
-                    this->write_data(data);
-                    return mpush(rest...);
-                }
-
-            int32_t mpush()
-            {
-
-                mutex.unlock(); 
-				if (!udp_socket) { 
-                    return -1; 
-                }
-
-                if (cache_buffer.empty())
-                {
-                    if (mutex.try_lock()) {
-                        send_buffer.swap(cache_buffer);
-                        mutex.unlock();
-                    }
-                }
-
-                if (!cache_buffer.empty())
-                {
-                    udp_socket->async_send_to(asio::buffer(cache_buffer), remote_point, [ this](std::error_code ec, std::size_t len /*bytes_sent*/) {
-                            cache_buffer.clear(); 
-                            if (!ec) {
-                            // if (event_handler) {
-                            // 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
-                            // }
-                            //dlog("sent out thread id is {}", std::this_thread::get_id());
-                            }
-                            else {
-                            elog("sent message error : {}, {}", ec.value(), ec.message());
-                            }
-                            });
-
-                }
-
-                return cache_buffer.length() ; 
-            }
-
-
-			inline void bind_data_handler(DataHandler handler) { data_handler = handler; }
-		
-			inline void bind_event_handler(EventHandler handler) { event_handler = handler; }
-			
-			virtual PackageType handle_package(const std::string& msg) {		
-				return PACKAGE_USER;
+			template <typename P>
+			inline void write_data(SendBufferPtr &sndBuf, const P &data)
+			{
+				sndBuf->append(std::string_view((const char *)&data, sizeof(P)));
 			}
 
-			bool ping() { return true; }
-			bool pong() { return true; }
+			inline void write_data(SendBufferPtr &sndBuf, const std::string_view &data)
+			{
+				sndBuf->append(data);
+			}
+
+			inline void write_data(SendBufferPtr &sndBuf, const std::string &data)
+			{
+				sndBuf->append(data);
+			}
+
+			inline void write_data(SendBufferPtr &sndBuf, const char *data)
+			{
+				sndBuf->append(std::string(data));
+			}
+
+			template <class P, class... Args>
+			int32_t msend(const P &first, const Args &...rest)
+			{
+				auto sendBuffer = std::make_shared<std::string>();//calc all params size 
+				return mpush(sendBuffer, first, rest...);
+			}
+
+			template <typename F, typename... Args>
+			int32_t mpush(SendBufferPtr &sndBuf, const F &data, Args... rest)
+			{
+				this->write_data(sndBuf, data);
+				return mpush(sndBuf, rest...);
+			}
+
+			int32_t mpush(SendBufferPtr &sndBuf)
+			{
+
+				if (!udp_socket)
+				{
+					return -1;
+				}
+
+				if (!sndBuf->empty())
+				{
+					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), remote_point, [ this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/) {
+						if (!ec)
+						{
+							// if (event_handler) {
+							// 	event_handler(this->shared_from_this(), EVT_SEND, { nullptr, len });
+							// }
+							//dlog("sent out thread id is {}", std::this_thread::get_id());
+						}
+						else
+						{
+							elog("sent message error : {}, {}", ec.value(), ec.message());
+						}
+
+				
+					}); 
+					return sndBuf->length(); 
+				}
+				return 0; 				
+            }
+
+
+			inline void bind_data_handler(DataHandler handler) {
+						data_handler = handler; }
+		
+			inline void bind_event_handler(EventHandler handler) {
+						event_handler = handler; }
+			
+			virtual PackageType handle_package(const std::string& msg) {
+						return PACKAGE_USER;
+			}
+
+			bool ping() {
+						return true; }
+			bool pong() {
+						return true; }
 			uint32_t cid = 0;
 			void close() {
-				if (udp_socket ) {
-					if (udp_socket->is_open()){
-						udp_socket->close();
-					}
-					udp_socket.reset(); 
-				}  
+						if (udp_socket)
+						{
+							if (udp_socket->is_open())
+							{
+								udp_socket->close();
+							}
+							udp_socket.reset();
+						}  
 			}
 
 			virtual bool handle_event(NetEvent evt)
 			{
-				//dlog("handle event in connection {}", evt);
-				return true;
+						//dlog("handle event in connection {}", evt);
+						return true;
 			}
 
 
 			virtual bool handle_data(const std::string& msg)
 			{
-				return true;
+						return true;
 			}
 
 
@@ -196,38 +209,40 @@ namespace knet {
 
 
 			bool process_data(const std::string &msg ){
-				bool ret = true; 
-				if (data_handler)
-				{
-					ret=  data_handler(msg);
-				}
+						bool ret = true;
+						if (data_handler)
+						{
+							ret = data_handler(msg);
+						}
 
-				if (ret && m.user_event_handler)
-				{
-					ret = m.user_event_handler->handle_data(this->shared_from_this(), msg );
-				}		
-				if (ret) {
-					ret = handle_data(msg);
-				}
-		 		return ret; 				
+						if (ret && m.user_event_handler)
+						{
+							ret = m.user_event_handler->handle_data(this->shared_from_this(), msg);
+						}
+						if (ret)
+						{
+							ret = handle_data(msg);
+						}
+						return ret; 				
 			}
 
 			bool process_event(NetEvent evt){
-				bool ret = true; 
-				if (event_handler)
-				{
-					ret =  event_handler(evt);
-				}
+						bool ret = true;
+						if (event_handler)
+						{
+							ret = event_handler(evt);
+						}
 
-				if (ret && m.user_event_handler)
-				{
-					 ret = m.user_event_handler->handle_event(this->shared_from_this(), evt);
-				}	
+						if (ret && m.user_event_handler)
+						{
+							ret = m.user_event_handler->handle_event(this->shared_from_this(), evt);
+						}
 
-				if (ret){
-					return handle_event(evt); 				
-				}	
-				return ret; 				
+						if (ret)
+						{
+							return handle_event(evt);
+						}
+						return ret; 				
 			}
 
 
@@ -238,66 +253,75 @@ namespace knet {
 
 			void connect(udp::endpoint pt, uint32_t localPort = 0,
 				const std::string& localAddr = "0.0.0.0") {
-				remote_point = pt;
-				// this->udp_socket = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
-				this->udp_socket = std::make_shared<udp::socket>(m.event_worker->context());
-				if (udp_socket) {
-					asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
-					udp_socket->open(lisPoint.protocol());
-					udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
-					if (localPort > 0) {
-						udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
-						udp_socket->bind(lisPoint);
-					}
+						remote_point = pt;
+						// this->udp_socket = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
+						this->udp_socket = std::make_shared<udp::socket>(m.event_worker->context());
+						if (udp_socket)
+						{
+							asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
+							udp_socket->open(lisPoint.protocol());
+							udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
+							if (localPort > 0)
+							{
+								udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
+								udp_socket->bind(lisPoint);
+							}
 
-					m.timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(m.event_worker->context()));
-					m.timer->start_timer(
-						[this]() {
-							std::chrono::steady_clock::time_point nowPoint =
-								std::chrono::steady_clock::now();
-							auto elapseTime = std::chrono::duration_cast<std::chrono::duration<double>>(
-								nowPoint - last_msg_time);
+							m.timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(m.event_worker->context()));
+							m.timer->start_timer(
+								[this]()
+								{
+									std::chrono::steady_clock::time_point nowPoint =
+										std::chrono::steady_clock::now();
+									auto elapseTime = std::chrono::duration_cast<std::chrono::duration<double>>(
+										nowPoint - last_msg_time);
 
-							if (elapseTime.count() > 3) {
-							 
-								this->release(); 
-							}			
-							return true; 		
-						},
-						4000000);
-					m.status = CONN_OPEN;
+									if (elapseTime.count() > 3)
+									{
 
-					if (remote_point.address().is_multicast()) {
-						join_group(remote_point.address().to_string());
-					}
+										this->release();
+									}
+									return true;
+								},
+								4000000);
+							m.status = CONN_OPEN;
 
-					do_receive();
-				}
+							if (remote_point.address().is_multicast())
+							{
+								join_group(remote_point.address().to_string());
+							}
+
+							do_receive();
+						}
 			}
 
 			void do_receive() {
-				udp_socket->async_receive_from(asio::buffer(recv_buffer, max_length), sender_point,
-					[this](std::error_code ec, std::size_t bytes_recvd) {
-						if (!ec && bytes_recvd > 0) {
+						udp_socket->async_receive_from(asio::buffer(recv_buffer, max_length), sender_point,
+													   [this](std::error_code ec, std::size_t bytes_recvd)
+													   {
+														   if (!ec && bytes_recvd > 0)
+														   {
 
-							last_msg_time = std::chrono::steady_clock::now();
-							//dlog("get message from {}:{}", sender_point.address().to_string(),
-							//	sender_point.port());
-							recv_buffer[bytes_recvd] = 0;
-							auto pkgType = this->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
-							if (pkgType == PACKAGE_USER){
-								process_data(std::string((const char*)recv_buffer, bytes_recvd)); 
-							}						
-					
-							do_receive();
-						}
-						else {
-							elog("async receive error {}, {}", ec.value(), ec.message());
-						}
-					});
+															   last_msg_time = std::chrono::steady_clock::now();
+															   //dlog("get message from {}:{}", sender_point.address().to_string(),
+															   //	sender_point.port());
+															   recv_buffer[bytes_recvd] = 0;
+															   auto pkgType = this->handle_package(std::string((const char *)recv_buffer, bytes_recvd));
+															   if (pkgType == PACKAGE_USER)
+															   {
+																   process_data(std::string((const char *)recv_buffer, bytes_recvd));
+															   }
+
+															   do_receive();
+														   }
+														   else
+														   {
+															   elog("async receive error {}, {}", ec.value(), ec.message());
+														   }
+													   });
 			}
 			void release(){
-				process_event(EVT_RELEASE); 
+						process_event(EVT_RELEASE); 
 			} 
 
 			// std::string cid() const { return remote_host + std::to_string(remote_port); }
@@ -312,19 +336,17 @@ namespace knet {
 
 			
 		private:
-            std::mutex mutex;
-            std::string send_buffer;
-            std::string cache_buffer;
+      
 			UdpSocketPtr udp_socket;
 			std::chrono::steady_clock::time_point last_msg_time;
 
 			struct {
-				KNetHandler<T>* user_event_handler = nullptr;
-				KNetWorkerPtr event_worker = nullptr;
-				ConnectionStatus status;
-				std::unique_ptr<knet::utils::Timer> timer = nullptr;
+						KNetHandler<T> *user_event_handler = nullptr;
+						KNetWorkerPtr event_worker = nullptr;
+						ConnectionStatus status;
+						std::unique_ptr<knet::utils::Timer> timer = nullptr;
 			} m;
-		};
+				};
 
-	} // namespace udp
-} // namespace knet
+			} // namespace udp
+		}	  // namespace knet
