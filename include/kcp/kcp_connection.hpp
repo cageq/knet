@@ -68,19 +68,9 @@ public:
 	}
 
 	int32_t send(const std::string& msg) {
-		dlog("send user message on status {}", status);
-		if (status == CONN_KCP_READY) {
-			if (kcp) {
-				return ikcp_send(kcp, msg.c_str(), msg.length());
-			}
-		} else {
-			this->shakehand_request();
-		}
-		return -1;
+		return send(msg.data(), msg.length()); 
 	}
  
-
-
    	template <typename P>
 	inline void write_data(std::string &sndBuf, const P &data)
 	{
@@ -132,12 +122,12 @@ public:
         return -1;
     }
 
-
-	virtual PackageType on_message(const char* data, uint32_t len) {
+	virtual PackageType handle_package(const char* data, uint32_t len) {
 
 		dlog("on recv udp message {} , length is {}", data, len);
 		return PACKAGE_USER;
 	}
+
 	int32_t disconnect() {
 
 		if (kcp_sock && status < CONN_CLOSING) {
@@ -176,9 +166,7 @@ private:
 	friend class KcpListener;
 	template <class,class, class ...>
 	friend class KcpConnector;
- 
 
- 
 	void init_kcp() { 
 		dlog("create kcp cid is {}", cid);
 		if (kcp != nullptr) {
@@ -527,7 +515,7 @@ private:
 				if (kcp_recvd_bytes >  0) {
 					recvLen += msgLen ; 
 			//		dlog("received kcp message length {}", kcp_recvd_bytes);
-					this->on_message(kcpBuf, kcp_recvd_bytes);
+					this->handle_package(kcpBuf, kcp_recvd_bytes);
 					if (event_handler) {
 						event_handler(this->shared_from_this(), EVT_RECV, {data, dataLen});
 					}

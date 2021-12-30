@@ -11,7 +11,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	public:
 	virtual ~MyConnection(){}
  
-	virtual PackageType on_message(const std::string& msg) {
+	virtual PackageType handle_package(const std::string& msg) {
 	    total ++; 
 
 	    if (total %20000 == 0){
@@ -30,7 +30,6 @@ class MyConnection : public UdpConnection<MyConnection> {
 
 	//    if (total > 1000000) {
 	//	    running = false; 
-
 	//    }
 
 	//	ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 

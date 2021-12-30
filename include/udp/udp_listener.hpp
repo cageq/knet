@@ -151,7 +151,7 @@ namespace knet {
 								// }
 							}
 							m.recv_buffer[bytes_recvd] = 0;
-							conn->on_message(std::string((const char*)m.recv_buffer, bytes_recvd));
+							conn->handle_package(std::string((const char*)m.recv_buffer, bytes_recvd));
 
 							if (m.event_handler) {
 								m.event_handler(conn, EVT_RECV, { m.recv_buffer, bytes_recvd });

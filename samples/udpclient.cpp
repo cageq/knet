@@ -10,7 +10,7 @@ class MyConnection : public UdpConnection<MyConnection >
     public:
 
     virtual ~MyConnection(){}
-	virtual PackageType on_message(const std::string & msg ) {
+	virtual PackageType handle_package(const std::string & msg ) {
 	    wlog("on recv udp message {} , lenght is {}", msg.data(), msg.length());
 	    return PACKAGE_USER;
 	}

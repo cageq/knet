@@ -13,7 +13,7 @@ public:
 			cid = 8888; 	
 		}
 	virtual ~MyConnection(){}
-	virtual PackageType on_message(const char* data, uint32_t len) {
+	virtual PackageType handle_package(const char* data, uint32_t len) {
 		wlog("on recv udp message\n{} , lenght is {}", data, len);
 		return PACKAGE_USER;
 	}
@@ -21,9 +21,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-
-
-
+ 
 	KNetLogIns.add_console(); 
 	KcpConnector<MyConnection> connector;
 	connector.start();
