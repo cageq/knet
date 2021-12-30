@@ -116,12 +116,14 @@ namespace knet {
 					}
 
 					int32_t send_inloop(const char* pData, uint32_t dataLen) {
-						asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
-								if (ec) {
-								//elog("send in loop error : {} , {}", ec, ec.message());
-								this->do_close();
-								}
-								});
+						// asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
+						// 		if (ec) {
+						// 			//elog("send in loop error : {} , {}", ec, ec.message());
+						// 			this->do_close();
+						// 		}
+						// 		});
+
+						asio::write(tcp_sock, asio::const_buffer(pData, dataLen));
 						return 0;
 					}
 
@@ -198,23 +200,25 @@ namespace knet {
 						auto self = this->shared_from_this();
 						asio::post(io_context, [this, self]() {
 								if (tcp_sock.is_open()) {
-								if (m.cache_buffer.empty()) {
-									do_async_write();
-								}
+									if (m.cache_buffer.empty())
+									{
+										if (m.mutex.try_lock()) {
+											m.send_buffer.swap(m.cache_buffer);
+											m.mutex.unlock();
+										} 
+									}   
+							 		if (!m.cache_buffer.empty()){
+										 //Write all of the supplied data to a stream before returning.
+										 asio::write(self->tcp_sock, asio::const_buffer(m.cache_buffer.data(), m.cache_buffer.size()));
+										 m.cache_buffer.clear(); 
+									}							
+						 
 								}
 								});
 					}
 
-					bool do_async_write() {
-
-						if (m.cache_buffer.empty())
-						{
-							if (m.mutex.try_lock()) {
-								m.send_buffer.swap(m.cache_buffer);
-								m.mutex.unlock();
-							} 
-						}  
-
+					bool do_async_write() { 
+						
 						if (!m.cache_buffer.empty())
 						{
 							auto self = this->shared_from_this();
@@ -224,7 +228,7 @@ namespace knet {
 									//	m.connection->process_event(EVT_SEND);
 									m.cache_buffer.clear(); 
 									if (m.send_buffer.size() == 0) {
-									return;
+										return;
 									}
 									self->do_async_write();
 									}else {

@@ -36,6 +36,8 @@ add_executable(tcpserver samples/tcpserver.cpp  )
 add_executable(tcpclient samples/tcpclient.cpp)
 #target_link_libraries(tcpclient fmt)
 
+add_executable(timeclient samples/timeclient.cpp)
+
 add_executable(fserver  samples/factory_server.cpp)
 #target_link_libraries(fserver fmt)
  
