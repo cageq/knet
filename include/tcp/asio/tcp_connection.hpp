@@ -92,6 +92,8 @@ namespace knet
 				return -1;  
 			}
 
+			bool vsend(const std::vector<asio::const_buffer> &bufs) { return tcp_socket->vsend(bufs); }
+
 			void close()
 			{
 				reconn_flag = false;
@@ -149,8 +151,7 @@ namespace knet
 				passive_mode = false; 
 				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
 			}
-
-			bool vsend(const std::vector<asio::const_buffer> &bufs) { return tcp_socket->vsend(bufs); }
+		
 
 			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
 
