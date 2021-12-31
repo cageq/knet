@@ -116,15 +116,18 @@ namespace knet {
 					}
 
 					int32_t send_inloop(const char* pData, uint32_t dataLen) {
-						 asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
-						 		if (ec) {
-						 		//	elog("send in loop error : {} , {}", ec, ec.message());
-						 			this->do_close();
-						 		}
-						 		});
+                        if (tcp_sock.is_open() ) {					
+                            asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
+                                    if (ec) {
+                                        elog("send in loop error : {} , {}", ec.value(), ec.message());
+                                        this->do_close();
+                                    }
+                                    });
 
-						//asio::write(tcp_sock, asio::const_buffer(pData, dataLen));
-						return 0;
+                            //asio::write(tcp_sock, asio::const_buffer(pData, dataLen));
+                            return 0;
+                        }
+                        return -1; 
 					}
 
 
@@ -163,6 +166,7 @@ namespace knet {
 							if (tcp_sock.is_open()) {
 								if (!is_empty(first) ) {
 									write_mutex.lock(); 
+                                    send_buffer.clear(); 
 									this->mpush(first, rest...);					 
 								}
 								return 0;
@@ -197,14 +201,17 @@ namespace knet {
 
 					void mpush() {
                         write_mutex.unlock(); 
-                        if (!tcp_sock.is_open()){
+                        if (!this->is_open()){
                             return ; 
                         }
 
 						auto self = this->shared_from_this();
 						//so cache_buffer is safe in network loop thread only
-						asio::post(io_context, [this, self]() {
-								if (tcp_sock.is_open()) {
+						asio::dispatch(io_context, [this, self]() {
+                                    if (!this->is_open()) {
+                                        elog("socket is not open"); 
+                                        return ; 
+                                    }
 									if (cache_buffer.empty())
 									{
 										if (write_mutex.try_lock()) {
@@ -218,10 +225,10 @@ namespace knet {
 										//which must guarantee that they remain valid until the handler is called.
 										 asio::async_write(tcp_sock, asio::const_buffer(cache_buffer.data(), cache_buffer.length()), [this](std::error_code ec, std::size_t length) {
 												if (!ec){
-										      	cache_buffer.clear(); 
+                                                    cache_buffer.clear(); 
 												}else 
 										 		{
-										 			//elog("send in loop error : {} , {}", ec, ec.message());
+										 			elog("send error : {} , {}", ec.value(), ec.message());
 										 			this->do_close();
 										 		}
 										 		});
@@ -231,7 +238,6 @@ namespace knet {
 										 //cache_buffer.clear(); 
 									}							
 						 
-								}
 								});
 					}
 

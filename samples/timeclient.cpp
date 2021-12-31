@@ -21,7 +21,6 @@ public:
 	}
 	virtual int32_t handle_package(const char* data, uint32_t len) {
         if (len < sizeof (TestMsg) ){
-
             return -1; 
         }
 
@@ -41,7 +40,7 @@ public:
 	}
 	virtual bool handle_event(knet::NetEvent evt) {
 
-        dlog("handle net event {}", evt); 
+//        dlog("handle net event {}", evt); 
 
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
