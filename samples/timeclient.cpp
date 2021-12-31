@@ -7,6 +7,7 @@ using namespace knet::tcp;
 struct TestMsg{
     uint32_t length; 
     struct timeval time; 
+    uint64_t index; 
 }; 
 
 class TcpSession : public TcpConnection<TcpSession >
@@ -32,12 +33,15 @@ public:
         TestMsg * tMsg = (TestMsg*) msg.c_str(); 
         TestMsg recvMsg; 
         gettimeofday(&recvMsg.time,0); 
-        this->send((const char *)&recvMsg, sizeof(TestMsg) );
-        dlog("start time {}:{}  =>  {}:{}, elapse {}", tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec); 
+        total_time  +=  (recvMsg.time.tv_usec - tMsg->time.tv_usec) ; 
+        dlog("from {}:{} => {}:{} elapse {} avg {}", tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec,  tMsg->index - last_index ); 
+        last_index = tMsg->index; 
 
 		return true;
 	}
 	virtual bool handle_event(knet::NetEvent evt) {
+
+        dlog("handle net event {}", evt); 
 
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
@@ -48,7 +52,8 @@ public:
 		return true; 
 	}
 
-
+    uint64_t total_time = 0 ; 
+    uint64_t last_index = 0; 
 };
 
 int main(int argc, char** argv)
@@ -88,19 +93,34 @@ int main(int argc, char** argv)
 
 
 	auto conn = connector.add_connection({ host, 8888});
-	conn->enable_reconnect(); 
+	//conn->enable_reconnect(); 
 
+    uint64_t index = 1; 
+    while(true){
 
-	char c = getchar();
-	while (c)
-	{
-		if (c == 'q')
-		{
-			break;
-		}
-		c = getchar();
-	}
+        if (conn){
 
+            TestMsg recvMsg; 
+            gettimeofday(&recvMsg.time,0); 
+            recvMsg.index = index ++; 
+            conn->send((const char *)&recvMsg, sizeof(TestMsg) );
+            usleep(1); 
+
+        }
+
+    }
+
+//
+//	char c = getchar();
+//	while (c)
+//	{
+//		if (c == 'q')
+//		{
+//			break;
+//		}
+//		c = getchar();
+//	}
+//
 	return 0;
 }
 
