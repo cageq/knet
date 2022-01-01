@@ -7,7 +7,7 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 ## Build 
 need c++17 supported compiler to compile it. 
 
-It is a headonly library, basically you can copy all files to you project and use it. (need fmt lib or use headless version) 
+It is a headonly library, basically you can copy all files to you project and use it. 
 
 
 ## build samples
@@ -21,22 +21,54 @@ cmake .
 
 make -j4 
 
+# or 
+./build.sh 
+
 ```
-
-
 
 ## Tcp Server 
 
-Create a tcp server , you need define a tcp session inherited  to TcpConnection class, with the session type , you can create the listener. 
+Create a tcp server, you need define a tcp session inherited to TcpConnection class, with the session type , you can create the listener. 
 Start it with the port. now you get a discard tcp server. 
 
 ```cpp
+
+/*
+//Sample protocol head 
+struct UserMsgHead {
+    uint32_t length; //body length 
+    uint32_t type;
+    char     data[0];  
+}; 
+*/
 
 #include "knet.hpp"
 using namespace knet::tcp; 
 class TcpSession : public TcpConnection<TcpSession> {
       public:
+		virtual int32_t handle_package(const char * data, uint32_t len ){
+            /*
+			//sample use message head 
+            if (len  < sizeof(UserMsgHead)){
+                return 0; 
+            }
+            UserMsgHead * head = (UserMsgHead*) data;  
+            return head->length + sizeof(UserMsgHead);   
+            */ 
+            return len  ; 
+        }
 
+        //all net events
+        virtual bool handle_event(NetEvent evt) 
+        { 
+            return true; 
+        }
+
+        //one whole message, divided by handle_package  
+        virtual bool handle_data(const std::string &msg )
+        {
+            return true; 
+        }
 }; 
 
 TcpListener<TcpSession> listener;
@@ -46,27 +78,25 @@ listener.start(8899);
 
 
 ## Tcp Client 
-It's almost the same code with the server, you need define a tcp session , then connect to server will create a session for you. 
+It's almost the same code with the server, you need define a tcp session , then connect to server will create a session for you. or use add_connection() 
 
 ```cpp 
 #include "knet.hpp"
 using namespace knet::tcp; 
-class TcpSession : public TcpConnection<TcpSession> {
-	public:
 
-}; 
+// TcpSession same with the server 
 
 TcpConnector<TcpSession>  connector;
 connector.start(); 
 connector.add_connection("127.0.0.1", 8899);
+
 ```
 
 
 
 ## UDP/KCP/HTTP/WEBSOCK
 
-​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has  the same apis with tcp. you can peek the  code in samples directory. 
-
+​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has the same apis with tcp.  
 ​	It have basic http/websocket protocol server-side implements,  and need more work to make it complete.
 
 
@@ -106,33 +136,30 @@ class TcpSession : public TcpConnection<TcpSession >
 
 
 ## Session Factory 
-As a server, most of the time , we need a manager to manage all the incoming sessions, so you need create a factory to handle all sessions' events . 
-
-you can create a factory, then handle all sessions' event in the factory instance. if you have used factory ,  you cann't get data or events in your own session again. 
+As a server, we need a manager to control all the incoming sessions's lifetime, you can create a factory to handle all sessions' events . 
 
 ```cpp 
 
 class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
 	public:
+		virtual void on_create(TPtr ptr) {
 
-		virtual void handle_event(TPtr conn, knet::NetEvent evt) {
-			ilog("handle event in connection my factory"); 
+			dlog("connection created event in my factory "); 
 		}
 
-		virtual bool handle_data(TPtr conn, char * data, uint32_t len) { 
-			conn->send(data,len); 
-			return true ;
-		}; 
-
+		virtual void on_release(TPtr ptr) { 
+			dlog("connection release event in my factory "); 
+		} 
+		 
 }; 
 
 	MyFactory factory; 
 	dlog("start server");
-  // you need create a factory instance and pass it to listener.
+  	// create a factory instance and pass it to listener.
 	TcpListener<TcpSession,MyFactory> listener(&factory);
 	int port = 8899;
-	listener.start(  port); 
+	listener.start(port); 
 
 ```
 
@@ -140,20 +167,9 @@ class MyFactory: public KNetFactory<TcpSession> {
 
 ## Thread mode 
 
-​	You can create one or multi EventWorker(s) to process the connections, but we will keep one connecion's events always be in one thread of its lifecycle.  so it is safty to create a lua engine in your session, all net events will be called in the same thread.  
+​	use one listener thread and zero or more worker threads.  we will keep one connecion's events always be in same thread. so it is safety to create a lua engine in your session, all net events will be called in the same thread.  
 
-
-
-## Backends 
-
-​	There are serval backends implements including the raw epoll/kqueue/iocp api, the open source version is based on standalone asio version. The goal of this project is to provide simple apis for user to build network components.  Will it can help.
-
-
-
-## Performance 
-   I have not test it, but it's a very thin wrapper over the asio, I think the performace will be close to asio. 
-
-
+  
 
 ## github & gitee   
 
@@ -162,11 +178,4 @@ https://github.com/cageq/knet
 https://gitee.com/cageq/knet  
 
 
-
-## welcome to contribute
-
-  If you think it's a little useful,  welcome all of you to make it better. 
-
-
-
-
+ 
