@@ -1,5 +1,8 @@
 ![C/C++ CI](https://github.com/cageq/knet/workflows/C/C++%20CI/badge.svg)
 
+
+[中文文档](README_ZH.md)
+
 # KNet 
 Simple morden c++ network library wrapper based on asio standalone version, provide simple APIs to build your network applications. 
 

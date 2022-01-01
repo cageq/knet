@@ -9,6 +9,20 @@
 
   库本身不需要编译，内置了一些示例代码，可以进行编译。 最新版本使用了C++17语言的一些特性，需要支持C++17的编译器和CMake工具。 由于国内访问github困难，内置了依赖的第三方包，如fmt，spdlog等,可以直接使用根目录下的./build.sh 可自动展开进行编译（需要先安装unzip等工具）。
 
+```shell
+
+git submodule init 
+
+git submodule update --recursive 
+
+cmake . 
+
+make -j4 
+
+# or 
+./build.sh 
+
+```
 
 
 ## 创建Tcp服务器
