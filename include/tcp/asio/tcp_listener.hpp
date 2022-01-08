@@ -81,7 +81,7 @@ namespace knet
 						if (tcp_acceptor->is_open())
 						{
 							this->tcp_acceptor->set_option(asio::socket_base::reuse_address(true));
-							//this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
+							this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
 							this->tcp_acceptor->non_blocking(true);
 
 							asio::socket_base::send_buffer_size SNDBUF(m.options.send_buffer_size);
@@ -248,6 +248,8 @@ namespace knet
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 							if (!ec)
 							{
+
+								socket->socket().set_option(asio::ip::tcp::no_delay(true));
 								dlog("accept new connection ");
 								this->init_conn(worker, socket);
 								do_accept();
