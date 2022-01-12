@@ -81,7 +81,9 @@ namespace knet
 						if (tcp_acceptor->is_open())
 						{
 							this->tcp_acceptor->set_option(asio::socket_base::reuse_address(true));
-							this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
+                            if (!m.options.tcp_delay) {
+                                this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
+                            }
 							this->tcp_acceptor->non_blocking(true);
 
 							asio::socket_base::send_buffer_size SNDBUF(m.options.send_buffer_size);
@@ -133,7 +135,6 @@ namespace knet
 							worker->stop(); 
 						}
 						m.user_workers.clear();
-
 						m.listen_worker->stop();
 					}
 				}
@@ -281,7 +282,9 @@ namespace knet
 					{
 						asio::dispatch(worker->context(), [=]() {
 								auto conn = create_connection(socket, worker);				 
-								socket->init_read();
+                                    if (!this->m.options.sync ) {
+                                        socket->init_read();
+                                    }
 								});
 					}
 				}
@@ -294,7 +297,7 @@ namespace knet
 					} else {
 						conn = std::make_shared<T>(); 						
 					}
-					conn->init(sock, worker, this);
+					conn->init(m.options, sock, worker, this);
 					return conn; 
 				}
 

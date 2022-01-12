@@ -50,6 +50,21 @@ namespace knet
 					user_workers.push_back(worker);
 				}
 			}
+			bool start(NetOptions opts , FactoryPtr fac = nullptr)
+            {
+                net_options = opts; 
+                if (fac != nullptr)
+				{
+					m.factory = fac;
+				}
+                for (uint32_t i = 0; i < opts.threads ; i++)
+				{
+					auto worker = std::make_shared<Worker>(nullptr , this );
+					user_workers.emplace_back(worker);
+					worker->start();
+				}
+                return true; 
+            }
 
 			bool start(uint32_t thrds = 1, FactoryPtr fac = nullptr)
 			{
@@ -101,7 +116,7 @@ namespace knet
 					auto worker = this->get_worker();
 					auto sock =
 						std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
-					conn->init(sock, worker, this);
+					conn->init(net_options, sock, worker, this);
 					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
 					conn->connect(connInfo);
 					connections[conn->get_cid()] = conn;
@@ -125,7 +140,7 @@ namespace knet
 					conn = std::make_shared<T>(args...);
 				}
 
-				conn->init(sock, worker, this);
+				conn->init(net_options, sock, worker, this);
 				conn->connect(connInfo);
 				connections[conn->get_cid()] = conn;
 				return conn;
@@ -247,6 +262,7 @@ namespace knet
 			uint32_t worker_index = 0;
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
+            NetOptions net_options; 
 			struct
 			{
 				FactoryPtr factory = nullptr;

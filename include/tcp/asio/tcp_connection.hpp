@@ -70,8 +70,9 @@ namespace knet
 				}
 			}
 
-			void init( SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
+			void init(NetOptions opts,  SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
+                net_options = opts; 
 				event_worker = worker;			 
 				tcp_socket = sock;
 				tcp_socket->init(this->shared_from_this()); 
@@ -171,6 +172,14 @@ namespace knet
 				}
 				return 0; 				
 			}
+
+
+            int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
+                if(tcp_socket){
+                    return tcp_socket->do_sync_read(handler); 
+                }
+                return 0; 
+            }
 
 			inline uint64_t get_cid() const { return cid; }
 
@@ -299,6 +308,7 @@ namespace knet
 				return ret; 				
 			}
 
+            NetOptions net_options; 
 			bool reconn_flag = false;
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
