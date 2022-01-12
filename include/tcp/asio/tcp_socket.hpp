@@ -60,9 +60,16 @@ namespace knet {
                         async_connect(tcp_sock, result,
                                 [self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
                                 if (!ec) {
-                                self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));
-                                dlog("connect to {}:{} success",host,port); 
-                                self->init_read(); 
+                                    if (!self->connection->net_options.tcp_delay)
+                                    {
+                                        self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
+                                    }
+                                
+                                    dlog("connect to {}:{} success",host,port); 
+                                    if (!self->connection->net_options.sync){
+                                        self->init_read(); 
+                                    }
+                                    
                                 }else {
                                 dlog("connect to server failed, {}:{} , error : {}", host.c_str(), port, ec.message() );
                                 self->tcp_sock.close();
