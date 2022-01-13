@@ -29,6 +29,7 @@ namespace knet
 			std::string local_addr; 
 			uint16_t local_port; 
 			bool reuse = true;  
+			bool async = true; 
 		}; 
 
 
@@ -147,11 +148,11 @@ namespace knet
 				this->remote_host = connInfo.server_addr;
 				this->remote_port = connInfo.server_port;
 				passive_mode = false; 
-				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
+				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port,connInfo.async  );
 			}
 		
 
-			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
+			bool connect() {	passive_mode = false;   return tcp_socket->connect(remote_host, remote_port); }
 
 			inline tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
 			inline tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
@@ -170,13 +171,13 @@ namespace knet
 				return 0; 				
 			}
 
-			// asio can't supoort sync with async op 
-            // int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
-            //     if(tcp_socket){
-            //         return tcp_socket->do_sync_read(handler); 
-            //     }
-            //     return 0; 
-            // }
+			
+            int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
+                if(tcp_socket){  
+                    return this->tcp_socket->do_sync_read(handler); 
+                }
+                return 0; 
+            }
 
 			inline uint64_t get_cid() const { return cid; }
 

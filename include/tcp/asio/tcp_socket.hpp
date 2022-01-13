@@ -11,7 +11,7 @@
 #include <chrono>
 #include <type_traits>
 #include <string_view> 
-
+#include <asio/use_future.hpp>
 
 
 namespace knet {
@@ -45,7 +45,7 @@ namespace knet {
                         connection = conn;
                     }
 
-                    bool connect(const std::string& host, uint32_t port, const std::string& localAddr = "0.0.0.0", uint32_t localPort = 0) {
+                    bool connect(const std::string& host, uint16_t port, const std::string& localAddr = "0.0.0.0", uint32_t localPort = 0 , bool async = true  ) {
                         tcp::resolver resolver(io_context);
                         auto result = resolver.resolve(host, std::to_string(port));
                         dlog("connect to server {}:{}", host.c_str(), port);
@@ -57,27 +57,39 @@ namespace knet {
                             tcp_sock.bind(laddr);
                         }
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
-                        async_connect(tcp_sock, result,
-                                [self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
-                                if (!ec) {
-                                    if (!self->connection->net_options.tcp_delay)
-                                    {
-                                        self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
-                                    }
-                                
-                                    dlog("connect to {}:{} success",host,port); 
-                                    if (!self->connection->net_options.sync){
-                                        self->init_read(); 
-                                    }
+                        if (async){
+                               async_connect(tcp_sock, result,
+                                    [self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
+                                    if (!ec) {
+                                        if (!self->connection->net_options.tcp_delay)
+                                        {
+                                            self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
+                                        }
                                     
-                                }else {
-                                   dlog("connect to server failed, {}:{} , error : {}", host.c_str(), port, ec.message() );
-                                    self->tcp_sock.close();
-                                    self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                                }
-                                });
+                                        dlog("connect to {}:{} success",host,port); 
+                                        if (!self->connection->net_options.sync){
+                                            self->init_read(); 
+                                        }
+                                        
+                                    }else {
+                                       dlog("connect to {}:{} failed, error : {}", host, port, ec.message() );
+                                        self->tcp_sock.close();
+                                        self->socket_status = SocketStatus::SOCKET_CLOSED; 
+                                    }
+                                }); 
 
-
+                            return true; 
+                        }else {                                      
+                            try {
+                                std::future<asio::ip::tcp::endpoint> cf =  async_connect(tcp_sock, result, asio::use_future); 
+                                cf.get();                                 
+                            }catch(std::system_error& e){
+                                dlog("connect to {}:{} failed, error : {}", host, port, e.what() );
+                                self->tcp_sock.close();
+                                self->socket_status = SocketStatus::SOCKET_CLOSED; 
+                                return false; 
+                            }                          
+                        }                     
                         return true;
                     }
 
@@ -93,21 +105,22 @@ namespace knet {
                     }
                     int32_t do_sync_read(const std::function<int32_t (const char * data, uint32_t len) > & handler){
                         if(tcp_sock.is_open()){
-                            asio::error_code error;
-                            
-                            size_t len = tcp_sock.read_some(asio::buffer( (char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos), error);
+                            asio::error_code error;                            
+                            asio::mutable_buffer  readBuffer ( (char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos); 
+                            std::future<size_t> len = tcp_sock.async_read_some(readBuffer, asio::use_future);
 
-                            if (error == asio::error::eof)
-                            {
-                                return -1; 
+                            // if (error == asio::error::eof)
+                            // {
+                            //     return -1; 
 
-                            } else if (error)
-                            {
-                                //throw asio::system_error(error); // Some other error.
-                                return -1; 
-                            }
-
-                            read_buffer_pos += len ; 
+                            // } else if (error)
+                            // {
+                            //     //throw asio::system_error(error); // Some other error.
+                            //     return -1; 
+                            // }
+                            //len.wait(); 
+                            size_t dataLen = len.get(); 
+                            read_buffer_pos += dataLen ; 
 
                             uint32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
                             if (readLen < read_buffer_pos) {
@@ -115,7 +128,7 @@ namespace knet {
                                 read_buffer_pos = read_buffer_pos - readLen; 
                             }
 
-                            return len; 
+                            return dataLen; 
                         }
 
                         return 0; 
@@ -383,14 +396,14 @@ namespace knet {
                                 conn->process_event(EVT_DISCONNECT); 
                                 self->socket_status = SocketStatus::SOCKET_CLOSED;
                                 if (tcp_sock.is_open()) {
-                                tcp_sock.close();
+                                  tcp_sock.close();
                                 }
                                 conn->release();
                                 conn.reset(); 
                                 }else {
                                 self->socket_status = SocketStatus::SOCKET_CLOSED;
                                 if (tcp_sock.is_open()) {
-                                tcp_sock.close();							
+                                    tcp_sock.close();							
                                 } 
                                 }
                                 self->read_buffer_pos = 0;

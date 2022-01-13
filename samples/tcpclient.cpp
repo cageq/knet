@@ -69,8 +69,9 @@ int main(int argc, char** argv)
 	// return 0; 
 	// });
 
-
-	auto conn = connector.add_connection({ "127.0.0.1", 8888});
+    ConnectionInfo cInfo {"127.0.0.1", 8888}; 
+    cInfo.async = false; 
+	auto conn = connector.add_connection(cInfo);
 	//connector->add_connection("10.246.34.55", 8855);
 	conn->enable_reconnect(); 
 

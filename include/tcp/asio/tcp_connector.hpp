@@ -109,7 +109,7 @@ namespace knet
 				return false;
 			}
 
-			bool add_connection(TPtr conn, const ConnectionInfo &connInfo)
+			bool add_connection(TPtr conn, const ConnectionInfo &connInfo  )
 			{
 				if (conn)
 				{
