@@ -7,7 +7,6 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
-
 #include "tcp_socket.hpp"
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
@@ -72,9 +71,9 @@ namespace knet
 
 			void init(NetOptions opts,  SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
-                net_options = opts; 
+                net_options  = opts; 
 				event_worker = worker;			 
-				tcp_socket = sock;
+				tcp_socket   = sock;
 				tcp_socket->init(this->shared_from_this()); 
 				user_event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
@@ -117,7 +116,6 @@ namespace knet
 				}
 				return false; 
 			}
-
 			
 			inline void bind_package_handler(const PackageHandler & handler) { package_handler = handler; }
 			void bind_package_handler(const SelfPackageHandler & handler)
@@ -125,7 +123,6 @@ namespace knet
 				T *child = static_cast<T *>(this);
 				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
-
 
 			inline void bind_data_handler(const DataHandler & handler) { data_handler = handler; }
 			void bind_data_handler(const SelfDataHandler & handler)
@@ -173,13 +170,13 @@ namespace knet
 				return 0; 				
 			}
 
-
-            int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
-                if(tcp_socket){
-                    return tcp_socket->do_sync_read(handler); 
-                }
-                return 0; 
-            }
+			// asio can't supoort sync with async op 
+            // int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
+            //     if(tcp_socket){
+            //         return tcp_socket->do_sync_read(handler); 
+            //     }
+            //     return 0; 
+            // }
 
 			inline uint64_t get_cid() const { return cid; }
 
@@ -217,7 +214,7 @@ namespace knet
 
 			inline KNetWorkerPtr get_worker() { return event_worker; }
  
-			void *user_data = nullptr;  
+
  
 			virtual int32_t handle_package(const char * data, uint32_t len ){
 				return len  ; 
@@ -287,6 +284,8 @@ namespace knet
 				}
 		 		return ret; 				
 			}
+
+			void *user_data = nullptr;  
 	private:
 			bool process_event(NetEvent evt){
 
