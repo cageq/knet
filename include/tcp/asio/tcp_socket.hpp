@@ -122,8 +122,8 @@ namespace knet {
                             size_t dataLen = len.get(); 
                             read_buffer_pos += dataLen ; 
 
-                            uint32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
-                            if (readLen < read_buffer_pos) {
+                            int32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
+                            if (readLen > 0 && readLen < read_buffer_pos) {
                                 memmove((char*)read_buffer, (char *)read_buffer + readLen, read_buffer_pos - readLen); 
                                 read_buffer_pos = read_buffer_pos - readLen; 
                             }
