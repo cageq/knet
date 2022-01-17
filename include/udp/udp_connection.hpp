@@ -11,6 +11,7 @@
 #include <asio.hpp>
 #include "utils/knet_log.hpp"
 #include "utils/timer.hpp"
+#include "utils/knet_url.hpp"
 #include "knet_worker.hpp"
 
 using namespace knet::utils;
@@ -25,6 +26,7 @@ namespace knet
 		using UdpSocketPtr = std::shared_ptr<udp::socket>;
 		using SendBufferPtr = std::shared_ptr<std::string>;
 
+	
 		inline std::string addrstr(udp::endpoint pt)
 		{
 			return pt.address().to_string() + ":" + std::to_string(pt.port());
@@ -55,6 +57,8 @@ namespace knet
 			using EventHandler = std::function<bool(knet::NetEvent)>;
 			using DataHandler = std::function<bool(const std::string &)>;
 
+
+
 			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T> *evtHandler = nullptr)
 			{
 				udp_socket = socket;
@@ -83,7 +87,7 @@ namespace knet
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
 					udp_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 				}
-				return true;
+				return true; 
 			}
 
 			int32_t sync_send(const std::string &msg)
@@ -145,7 +149,8 @@ namespace knet
 
 				if (!sndBuf->empty())
 				{
-					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
+					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), 
+											  remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
 											  {
 												  if (!ec)
 												  {
@@ -197,8 +202,8 @@ namespace knet
 			{
 				return true;
 			}
-			uint32_t cid = 0;
 
+			uint32_t cid = 0;
 		private:
 			bool process_data(const std::string &msg)
 			{
@@ -320,16 +325,14 @@ namespace knet
 			udp::endpoint sender_point;
 			udp::endpoint remote_point;
 			udp::endpoint multicast_point;
-
 		private:
 			UdpSocketPtr udp_socket;
-			std::chrono::steady_clock::time_point last_msg_time;
-	 
+			std::chrono::steady_clock::time_point last_msg_time;	 
 			KNetHandler<T> *user_event_handler = nullptr;
 			KNetWorkerPtr event_worker = nullptr;
 			ConnectionStatus net_status;
 			std::unique_ptr<knet::utils::Timer> net_timer = nullptr;
-	 
+			
 		};
 
 	} // namespace udp

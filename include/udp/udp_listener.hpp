@@ -20,6 +20,8 @@ namespace knet {
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string&)>;
 			using WorkerPtr = std::shared_ptr<Worker>;
 			using FactoryPtr = Factory*;
+			enum { kMaxRecvBufferSize = 4096 };
+
 			UdpListener(WorkerPtr w = nullptr)
 				: net_worker(w) {
 				if (net_worker == nullptr) {
@@ -28,23 +30,22 @@ namespace knet {
 				}
 			}
 
-			bool start(EventHandler evtHandler, uint32_t port, const std::string& lisHost = "0.0.0.0",
-				const std::string& multiHost = "", bool reuse = true) {
+			bool start(uint16_t port, NetOptions opt = {}, FactoryPtr fac  = nullptr ){
+				return start({"udp","0.0.0.0",port},opt, fac); 
+			}
 
-				udp_port = port;
-				event_handler = evtHandler;
-				asio::ip::address lisAddr = asio::ip::make_address(lisHost);
+			bool start(KNetUrl url, NetOptions opt = {}, FactoryPtr fac  = nullptr ){
+				url_info = url; 
+				net_factory = fac; 
+				asio::ip::address lisAddr = asio::ip::make_address(url_info.host);
 				server_socket = std::make_shared<udp::socket>(net_worker->context());
-				// server_socket =
-				// 	std::make_shared<udp::socket>(net_worker->context(),  udp::endpoint(lisAddr, port) );
-
-				asio::ip::udp::endpoint lisPoint(lisAddr, port);
-
+				
+				asio::ip::udp::endpoint lisPoint(lisAddr, url_info.port);
 				server_socket->open(lisPoint.protocol());
-				server_socket->set_option(asio::ip::udp::socket::reuse_address(reuse));
+				server_socket->set_option(asio::ip::udp::socket::reuse_address(opt.reuse));
 				server_socket->bind(lisPoint);
-		
 
+				std::string multiHost = url.get("multi"); 				
 				if (!multiHost.empty()) {
 					multi_host = multiHost;
 					// Create the socket so that multiple may be bound to the same address.
@@ -53,10 +54,11 @@ namespace knet {
 					server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 				}
 
-				dlog("start udp server {}:{}", lisHost, port);
+				dlog("start udp server {}:{}", url_info.host, url_info.port);
 				do_receive();
-				return true;
+				return true; 		
 			}
+ 
 
 			TPtr find_connection(udp::endpoint pt) {
 				auto itr = connections.find(addrstr(pt));
@@ -66,7 +68,6 @@ namespace knet {
 				return nullptr;
 			}
 			void broadcast(const std::string& msg) {
-
 				if (multi_host.empty()) {
 					for (auto& item : connections) {
 						auto conn = item.second;
@@ -76,15 +77,12 @@ namespace knet {
 				else {
 					auto buffer = std::make_shared<std::string>(std::move(msg));
 					asio::ip::address multiAddr = asio::ip::make_address(multi_host);
-
-					asio::ip::udp::endpoint multiPoint(multiAddr, udp_port);
+					asio::ip::udp::endpoint multiPoint(multiAddr, listen_port);
 					dlog("broadcast message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
 					server_socket->async_send_to(asio::buffer(*buffer), multiPoint,
 						[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
-							if (!ec) {
-								if (event_handler) {
-									event_handler(nullptr, EVT_SEND, { nullptr, len });
-								}
+							if (!ec) {						 
+								this->handle_event(nullptr, EVT_SEND); 
 							}
 							else {
 								dlog("sent message error : {}, {}", ec.value(), ec.message());
@@ -113,53 +111,124 @@ namespace knet {
 			void stop() {
 				if (server_socket){
 					server_socket->close();
-				}
-				
+				}				
 				connections.clear();
 			}
 
-		private:
-
-			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg) {
-
-				return true;
+			void add_event_handler(KNetHandler<T> *handler)
+			{
+				if (handler)
+				{
+					event_handler_chain.push_back(handler);
+				}
 			}
-			virtual bool handle_event(std::shared_ptr<T>, NetEvent) {
-				return true;
+			void push_front(KNetHandler<T> *handler){
+				if (handler)
+				{
+					auto beg = event_handler_chain.begin(); 
+					event_handler_chain.insert(beg, handler);
+				}
+			}
+
+			void push_back(KNetHandler<T> *handler){
+				if (handler)
+				{
+					event_handler_chain.push_back(handler);
+				}
+			}
+			
+		private:
+			virtual bool handle_data(TPtr conn, const std::string &msg)
+			{
+				return invoke_data_chain(conn, msg);
+			}
+
+			virtual bool handle_event(TPtr conn, NetEvent evt)
+			{
+				bool ret = invoke_event_chain(conn, evt);
+				if (evt == EVT_RELEASE)
+				{
+					this->release(conn);
+				}
+				return ret;
+			}
+
+
+			void release(const TPtr &  conn)
+			{
+				if (net_worker) 
+				{
+					net_worker->post([this, conn]() {
+							if (net_factory)
+							{
+								net_factory->release(conn);
+							}
+							}); 
+				}
+			}
+
+			bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
+			{
+				bool ret = true;
+				for (auto &handler : event_handler_chain)
+				{
+					if (handler)
+					{
+						ret = handler->handle_data(conn, msg);
+						if (!ret)
+						{
+							break;
+						}
+					}
+				}
+				return ret;
+			}
+
+			bool invoke_event_chain(const TPtr &  conn, NetEvent evt)
+			{
+				bool ret = true;
+				for (auto &handler : event_handler_chain)
+				{
+					if (handler)
+					{
+						ret = handler->handle_event(conn, evt);
+						if (!ret)
+						{
+							break;
+						}
+					}
+				}
+				return ret;
 			}
 
 
 			void do_receive() {
-
-				server_socket->async_receive_from(asio::buffer(recv_buffer, max_length), remote_point,
+				server_socket->async_receive_from(asio::buffer(recv_buffer, kMaxRecvBufferSize), remote_point,
 					[this](std::error_code ec, std::size_t bytes_recvd) {
+						auto conn = this->find_connection(remote_point);
 						if (!ec && bytes_recvd > 0) {
-
-							dlog("get message from {}:{}", remote_point.address().to_string(),
-								remote_point.port());
-							auto conn = this->find_connection(remote_point);
+							dlog("get message from {}:{}", remote_point.address().to_string(), remote_point.port());						
 							if (!conn) {
 								conn = this->create_connection(remote_point);
-								conn->init(server_socket, net_worker, this );
-								//conn->udp_socket = server_socket;
+								conn->init(server_socket, net_worker, static_cast<KNetHandler<T>*>(this)  );
+							
 								conn->remote_point = remote_point;
 								// if (multi_host.empty()) {
 								// 	conn->remote_point = remote_point;
 								// } else {
 								// 	conn->remote_point =
-								// 		asio::ip::udp::endpoint(asio::ip::make_address(multi_host), udp_port);
+								// 		asio::ip::udp::endpoint(asio::ip::make_address(multi_host), listen_port);
 								// }
 							}
 							recv_buffer[bytes_recvd] = 0;
 							conn->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
+							this->handle_data(conn, std::string((const char*)recv_buffer, bytes_recvd)); 
+							this->handle_event(conn, EVT_RECV);  
 
-							if (event_handler) {
-								event_handler(conn, EVT_RECV, { recv_buffer, bytes_recvd });
-							}
-
-						}
-						else {
-							elog("receive error");
+						}else {
+							elog("receive error from {}:{}", remote_point.address().to_string(), remote_point.port());
+							this->handle_event(conn, EVT_DISCONNECT);  
+							return ; 
 						}
 						do_receive();
 					});
@@ -167,16 +236,18 @@ namespace knet {
 
 
 
-			enum { max_length = 4096 };
-			char recv_buffer[max_length];
-			uint32_t udp_port;
+	
+			char recv_buffer[kMaxRecvBufferSize];
+			uint32_t listen_port;
 			std::string multi_host;
 			udp::endpoint remote_point;
 			std::shared_ptr<udp::socket> server_socket;
 			std::unordered_map<std::string, TPtr> connections;
-			EventHandler event_handler;
+ 
 			FactoryPtr net_factory = nullptr;
 			WorkerPtr net_worker;
+			std::vector<KNetHandler<T> *> event_handler_chain;
+			KNetUrl url_info; 
 
 		};
 

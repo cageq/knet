@@ -156,6 +156,7 @@ namespace knet
 			WorkerPtr net_worker;
 			std::vector< KNetHandler<T>*>  event_handler_chain;
 			std::unordered_map<std::string, TPtr> connections;
+			KNetUrl url_info; 
 		};
 
 	} // namespace udp

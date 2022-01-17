@@ -47,15 +47,7 @@ int main(int argc, char* argv[]) {
 
 	KNetLogIns.add_console(); 
 	UdpListener<MyConnection> udpListener;
-	udpListener.start([](MyConnection::TPtr conn, knet::NetEvent evt, const std::string &dv) {
-		dlog("received connection event {}", evt);
-		if (conn)
-		{
-		//std::string msg= "message from server" ; 
-		//conn->send(msg.c_str(), msg.length()); 
-		}
-		return nullptr;
-	},9000);
+	udpListener.start(9000);
 
 	while (running) {
 		std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -11,9 +11,9 @@
 #include <chrono>
 #include <type_traits>
 #include <string_view> 
-#include "utils/knet_url.h"
+#include "utils/knet_url.hpp"
 #include <asio/use_future.hpp>
-
+using namespace knet::utils; 
 
 namespace knet {
     namespace tcp {
