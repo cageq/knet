@@ -67,14 +67,16 @@ namespace knet
 
 				~TcpListener() {}
 
-				bool start(NetOptions opt, void *sslCtx = nullptr)
+
+				bool start(KNetUrl url, NetOptions opt ={}, void *sslCtx = nullptr)
 				{
+					url_info = url; 
 					net_options = opt;
 					ssl_context = sslCtx;
 					if (!is_running)
 					{
 						is_running = true;
-						asio::ip::tcp::endpoint endpoint(asio::ip::make_address(opt.host), opt.port);
+						asio::ip::tcp::endpoint endpoint(asio::ip::make_address(url_info.host),url_info.port  );
 
 						// this->tcp_acceptor.open(asio::ip::tcp::v4());
 						this->tcp_acceptor->open(endpoint.protocol());
@@ -95,7 +97,7 @@ namespace knet
 							this->tcp_acceptor->bind(endpoint, ec);
 							if (ec)
 							{
-								elog("bind address failed {}:{}", opt.host, opt.port);
+								elog("bind address failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
 								return false;
 							}
@@ -117,11 +119,13 @@ namespace knet
 					return true;
 				}
 
-				bool start(uint16_t port = 9999, const std::string &host = "0.0.0.0", void *ssl = nullptr)
-				{
-					net_options.host = host;
-					net_options.port = port;
-					return start(net_options, ssl);
+				bool start(uint16_t port){
+					return start(KNetUrl{"tcp","0.0.0.0",port}); 
+				}
+		 
+				bool start(const std::string & url , void *ssl = nullptr)
+				{					
+					return start(KNetUrl{url}, ssl);
 				}
 
 				void stop()
@@ -304,6 +308,7 @@ namespace knet
 			
 				uint32_t worker_index = 0;
 				std::vector<WorkerPtr> user_workers;
+				KNetUrl url_info; 
 				NetOptions net_options;
 				bool is_running = false;
 				void *ssl_context = nullptr;

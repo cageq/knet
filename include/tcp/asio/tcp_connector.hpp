@@ -24,7 +24,7 @@ namespace knet
 
 			TcpConnector(FactoryPtr fac = nullptr, WorkerPtr worker = nullptr)
 			{
-				m.factory = fac;
+				net_factory = fac;
 				if (worker)
 				{
 					user_workers.emplace_back(worker);
@@ -35,12 +35,13 @@ namespace knet
 					 user_workers.emplace_back(worker);
 					 worker->start();
 				}
-				if (m.factory)
+				if (net_factory)
 				{
 					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
 				}
 				
 			}
+
 			virtual ~TcpConnector() {}
 
 			void add_worker(WorkerPtr worker)
@@ -50,12 +51,13 @@ namespace knet
 					user_workers.push_back(worker);
 				}
 			}
-			bool start(NetOptions opts , FactoryPtr fac = nullptr)
+
+			bool start(  NetOptions opts = {}, FactoryPtr fac = nullptr)
             {
                 net_options = opts; 
                 if (fac != nullptr)
 				{
-					m.factory = fac;
+					net_factory = fac;
 				}
                 for (uint32_t i = 0; i < opts.threads ; i++)
 				{
@@ -65,23 +67,6 @@ namespace knet
 				}
                 return true; 
             }
-
-			bool start(uint32_t thrds = 1, FactoryPtr fac = nullptr)
-			{
-				if (fac != nullptr)
-				{
-					m.factory = fac;
-				}
-				// nothing to do
-				for (uint32_t i = 0; i < thrds; i++)
-				{
-					auto worker = std::make_shared<Worker>(nullptr , this );
-					user_workers.emplace_back(worker);
-					worker->start();
-				}
-
-				return true;
-			}
 
 			void stop()
 			{
@@ -132,9 +117,9 @@ namespace knet
 				auto worker = this->get_worker();
 				auto sock = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
 				TPtr conn = nullptr;
-				if (m.factory)
+				if (net_factory)
 				{
-					conn = m.factory->create(args...);
+					conn = net_factory->create(args...);
 				}
 				else
 				{
@@ -171,22 +156,22 @@ namespace knet
 			{
 				if (handler)
 				{
-					m.event_handler_chain.push_back(handler);
+					event_handler_chain.push_back(handler);
 				}
 			}
 
 			void push_front(KNetHandler<T> *handler){
 				if (handler)
 				{
-					auto beg = m.event_handler_chain.begin(); 
-					m.event_handler_chain.insert(beg, handler);
+					auto beg = event_handler_chain.begin(); 
+					event_handler_chain.insert(beg, handler);
 				}
 			}
 			
 			void push_back(KNetHandler<T> *handler){
 				if (handler)
 				{
-					m.event_handler_chain.push_back(handler);
+					event_handler_chain.push_back(handler);
 				}
 			}
 
@@ -216,9 +201,9 @@ namespace knet
 				{
 					conn->post([this, conn]() {
 						conn->disable_reconnect();
-						if (m.factory)
+						if (net_factory)
 						{
-							m.factory->release(conn);
+							net_factory->release(conn);
 						}
 					});  
 				}
@@ -229,7 +214,7 @@ namespace knet
 			bool invoke_data_chain(TPtr conn, const std::string &msg)
 			{
 				bool ret = true;
-				for (auto handler : m.event_handler_chain)
+				for (auto handler : event_handler_chain)
 				{
 					if (handler)
 					{
@@ -246,7 +231,7 @@ namespace knet
 			bool invoke_event_chain(TPtr conn, NetEvent evt)
 			{
 				bool ret = true;
-				for (auto handler : m.event_handler_chain)
+				for (auto handler : event_handler_chain)
 				{
 					if (handler)
 					{
@@ -263,12 +248,10 @@ namespace knet
 			uint32_t worker_index = 0;
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
-            NetOptions net_options; 
-			struct
-			{
-				FactoryPtr factory = nullptr;
-				std::vector<KNetHandler<T> *> event_handler_chain;
-			} m;
+            NetOptions net_options;  
+			FactoryPtr net_factory = nullptr;
+			std::vector<KNetHandler<T> *> event_handler_chain;
+		 
 		};
 
 	} // namespace tcp

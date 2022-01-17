@@ -49,7 +49,7 @@ namespace knet
 				PACKAGE_USER,
 			};
 
-			UdpConnection() { m.status = CONN_IDLE; }
+			UdpConnection() { net_status = CONN_IDLE; }
 
 			using TPtr = std::shared_ptr<T>;
 			using EventHandler = std::function<bool(knet::NetEvent)>;
@@ -60,8 +60,8 @@ namespace knet
 				udp_socket = socket;
 				static uint64_t index = 1024;
 				cid = ++index;
-				m.event_worker = worker;
-				m.user_event_handler = evtHandler;
+				event_worker = worker;
+				user_event_handler = evtHandler;
 				process_event(EVT_CREATE);
 			}
 
@@ -204,9 +204,9 @@ namespace knet
 			{
 				bool ret = true;
 
-				if (ret && m.user_event_handler)
+				if (ret && user_event_handler)
 				{
-					ret = m.user_event_handler->handle_data(this->shared_from_this(), msg);
+					ret = user_event_handler->handle_data(this->shared_from_this(), msg);
 				}
 				if (ret)
 				{
@@ -219,9 +219,9 @@ namespace knet
 			{
 				bool ret = true;
 
-				if (ret && m.user_event_handler)
+				if (ret && user_event_handler)
 				{
-					ret = m.user_event_handler->handle_event(this->shared_from_this(), evt);
+					ret = user_event_handler->handle_event(this->shared_from_this(), evt);
 				}
 
 				if (ret)
@@ -241,7 +241,7 @@ namespace knet
 			{
 				remote_point = pt;
 				// this->udp_socket = std::make_shared<udp::socket>(ctx, udp::endpoint(udp::v4(), localPort));
-				this->udp_socket = std::make_shared<udp::socket>(m.event_worker->context());
+				this->udp_socket = std::make_shared<udp::socket>(event_worker->context());
 				if (udp_socket)
 				{
 					asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
@@ -253,8 +253,8 @@ namespace knet
 						udp_socket->bind(lisPoint);
 					}
 
-					m.timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(m.event_worker->context()));
-					m.timer->start_timer(
+					net_timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(event_worker->context()));
+					net_timer->start_timer(
 						[this]()
 						{
 							std::chrono::steady_clock::time_point nowPoint =
@@ -269,7 +269,7 @@ namespace knet
 							return true;
 						},
 						4000000);
-					m.status = CONN_OPEN;
+					net_status = CONN_OPEN;
 
 					if (remote_point.address().is_multicast())
 					{
@@ -324,14 +324,12 @@ namespace knet
 		private:
 			UdpSocketPtr udp_socket;
 			std::chrono::steady_clock::time_point last_msg_time;
-
-			struct
-			{
-				KNetHandler<T> *user_event_handler = nullptr;
-				KNetWorkerPtr event_worker = nullptr;
-				ConnectionStatus status;
-				std::unique_ptr<knet::utils::Timer> timer = nullptr;
-			} m;
+	 
+			KNetHandler<T> *user_event_handler = nullptr;
+			KNetWorkerPtr event_worker = nullptr;
+			ConnectionStatus net_status;
+			std::unique_ptr<knet::utils::Timer> net_timer = nullptr;
+	 
 		};
 
 	} // namespace udp

@@ -25,7 +25,7 @@ public:
 		wsock_listener.add_worker(lisWorker); // also as default worker
 	}
 
-	bool start( uint32_t port = 8888,const std::string& host ="127.0.0.1") { return wsock_listener.start(port, host); }
+	bool start( uint16_t port = 8888,const std::string& host ="127.0.0.1") { return wsock_listener.start({"tcp", host, port}); }
 
 	void register_router(const std::string& path, HttpHandler handler) {
 		dlog("register path {}", path);

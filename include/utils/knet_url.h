@@ -18,16 +18,18 @@ value     = *( "[^&:]" )
 options: 
     bind_addr
     bind_port 
-    delay   = 0/1 
-    async = 0/1
+ 
 */
 struct KNetUrl{
     std::string protocol;
     std::string host; 
     uint16_t    port; 
     //std::vector<std::pair<std::string, std::string > > params;
+    KNetUrl(const std::string & url = ""){
+        encode(url); 
+    }
     
-    KNetUrl(const std::string & proto ="",const  std::string & host = "", uint16_t port =0 ){
+    KNetUrl(const std::string & proto ,const  std::string & host , uint16_t port =0 ){
         protocol = proto; 
         this->host = host; 
         this->port = port; 

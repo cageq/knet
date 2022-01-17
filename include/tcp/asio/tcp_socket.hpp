@@ -42,15 +42,16 @@ namespace knet {
                               cache_buffer.reserve(1024); 
                           }
 
-                    inline void init(TPtr conn) {
+                    inline void init(TPtr conn, NetOptions opts) {
+                        net_options = opts; 
                         connection = conn;
                     }
 
                     inline bool connect(){
-                        return connect(url_info); 
+                        return connect(url_info ); 
                     }
 
-                    bool connect(const KNetUrl & urlInfo) {
+                    bool connect(const KNetUrl & urlInfo  ) {                       
                         url_info = urlInfo; 
                         tcp::resolver resolver(io_context);
                         auto result = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
@@ -63,27 +64,22 @@ namespace knet {
                             std::string bindPort = urlInfo.get("bind_port"); 
                             asio::ip::tcp::endpoint laddr(asio::ip::make_address(bindAddr), std::stoi(bindPort) );
                             tcp_sock.bind(laddr);
-                        }  
-
-                        auto asyncFlag = urlInfo.get("async"); 
-                        int32_t async = asyncFlag.empty()?1:std::stoi(asyncFlag); 
+                        }   
                      
                         auto self = this->shared_from_this();
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
-                        if (async){
+                        if (!net_options.sync){
                                async_connect(tcp_sock, result,
                                     [self, this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
                                     if (!ec) {
-                                        if (!self->connection->net_options.tcp_delay)
+                                        if (!self->net_options.tcp_delay)
                                         {
                                             self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
                                         }
                                     
-                                        dlog("connect to {}:{} success",url_info.host,url_info.port); 
-                                        if (!self->connection->net_options.sync){
-                                            self->init_read(); 
-                                        }
-                                        
+                                        dlog("connect to {}:{} success",url_info.host,url_info.port);       
+                                        self->init_read(); 
+                                                                           
                                     }else {
                                        dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
                                         self->tcp_sock.close();
@@ -96,7 +92,12 @@ namespace knet {
                         }else {                                      
                             try {
                                 std::future<asio::ip::tcp::endpoint> cf =  async_connect(tcp_sock, result, asio::use_future); 
-                                cf.get();                                 
+                                cf.get();             
+
+                                if (!net_options.tcp_delay)
+                                {
+                                    tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
+                                }                    
                             }catch(std::system_error& e){
                                 dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, e.what() );
                                 self->tcp_sock.close();
@@ -141,7 +142,6 @@ namespace knet {
                                 memmove((char*)read_buffer, (char *)read_buffer + readLen, read_buffer_pos - readLen); 
                                 read_buffer_pos = read_buffer_pos - readLen; 
                             }
-
                             return dataLen; 
                         }
 
@@ -162,8 +162,8 @@ namespace knet {
                                         self->do_read();
                                         }
                                         else {
-                                        elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
-                                        do_close();
+                                            elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+                                            do_close();
                                         }
                                         });
 
@@ -482,6 +482,7 @@ namespace knet {
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
                     std::thread::id worker_tid;
                     KNetUrl url_info; 
+                    NetOptions net_options; 
             };
 
 

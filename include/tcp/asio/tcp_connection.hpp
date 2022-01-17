@@ -39,8 +39,7 @@ namespace knet
 			TcpConnection(Args ... args){ 
 				static uint64_t index = 1024;
 				cid = ++index; 
-			}
-		 
+			}	 
 
 			virtual ~TcpConnection()
 			{
@@ -57,10 +56,10 @@ namespace knet
 
 			void init(NetOptions opts,  SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
 			{
-                net_options  = opts; 
+                
 				event_worker = worker;			 
 				tcp_socket   = sock;
-				tcp_socket->init(this->shared_from_this()); 
+				tcp_socket->init(this->shared_from_this() , opts ); 
 				user_event_handler = evtHandler; 
 				handle_event(EVT_CREATE);
 			}
@@ -127,7 +126,7 @@ namespace knet
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
 			inline bool is_connecting() { return tcp_socket && tcp_socket->is_connecting(); }
 
-			bool connect(const KNetUrl & urlInfo )
+			bool connect(const KNetUrl & urlInfo    )
 			{		 
 				dlog("start to connect {}", urlInfo.dump()); 
 				passive_mode = false; 
@@ -270,8 +269,6 @@ namespace knet
 			void *user_data = nullptr;  
 	private:
 			bool process_event(NetEvent evt){
-
-				//dlog("process event {}", evt);
 				bool ret = true; 
 				if (event_handler)
 				{
@@ -288,15 +285,13 @@ namespace knet
 				}	
 				return ret; 				
 			}
-
-            NetOptions net_options; 
+            
 			bool reconn_flag = false;
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
 			bool passive_mode = true;
 			std::set<uint64_t> conn_timers; 
 			SocketPtr tcp_socket = nullptr;
-
 			EventHandler    event_handler   = nullptr;
 			DataHandler     data_handler    = nullptr;
 			PackageHandler  package_handler = nullptr;  

@@ -90,6 +90,8 @@ int main(int argc, char** argv)
 	// });
 
 
+    KNetUrl url{"tcp",host, 8888}; 
+    url.set("delay", "0"); 
 
 	auto conn = connector.add_connection({"tcp", host, 8888});
 	//conn->enable_reconnect(); 
@@ -103,7 +105,8 @@ int main(int argc, char** argv)
             gettimeofday(&recvMsg.time,0); 
             recvMsg.index = index ++; 
             conn->send((const char *)&recvMsg, sizeof(TestMsg) );
-            usleep(10); 
+            usleep(100); 
+
 
         }
 
