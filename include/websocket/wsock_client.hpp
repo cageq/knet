@@ -32,7 +32,7 @@ public:
 		
 
 		auto firstReq = create_request(urlInfo);
-		return connector.add_connection(ConnectionInfo(urlInfo.host(), urlInfo.port()), firstReq, handler );
+		return connector.add_connection(KNetUrl("tcp",urlInfo.host(), urlInfo.port()), firstReq, handler );
 	}
 
 	HttpRequestPtr create_request(const HttpUrl& urlInfo) {

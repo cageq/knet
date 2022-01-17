@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 
 
 
-	auto conn = connector.add_connection({ host, 8888});
+	auto conn = connector.add_connection({"tcp", host, 8888});
 	//conn->enable_reconnect(); 
 
     uint64_t index = 1; 

@@ -8,6 +8,7 @@
 #include <set>
 #include <unordered_map>
 
+
 #include "tcp_socket.hpp"
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
@@ -16,21 +17,7 @@ using asio::ip::tcp;
 namespace knet
 {
 	namespace tcp
-	{
-		struct ConnectionInfo {
-			ConnectionInfo(const std::string & sAddr, uint16_t sPort, const std::string & dAddr = "127.0.0.1", uint16_t dPort =0){
-					server_addr = sAddr; 
-					server_port = sPort; 
-					local_addr = dAddr; 
-					local_port = dPort; 
-			}
- 
-			std::string server_addr; 
-			uint16_t server_port; 
-			std::string local_addr; 
-			uint16_t local_port; 
-			bool reuse = true;  
-		}; 
+	{ 
 
 
 		template <class T>
@@ -144,17 +131,14 @@ namespace knet
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
 			inline bool is_connecting() { return tcp_socket && tcp_socket->is_connecting(); }
 
-			bool connect(const ConnectionInfo & connInfo )
-			{
-				dlog("start to connect {}:{}", connInfo.server_addr, connInfo.server_port);
-				this->remote_host = connInfo.server_addr;
-				this->remote_port = connInfo.server_port;
+			bool connect(const KNetUrl & urlInfo )
+			{		 
+				dlog("start to connect {}", urlInfo.dump()); 
 				passive_mode = false; 
-				return tcp_socket->connect(connInfo.server_addr, connInfo.server_port, connInfo.local_addr, connInfo.local_port);
-			}
-		
+				return tcp_socket->connect(urlInfo);
+			}		
 
-			bool connect() { return tcp_socket->connect(remote_host, remote_port); }
+			bool connect() { return tcp_socket->connect(); }
 
 			inline tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
 			inline tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
@@ -172,8 +156,7 @@ namespace knet
 				}
 				return 0; 				
 			}
-
-
+ 
             int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
                 if(tcp_socket){
                     return tcp_socket->do_sync_read(handler); 
@@ -316,14 +299,12 @@ namespace knet
 			std::set<uint64_t> conn_timers; 
 			SocketPtr tcp_socket = nullptr;
 
-			EventHandler   event_handler   = nullptr;
-			DataHandler    data_handler    = nullptr;
-			PackageHandler package_handler = nullptr; 
-
-			std::string remote_host ;
-			uint16_t remote_port; 
-			KNetWorkerPtr event_worker = nullptr;
+			EventHandler    event_handler   = nullptr;
+			DataHandler     data_handler    = nullptr;
+			PackageHandler  package_handler = nullptr;  
+			KNetWorkerPtr   event_worker = nullptr;
 			KNetHandler<T>* user_event_handler = nullptr;
+	 
 		};
 
 	} // namespace tcp

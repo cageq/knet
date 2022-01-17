@@ -11,7 +11,7 @@
 #include <chrono>
 #include <type_traits>
 #include <string_view> 
-
+#include "utils/knet_url.h"
 
 
 namespace knet {
@@ -45,32 +45,42 @@ namespace knet {
                         connection = conn;
                     }
 
-                    bool connect(const std::string& host, uint32_t port, const std::string& localAddr = "0.0.0.0", uint32_t localPort = 0) {
+                    inline bool connect(){
+                        return connect(url_info); 
+                    }
+
+                    bool connect(const KNetUrl & urlInfo) {
+                        url_info = urlInfo; 
                         tcp::resolver resolver(io_context);
-                        auto result = resolver.resolve(host, std::to_string(port));
-                        dlog("connect to server {}:{}", host.c_str(), port);
-                        auto self = this->shared_from_this();
+                        auto result = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
+                        dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);
+                        
                         tcp_sock.close(); 
                         tcp_sock = std::move(tcp::socket(io_context)); 
-                        if (localPort > 0) {
-                            asio::ip::tcp::endpoint laddr(asio::ip::make_address(localAddr), localPort);
+                        if ( urlInfo.has("bind_port")) {
+                            std::string bindAddr = urlInfo.get("bind_addr"); 
+                            std::string bindPort = urlInfo.get("bind_port"); 
+                            asio::ip::tcp::endpoint laddr(asio::ip::make_address(bindAddr), std::stoi(bindPort) );
                             tcp_sock.bind(laddr);
-                        }
+                        }  
+                     
+                        auto self = this->shared_from_this();
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
                         async_connect(tcp_sock, result,
-                                [self, host, port ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
+                                [self,this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
                                 if (!ec) {
-                                self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));
-                                dlog("connect to {}:{} success",host,port); 
-                                self->init_read(); 
+                                    if (url_info.has("delay")){
+                                        int32_t delay = std::stoi(url_info.get("delay")); 
+                                        self->tcp_sock.set_option(asio::ip::tcp::no_delay(delay));
+                                    }
+                                    dlog("connect to {}:{} success",url_info.host, url_info.port); 
+                                    self->init_read(); 
                                 }else {
-                                dlog("connect to server failed, {}:{} , error : {}", host.c_str(), port, ec.message() );
-                                self->tcp_sock.close();
-                                self->socket_status = SocketStatus::SOCKET_CLOSED; 
+                                    dlog("connect to server failed, {}:{} , error : {}", url_info.host, url_info.port, ec.message() );
+                                    self->tcp_sock.close();
+                                    self->socket_status = SocketStatus::SOCKET_CLOSED; 
                                 }
                                 });
-
-
                         return true;
                     }
 
@@ -463,6 +473,7 @@ namespace knet {
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
 
                     std::thread::id worker_tid;
+                    KNetUrl url_info; 
             };
 
 

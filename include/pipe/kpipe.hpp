@@ -61,7 +61,7 @@ namespace knet {
 							if (port != 0) { 
 								pipe->set_port(port);  
 								if (is_started) { 
-									auto conn = connector->add_connection({pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
+									auto conn = connector->add_connection({"tcp",pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
 									conn->enable_reconnect();
 								}
 							}
@@ -70,7 +70,7 @@ namespace knet {
 
 					PipeSessionPtr attach(const std::string& host = "", uint16_t port = 0) { 
 						auto pipe = std::make_shared<PipeSession>(); 
-						auto conn = connector->add_connection({host, port});
+						auto conn = connector->add_connection({"tcp",host, port});
 						conn->enable_reconnect(); 
 						dlog("register unbind pipe {}",conn->get_cid()); 
 						pipe_factory.register_pipe(pipe,conn->get_cid());
@@ -107,7 +107,7 @@ namespace knet {
 						if (pipe_mode & PIPE_CLIENT_MODE) {
 
 							pipe_factory.start_clients([this](PipeSessionPtr pipe){ 
-								auto conn = connector->add_connection({pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
+								auto conn = connector->add_connection({"tcp",pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
 								conn->enable_reconnect();
 							});  
 				 

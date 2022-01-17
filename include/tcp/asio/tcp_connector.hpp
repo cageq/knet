@@ -109,16 +109,17 @@ namespace knet
 				return false;
 			}
 
-			bool add_connection(TPtr conn, const ConnectionInfo &connInfo)
+			bool add_connection(TPtr conn, const std::string& url )
 			{
 				if (conn)
 				{
+					KNetUrl urlInfo; 
+					urlInfo.encode(url); 
 					auto worker = this->get_worker();
 					auto sock =
 						std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
-					conn->init(net_options, sock, worker, this);
-					asio::ip::tcp::endpoint endpoint(asio::ip::make_address(connInfo.server_addr), connInfo.server_port);
-					conn->connect(connInfo);
+					conn->init(net_options, sock, worker, this);					 
+					conn->connect(urlInfo );
 					connections[conn->get_cid()] = conn;
 					return true;
 				}
@@ -126,7 +127,7 @@ namespace knet
 			}
 
 			template <class... Args>
-			TPtr add_connection(const ConnectionInfo &connInfo, Args... args)
+			TPtr add_connection(const KNetUrl &urlInfo, Args... args)
 			{
 				auto worker = this->get_worker();
 				auto sock = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
@@ -141,7 +142,7 @@ namespace knet
 				}
 
 				conn->init(net_options, sock, worker, this);
-				conn->connect(connInfo);
+				conn->connect(urlInfo);
 				connections[conn->get_cid()] = conn;
 				return conn;
 			}

@@ -70,8 +70,7 @@ int main(int argc, char** argv)
 	// });
 
 
-	auto conn = connector.add_connection({ "127.0.0.1", 8888});
-	//connector->add_connection("10.246.34.55", 8855);
+	auto conn = connector.add_connection({"tcp", "127.0.0.1", 8888}); 
 	conn->enable_reconnect(); 
 
 

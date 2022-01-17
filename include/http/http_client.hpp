@@ -39,12 +39,20 @@ public:
 
 	bool get(const std::string& url) {
 
-		HttpUrl urlInfo(url);
+		HttpUrl httpUrl(url);
 
-		std::cout << urlInfo << std::endl;
+		std::cout << httpUrl << std::endl;
 
 		auto req = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
-		auto conn = connector.add_connection(ConnectionInfo(urlInfo.host(), urlInfo.port()), req );
+		
+
+		
+		KNetUrl urlInfo("tcp", httpUrl.host(), httpUrl.port()) ; 
+
+
+
+		auto conn = connector.add_connection(urlInfo, req );
+		
 
 		connections[conn->get_cid()] = conn;
 		return true;

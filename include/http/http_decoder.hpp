@@ -155,8 +155,7 @@ namespace knet
 				inplace_flag = inplace;
 				input_data = data;
 				input_len = len;
-				init_parser(HTTP_RESPONSE);
- 
+				init_parser(HTTP_RESPONSE); 
 
 				if (inplace)
 				{

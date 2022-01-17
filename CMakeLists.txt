@@ -78,3 +78,7 @@ add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  )
 
 add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  )
 #target_link_libraries(unbindpipeserver fmt)
+
+
+
+add_executable(testurl samples/test_url.cpp  )

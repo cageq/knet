@@ -30,36 +30,36 @@ namespace knet
 				TcpListener(FactoryPtr fac = nullptr, WorkerPtr lisWorker = nullptr)
 				{
 					if (lisWorker == nullptr){
-						m.listen_worker = std::make_shared<Worker>(); 
-						m.listen_worker->start();
+						listen_worker = std::make_shared<Worker>(); 
+						listen_worker->start();
 					}else {
-						m.listen_worker = lisWorker;
+						listen_worker = lisWorker;
 					}
 
 					if (fac != nullptr)
 					{					
-						m.factory = fac;
+						factory = fac;
 						add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
 					}
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
+					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(listen_worker->context()); 
 				}
 
 				TcpListener(WorkerPtr lisWorker)
 				{  
 					if (lisWorker == nullptr){
-						m.listen_worker = std::make_shared<Worker>(); 
-						m.listen_worker->start();
+						listen_worker = std::make_shared<Worker>(); 
+						listen_worker->start();
 					}else {
-						m.listen_worker = lisWorker;
+						listen_worker = lisWorker;
 					} 
-					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m.listen_worker->context()); 
+					tcp_acceptor = std::make_shared<asio::ip::tcp::acceptor>(listen_worker->context()); 
 				}
 
 				void add_worker(WorkerPtr worker)
 				{
 					if (worker)
 					{
-						m.user_workers.push_back(worker);
+						user_workers.push_back(worker);
 					}
 				}
 
@@ -69,11 +69,11 @@ namespace knet
 
 				bool start(NetOptions opt, void *sslCtx = nullptr)
 				{
-					m.options = opt;
-					m.ssl_context = sslCtx;
-					if (!m.is_running)
+					net_options = opt;
+					ssl_context = sslCtx;
+					if (!is_running)
 					{
-						m.is_running = true;
+						is_running = true;
 						asio::ip::tcp::endpoint endpoint(asio::ip::make_address(opt.host), opt.port);
 
 						// this->tcp_acceptor.open(asio::ip::tcp::v4());
@@ -81,14 +81,14 @@ namespace knet
 						if (tcp_acceptor->is_open())
 						{
 							this->tcp_acceptor->set_option(asio::socket_base::reuse_address(true));
-                            if (!m.options.tcp_delay) {
+                            if (!net_options.tcp_delay) {
                                 this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
                             }
 							this->tcp_acceptor->non_blocking(true);
 
-							asio::socket_base::send_buffer_size SNDBUF(m.options.send_buffer_size);
+							asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
 							this->tcp_acceptor->set_option(SNDBUF);
-							asio::socket_base::receive_buffer_size RCVBUF(m.options.recv_buffer_size);
+							asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
 							this->tcp_acceptor->set_option(RCVBUF);
 
 							asio::error_code ec;
@@ -96,15 +96,15 @@ namespace knet
 							if (ec)
 							{
 								elog("bind address failed {}:{}", opt.host, opt.port);
-								m.is_running = false;
+								is_running = false;
 								return false;
 							}
-							this->tcp_acceptor->listen(m.options.backlogs, ec);
+							this->tcp_acceptor->listen(net_options.backlogs, ec);
 
 							if (ec)
 							{
 								elog("start listen failed");
-								m.is_running = false;
+								is_running = false;
 								return false;
 							}
 							this->do_accept();
@@ -119,23 +119,23 @@ namespace knet
 
 				bool start(uint16_t port = 9999, const std::string &host = "0.0.0.0", void *ssl = nullptr)
 				{
-					m.options.host = host;
-					m.options.port = port;
-					return start(m.options, ssl);
+					net_options.host = host;
+					net_options.port = port;
+					return start(net_options, ssl);
 				}
 
 				void stop()
 				{
 					dlog("stop listener thread");
-					if (m.is_running)
+					if (is_running)
 					{
-						m.is_running = false;
+						is_running = false;
 						tcp_acceptor->close();
-						for(auto & worker : m.user_workers){
+						for(auto & worker : user_workers){
 							worker->stop(); 
 						}
-						m.user_workers.clear();
-						m.listen_worker->stop();
+						user_workers.clear();
+						listen_worker->stop();
 					}
 				}
 
@@ -158,21 +158,21 @@ namespace knet
 				{
 					if (handler)
 					{
-						m.event_handler_chain.push_back(handler);
+						event_handler_chain.push_back(handler);
 					}
 				}
 				void push_front(KNetHandler<T> *handler){
 					if (handler)
 					{
-						auto beg = m.event_handler_chain.begin(); 
-						m.event_handler_chain.insert(beg, handler);
+						auto beg = event_handler_chain.begin(); 
+						event_handler_chain.insert(beg, handler);
 					}
 				}
 
 				void push_back(KNetHandler<T> *handler){
 					if (handler)
 					{
-						m.event_handler_chain.push_back(handler);
+						event_handler_chain.push_back(handler);
 					}
 				}
 
@@ -193,7 +193,7 @@ namespace knet
 				bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
 				{
 					bool ret = true;
-					for (auto &handler : m.event_handler_chain)
+					for (auto &handler : event_handler_chain)
 					{
 						if (handler)
 						{
@@ -210,7 +210,7 @@ namespace knet
 				bool invoke_event_chain(const TPtr &  conn, NetEvent evt)
 				{
 					bool ret = true;
-					for (auto &handler : m.event_handler_chain)
+					for (auto &handler : event_handler_chain)
 					{
 						if (handler)
 						{
@@ -226,12 +226,12 @@ namespace knet
 
 				void release(const TPtr &  conn)
 				{
-					if (m.factory) 
+					if (factory) 
 					{
-						asio::post(m.listen_worker->context(), [this, conn]() {
-								if (m.factory)
+						asio::post(listen_worker->context(), [this, conn]() {
+								if (factory)
 								{
-								m.factory->release(conn);
+								factory->release(conn);
 								}
 								});
 					}
@@ -245,7 +245,7 @@ namespace knet
 						return;
 					}
 
-					auto socket = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context(), m.ssl_context);
+					auto socket = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context(), ssl_context);
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
 							if (!ec)
 							{
@@ -264,15 +264,15 @@ namespace knet
 
 				WorkerPtr get_worker()
 				{
-					if (!m.user_workers.empty())
+					if (!user_workers.empty())
 					{
-						dlog("dispatch to worker {}", m.worker_index);
-						return m.user_workers[m.worker_index++ % m.user_workers.size()];
+						dlog("dispatch to worker {}", worker_index);
+						return user_workers[worker_index++ % user_workers.size()];
 					}
 					else
 					{
 						//dlog("dispatch work to listen worker {}", std::this_thread::get_id());
-						return m.listen_worker;
+						return listen_worker;
 					}
 				}
 
@@ -282,7 +282,7 @@ namespace knet
 					{
 						asio::dispatch(worker->context(), [=]() {
 								auto conn = create_connection(socket, worker);				 
-                                    if (!this->m.options.sync ) {
+                                    if (!this->net_options.sync ) {
                                         socket->init_read();
                                     }
 								});
@@ -292,26 +292,24 @@ namespace knet
 				TPtr create_connection(SocketPtr sock, WorkerPtr worker)
 				{
 					TPtr  conn = nullptr; 
-					if (m.factory) {
-						conn = m.factory->create();						
+					if (factory) {
+						conn = factory->create();						
 					} else {
 						conn = std::make_shared<T>(); 						
 					}
-					conn->init(m.options, sock, worker, this);
+					conn->init(net_options, sock, worker, this);
 					return conn; 
 				}
 
-				struct
-				{
-					uint32_t worker_index = 0;
-					std::vector<WorkerPtr> user_workers;
-					NetOptions options;
-					bool is_running = false;
-					void *ssl_context = nullptr;
-					FactoryPtr factory = nullptr;
-					std::vector<KNetHandler<T> *> event_handler_chain;
-					WorkerPtr listen_worker;
-				} m;
+			
+				uint32_t worker_index = 0;
+				std::vector<WorkerPtr> user_workers;
+				NetOptions net_options;
+				bool is_running = false;
+				void *ssl_context = nullptr;
+				FactoryPtr factory = nullptr;
+				std::vector<KNetHandler<T> *> event_handler_chain;
+				WorkerPtr listen_worker;	
 
 				std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
 		};
