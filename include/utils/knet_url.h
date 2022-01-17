@@ -19,6 +19,7 @@ options:
     bind_addr
     bind_port 
     delay   = 0/1 
+    async = 0/1
 */
 struct KNetUrl{
     std::string protocol;
@@ -99,13 +100,16 @@ struct KNetUrl{
         return params.find(key) != params.end(); 
     }
  
+    void set(const std::string & key  , const std::string & val){
+        params[key] = val; 
+    }
 
-    std::string get(const std::string& key) const {
+    std::string get(const std::string& key, const std::string & dft = "") const {
         auto itr = params.find(key); 
         if (itr!= params.end()){
             return itr->second; 
         }
-        return ""; 
+        return dft; 
     }
 
     std::string  dump() const {

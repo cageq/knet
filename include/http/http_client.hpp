@@ -48,9 +48,7 @@ public:
 
 		
 		KNetUrl urlInfo("tcp", httpUrl.host(), httpUrl.port()) ; 
-
-
-
+ 
 		auto conn = connector.add_connection(urlInfo, req );
 		
 

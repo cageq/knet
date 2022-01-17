@@ -20,7 +20,7 @@ namespace knet
 		KNetWorker(IOContextPtr ctx = nullptr, void* udata = nullptr)
 		{
 			if (ctx == nullptr) {
-				io_context = std::make_shared<asio::io_context>(); 
+				io_context = std::make_shared<asio::io_context>(1); 
 				self_context = io_context; //hold self context
 			}else {
 				io_context = ctx;
