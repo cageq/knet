@@ -58,8 +58,7 @@ namespace knet
 		 		cid = ++index;
 		   		net_status = CONN_IDLE;
 		    }
-
-			using TPtr = std::shared_ptr<T>;
+			
 			using EventHandler = std::function<bool(knet::NetEvent)>;
 			using DataHandler = std::function<bool(const std::string &)>; 
 
@@ -305,28 +304,33 @@ namespace knet
 			void do_receive()
 			{
 				udp_socket->async_receive_from(asio::buffer(recv_buffer, kMaxRecvBufferSize), sender_point,
-											   [this](std::error_code ec, std::size_t bytes_recvd)
-											   {
-												   if (!ec && bytes_recvd > 0)
-												   {
-													   last_msg_time = std::chrono::steady_clock::now();
-													   //dlog("get message from {}:{}", sender_point.address().to_string(),
-													   //	sender_point.port());
-													   recv_buffer[bytes_recvd] = 0;
-													   auto pkgType = this->handle_package(std::string((const char *)recv_buffer, bytes_recvd));
-													   if (pkgType == PACKAGE_USER)
-													   {
-														   process_data(std::string((const char *)recv_buffer, bytes_recvd));
-													   }
+						[this](std::error_code ec, std::size_t bytes_recvd)
+						{
+							if (!ec && bytes_recvd > 0)
+							{
+								last_msg_time = std::chrono::steady_clock::now();
+								//dlog("get message from {}:{}", sender_point.address().to_string(),
+								//	sender_point.port());
+								this->sender_point = sender_point; 
+								recv_buffer[bytes_recvd] = 0;
+								auto pkgType = this->handle_package(std::string((const char *)recv_buffer, bytes_recvd));
+								if (pkgType == PACKAGE_USER)
+								{
+									process_data(std::string((const char *)recv_buffer, bytes_recvd));
+								}
 
-													   do_receive();
-												   }
-												   else
-												   {
-													   elog("async receive error {}, {}", ec.value(), ec.message());
-												   }
-											   });
+								do_receive();
+							}
+							else
+							{
+								elog("async receive error {}, {}", ec.value(), ec.message());
+							}
+						});
 			}
+
+ 
+
+
 			void release()
 			{
 				process_event(EVT_RELEASE);
