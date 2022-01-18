@@ -25,12 +25,20 @@ namespace knet
 
 		using UdpSocketPtr = std::shared_ptr<udp::socket>;
 		using SendBufferPtr = std::shared_ptr<std::string>;
-
+		enum { kMaxRecvBufferSize = 4096 };
 	
 		inline std::string addrstr(udp::endpoint pt)
 		{
 			return pt.address().to_string() + ":" + std::to_string(pt.port());
 		}
+
+		enum PackageType
+		{
+			PACKAGE_PING,
+			PACKAGE_PONG,
+			PACKAGE_USER,
+		};
+
 
 		template <typename T>
 		class UdpConnection : public std::enable_shared_from_this<T>
@@ -44,26 +52,20 @@ namespace knet
 				CONN_CLOSED
 			};
 
-			enum PackageType
-			{
-				PACKAGE_PING,
-				PACKAGE_PONG,
-				PACKAGE_USER,
-			};
-
-			UdpConnection() { net_status = CONN_IDLE; }
+	
+			UdpConnection() {
+				static uint64_t index = 1024;
+		 		cid = ++index;
+		   		net_status = CONN_IDLE;
+		    }
 
 			using TPtr = std::shared_ptr<T>;
 			using EventHandler = std::function<bool(knet::NetEvent)>;
-			using DataHandler = std::function<bool(const std::string &)>;
-
-
+			using DataHandler = std::function<bool(const std::string &)>; 
 
 			void init(UdpSocketPtr socket = nullptr, KNetWorkerPtr worker = nullptr, KNetHandler<T> *evtHandler = nullptr)
 			{
 				udp_socket = socket;
-				static uint64_t index = 1024;
-				cid = ++index;
 				event_worker = worker;
 				user_event_handler = evtHandler;
 				process_event(EVT_CREATE);
@@ -78,6 +80,7 @@ namespace knet
 			{
 				return msend(msg);
 			}
+
 			bool join_group(const std::string &multiHost)
 			{
 				if (!multiHost.empty())
@@ -104,66 +107,12 @@ namespace knet
 				return -1;
 			}
 
-			template <typename P>
-			inline void write_data(SendBufferPtr &sndBuf, const P &data)
-			{
-				sndBuf->append(std::string_view((const char *)&data, sizeof(P)));
-			}
-
-			inline void write_data(SendBufferPtr &sndBuf, const std::string_view &data)
-			{
-				sndBuf->append(data);
-			}
-
-			inline void write_data(SendBufferPtr &sndBuf, const std::string &data)
-			{
-				sndBuf->append(data);
-			}
-
-			inline void write_data(SendBufferPtr &sndBuf, const char *data)
-			{
-				sndBuf->append(std::string(data));
-			}
 
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &...rest)
 			{
 				auto sendBuffer = std::make_shared<std::string>(); //calc all params size
 				return mpush(sendBuffer, first, rest...);
-			}
-
-			template <typename F, typename... Args>
-			int32_t mpush(SendBufferPtr &sndBuf, const F &data, Args... rest)
-			{
-				this->write_data(sndBuf, data);
-				return mpush(sndBuf, rest...);
-			}
-
-			int32_t mpush(SendBufferPtr &sndBuf)
-			{
-
-				if (!udp_socket)
-				{
-					return -1;
-				}
-
-				if (!sndBuf->empty())
-				{
-					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), 
-											  remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
-											  {
-												  if (!ec)
-												  {
-													  //dlog("sent out thread id is {}", std::this_thread::get_id());
-												  }
-												  else
-												  {
-													  elog("sent message error : {}, {}", ec.value(), ec.message());
-												  }
-											  });
-					return sndBuf->length();
-				}
-				return 0;
 			}
 
 			virtual PackageType handle_package(const std::string &msg)
@@ -205,6 +154,74 @@ namespace knet
 
 			uint32_t cid = 0;
 		private:
+
+		
+			template <typename P>
+			inline int32_t write_data(SendBufferPtr &sndBuf, const P &data)
+			{
+				sndBuf->append(std::string_view((const char *)&data, sizeof(P)));
+				return sizeof(P); 
+			}
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string_view &data)
+			{
+				sndBuf->append(data);
+				return data.length(); 
+			}
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string &data)
+			{
+				sndBuf->append(data);
+				return data.length(); 
+			}
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const char *data)
+			{
+				sndBuf->append(std::string(data));
+				return strlen(data); 
+			}
+
+
+			template <typename F, typename... Args>
+			int32_t mpush(SendBufferPtr &sndBuf, const F &data, Args... rest)
+			{
+				auto ret = this->write_data(sndBuf, data);
+				auto rst = mpush(sndBuf, rest...);
+				if (rst < 0)
+				{
+					return -1; 
+				}
+				return ret + rst; 
+			}
+
+			int32_t mpush(SendBufferPtr &sndBuf)
+			{
+				if (!udp_socket)
+				{
+					return -1;
+				}
+
+				if (!sndBuf->empty())
+				{
+					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), 
+											  remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
+											  {
+												  if (!ec)
+												  {
+													  //dlog("sent out thread id is {}", std::this_thread::get_id());
+												  }
+												  else
+												  {
+													  elog("sent message error : {}, {}", ec.value(), ec.message());
+												  }
+											  });
+					return sndBuf->length();
+				}
+				return 0;
+			}
+
+
+
 			bool process_data(const std::string &msg)
 			{
 				bool ret = true;
@@ -287,7 +304,7 @@ namespace knet
 
 			void do_receive()
 			{
-				udp_socket->async_receive_from(asio::buffer(recv_buffer, max_length), sender_point,
+				udp_socket->async_receive_from(asio::buffer(recv_buffer, kMaxRecvBufferSize), sender_point,
 											   [this](std::error_code ec, std::size_t bytes_recvd)
 											   {
 												   if (!ec && bytes_recvd > 0)
@@ -316,12 +333,8 @@ namespace knet
 			}
 
 			// std::string cid() const { return remote_host + std::to_string(remote_port); }
-			enum
-			{
-				max_length = 4096
-			};
-			char recv_buffer[max_length];
-
+ 
+			char recv_buffer[kMaxRecvBufferSize];
 			udp::endpoint sender_point;
 			udp::endpoint remote_point;
 			udp::endpoint multicast_point;

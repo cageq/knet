@@ -14,6 +14,11 @@ class MyConnection : public UdpConnection<MyConnection >
 	    wlog("on recv udp message {} , lenght is {}", msg.data(), msg.length());
 	    return PACKAGE_USER;
 	}
+    virtual bool handle_data(const std::string &msg)
+    {
+        dlog("hand udp message {}",msg); 
+        return true; 
+    }
 }; 
 
 int main(int argc , char * argv[])

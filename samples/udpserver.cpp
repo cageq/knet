@@ -35,6 +35,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	//	ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 
 		//std::string rsp = "message from server" ; 
 	//	send(msg.data(), msg.length()); 
+		send("welcome"); 
 		return PACKAGE_USER;
 	}
 	

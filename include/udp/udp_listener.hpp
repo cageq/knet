@@ -21,6 +21,7 @@ namespace knet {
 			using WorkerPtr = std::shared_ptr<Worker>;
 			using FactoryPtr = Factory*;
 			enum { kMaxRecvBufferSize = 4096 };
+	
 
 			UdpListener(WorkerPtr w = nullptr)
 				: net_worker(w) {
@@ -136,7 +137,7 @@ namespace knet {
 					event_handler_chain.push_back(handler);
 				}
 			}
-			
+
 		private:
 			virtual bool handle_data(TPtr conn, const std::string &msg)
 			{
@@ -151,9 +152,7 @@ namespace knet {
 					this->release(conn);
 				}
 				return ret;
-			}
-
-
+			} 
 			void release(const TPtr &  conn)
 			{
 				if (net_worker) 
@@ -201,7 +200,6 @@ namespace knet {
 				return ret;
 			}
 
-
 			void do_receive() {
 				server_socket->async_receive_from(asio::buffer(recv_buffer, kMaxRecvBufferSize), remote_point,
 					[this](std::error_code ec, std::size_t bytes_recvd) {
@@ -220,10 +218,13 @@ namespace knet {
 								// 		asio::ip::udp::endpoint(asio::ip::make_address(multi_host), listen_port);
 								// }
 							}
-							recv_buffer[bytes_recvd] = 0;
-							conn->handle_package(std::string((const char*)recv_buffer, bytes_recvd));
-							this->handle_data(conn, std::string((const char*)recv_buffer, bytes_recvd)); 
-							this->handle_event(conn, EVT_RECV);  
+							auto pkgType = conn->handle_package(std::string((const char *)recv_buffer, bytes_recvd));
+							if (pkgType == PACKAGE_USER)
+							{								
+								recv_buffer[bytes_recvd] = 0;				 
+								this->handle_data(conn, std::string((const char*)recv_buffer, bytes_recvd)); 
+								this->handle_event(conn, EVT_RECV);  
+							}
 
 						}else {
 							elog("receive error from {}:{}", remote_point.address().to_string(), remote_point.port());
@@ -233,9 +234,7 @@ namespace knet {
 						do_receive();
 					});
 			}
-
-
-
+ 
 	
 			char recv_buffer[kMaxRecvBufferSize];
 			uint32_t listen_port;
@@ -247,7 +246,7 @@ namespace knet {
 			FactoryPtr net_factory = nullptr;
 			WorkerPtr net_worker;
 			std::vector<KNetHandler<T> *> event_handler_chain;
-			KNetUrl url_info; 
+			KNetUrl url_info; 		
 
 		};
 

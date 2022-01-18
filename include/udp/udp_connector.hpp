@@ -33,10 +33,10 @@ namespace knet
 				} 
 			}
 
-
-			bool start(FactoryPtr fac = nullptr)
+			bool start(NetOptions opts = {},FactoryPtr fac = nullptr)
 			{
 				net_factory = fac; 
+				net_options = opts; 
 				if (net_worker == nullptr)
 				{
 					net_worker = std::make_shared<Worker>(nullptr , this );
@@ -44,11 +44,10 @@ namespace knet
 				}
 				return true;
 			}
-
-
-			TPtr connect(const std::string& host, uint32_t port, uint32_t localPort = 0,
-				const std::string& localAddr = "0.0.0.0")
+			
+			TPtr connect(const KNetUrl &urlInfo)
 			{
+				url_info = urlInfo; 
 				if (!net_worker){
 					elog("should init worker first"); 
 					return nullptr; 
@@ -65,54 +64,86 @@ namespace knet
 					conn = std::make_shared<T>();
 				}
 				conn->init(nullptr, net_worker,this);
+				asio::ip::address remoteAddr = asio::ip::make_address(url_info.host);
+				asio::ip::udp::endpoint remotePoint(remoteAddr, url_info.port);
 
-				asio::ip::address remoteAddr = asio::ip::make_address(host);
-				asio::ip::udp::endpoint remotePoint(remoteAddr, port);
+				std::string bindAddr = url_info.get("bind_addr"); 
+				uint16_t bindPort = std::stoi(url_info.get("bind_port","0")); 
 				
 				if (remoteAddr.is_multicast())
 				{
-					conn->connect(remotePoint, localPort, localAddr);
+					conn->connect(remotePoint, bindPort, bindAddr);
 				}
 				else
 				{
 					udp::resolver resolver(net_worker->context());
 					udp::resolver::results_type endpoints =
-						resolver.resolve(remotePoint.protocol(), host, std::to_string(port));
+						resolver.resolve(remotePoint.protocol(), url_info.host, std::to_string(url_info.port));
 
 					if (!endpoints.empty())
 					{
-						conn->connect(  *endpoints.begin(), localPort);
+						conn->connect(  *endpoints.begin(), bindPort, bindAddr);
 					}
 				}
 
 				connections[addrstr(remotePoint)] = conn;
 				return conn;
 			}
+
+			TPtr connect(const std::string& host, uint16_t port, uint16_t localPort = 0,
+				const std::string& localAddr = "0.0.0.0")
+			{
+				KNetUrl urlInfo {"udp",host,port}; 
+				urlInfo.set("bind_port",std::to_string(localPort)); 
+				urlInfo.set("bind_addr", localAddr); 
+				 return this->connect(urlInfo); 
+			}
+
 			void stop() {
 				for(auto & item : connections)
 				{
 					item.second->close();
 				}
 				connections.clear();  
-				if (net_worker && net_worker->get_user_data() == this){
+				if (net_worker && net_worker->get_user_data() == this){ // stop my net worker
 					net_worker->stop(); 
 				} 
 			}
 
 
-			virtual bool handle_data(std::shared_ptr<T>, const std::string& msg) {
+			virtual bool handle_data(std::shared_ptr<T> conn, const std::string& msg) {
+				return invoke_data_chain(conn, msg);
+				
+			}
+			virtual bool handle_event(std::shared_ptr<T> conn, NetEvent evt) {
+				bool ret = invoke_event_chain(conn, evt);
+				if (evt == EVT_RELEASE)
+				{
+					this->release(conn);
+				}
+				return ret;
+			}
 
-				return true;
-			}
-			virtual bool handle_event(std::shared_ptr<T>, NetEvent) {
-				return true;
-			}
 			void add_event_handler(KNetHandler<T>* handler) {
 				if (handler) {
 					event_handler_chain.push_back(handler);
 				}
 			}
 		private:
+			void release(const TPtr &  conn)
+			{
+				if (net_worker) 
+				{
+					net_worker->post([this, conn]() {
+							if (net_factory)
+							{
+								net_factory->release(conn);
+							}
+							}); 
+				}
+			}
+
+
 			bool invoke_data_chain(TPtr conn, const std::string& msg) {
 				bool ret = true;
 				for (auto & handler : event_handler_chain) {
@@ -140,7 +171,6 @@ namespace knet
 				return ret;
 			}
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac) {
-
 				auto evtHandler = static_cast<KNetHandler<T> *>(fac);
 				if (evtHandler) {
 					add_event_handler(evtHandler);
@@ -148,7 +178,6 @@ namespace knet
 			}
 
 			inline void add_factory_event_handler(std::false_type, FactoryPtr fac) {
-
 			}
  
 
@@ -157,6 +186,7 @@ namespace knet
 			std::vector< KNetHandler<T>*>  event_handler_chain;
 			std::unordered_map<std::string, TPtr> connections;
 			KNetUrl url_info; 
+			NetOptions net_options; 
 		};
 
 	} // namespace udp
