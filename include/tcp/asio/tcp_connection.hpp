@@ -253,13 +253,14 @@ namespace knet
 				bool ret = true; 
 				if (data_handler)
 				{
-					ret=  data_handler(msg);
+					ret = data_handler(msg);
 				}
 
 				if (ret && user_event_handler)
 				{
 					ret = user_event_handler->handle_data(this->shared_from_this(), msg );
 				}		
+
 				if (ret) {
 					ret = handle_data(msg);
 				}

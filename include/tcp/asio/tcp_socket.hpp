@@ -76,7 +76,7 @@ namespace knet {
                                         {
                                             self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
                                         }
-                                    
+                                        
                                         dlog("connect to {}:{} success",url_info.host,url_info.port);       
                                         self->init_read(); 
                                                                            
@@ -98,6 +98,7 @@ namespace knet {
                                 {
                                     tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
                                 }                    
+                                socket_status = SocketStatus::SOCKET_OPEN;
                             }catch(std::system_error& e){
                                 dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, e.what() );
                                 self->tcp_sock.close();
@@ -114,6 +115,7 @@ namespace knet {
                         }
                     void init_read(){
                         if (connection) {
+                            socket_status = SocketStatus::SOCKET_OPEN;
                             connection->process_event(EVT_CONNECT);
                             do_read(); 
                         }				
@@ -149,8 +151,7 @@ namespace knet {
                     }
 
                     void do_read() {
-                        if (tcp_sock.is_open() ) {					
-                            socket_status = SocketStatus::SOCKET_OPEN;
+                        if (tcp_sock.is_open() ) {					                           
                             auto self = this->shared_from_this();
                             auto buf = asio::buffer((char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
                             if (kReadBufferSize > read_buffer_pos){
@@ -257,7 +258,7 @@ namespace knet {
                         }
                         auto self = this->shared_from_this();
                         //so cache_buffer is safe in network loop thread only
-                        asio::dispatch(io_context, [this, self]() {
+                        asio::post(io_context, [this, self]() {
                                 if (!this->is_open()) {
                                      elog("socket is not open"); 
                                     return ; 

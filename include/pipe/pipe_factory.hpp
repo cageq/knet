@@ -23,7 +23,7 @@ namespace knet
 			virtual bool handle_event(TPtr conn, NetEvent evt)
 			{
 				auto session = conn->get_session();
-				//ilog("pipe factory event {} {} {}", evt, event_string(evt), std::this_thread::get_id());
+				ilog("pipe factory event {} {} ", evt, event_string(evt) );
 				switch (evt)
 				{
 				case EVT_CONNECT:
@@ -63,7 +63,7 @@ namespace knet
 					wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
-				//dlog("pipe message type {}", msg->type);
+				dlog("pipe message type {}", msg->type);
 				if (msg->type == PIPE_MSG_SHAKE_HAND)
 				{
 					dlog("handle pipe shake hande message ");
