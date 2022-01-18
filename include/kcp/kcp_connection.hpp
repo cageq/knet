@@ -544,10 +544,7 @@ private:
 	KcpShakeHandMsg disconnect_message_;
 	KcpHeartbeat heartbeat_message_;
  	bool passive = false; 
-
-	KNetWorkerPtr event_worker; 
-
-	 
+	KNetWorkerPtr event_worker;  
 	std::set<uint64_t> conn_timers;
 	ikcpcb* kcp = nullptr;
 	uint64_t kcp_timerid = 0;
