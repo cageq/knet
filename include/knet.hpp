@@ -16,7 +16,7 @@ namespace knet
 
 	struct NetOptions
 	{
-        bool tcp_delay{true}; 
+        bool tcp_delay{false}; 
 		bool sync {false};
 		bool reuse { true} ;
 		uint32_t backlogs = 512;								// listening queue size
