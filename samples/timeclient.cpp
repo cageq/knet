@@ -23,17 +23,25 @@ public:
         if (len < sizeof (TestMsg) ){
             return -1; 
         }
-
+		dlog("data length {} default {}", len, sizeof(TestMsg)); 
 		return sizeof(TestMsg);
 	}
 
 	virtual bool handle_data(const std::string& msg)
 	{
+		
+	 
         TestMsg * tMsg = (TestMsg*) msg.c_str(); 
         TestMsg recvMsg; 
         gettimeofday(&recvMsg.time,0); 
         total_time  +=  (recvMsg.time.tv_usec - tMsg->time.tv_usec) ; 
-        dlog("from {}:{} => {}:{} elapse {} avg {}", tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec,  tMsg->index - last_index ); 
+       // dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
+
+	    dlog("{}#  elapse {}",tMsg->index,   recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
+        if (last_index +1 != tMsg->index){
+            elog("wrong seqence"); 
+            exit(0); 
+        }
         last_index = tMsg->index; 
 
 		return true;
@@ -44,9 +52,9 @@ public:
 
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
-            TestMsg tMsg; 
-            gettimeofday(&tMsg.time,0); 
-			this->send((const char *)&tMsg, sizeof(TestMsg) );
+            //TestMsg tMsg; 
+            //gettimeofday(&tMsg.time,0); 
+			//this->send((const char *)&tMsg, sizeof(TestMsg) );
 		}
 		return true; 
 	}
@@ -105,7 +113,7 @@ int main(int argc, char** argv)
             gettimeofday(&recvMsg.time,0); 
             recvMsg.index = index ++; 
             conn->send((const char *)&recvMsg, sizeof(TestMsg) );
-            usleep(10); 
+           usleep(10); 
 
 
         }
