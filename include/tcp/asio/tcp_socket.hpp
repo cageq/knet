@@ -215,7 +215,7 @@ namespace knet {
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
                             write_mutex.lock(); 
-                            send_buffer.clear(); 
+                
                             return this->mpush(first, rest...);
                         }
 
@@ -252,7 +252,7 @@ namespace knet {
                         }
 
                     int32_t mpush() {
-                        if (cache_buffer.empty() && !send_buffer.empty()){
+                        if (cache_buffer.empty()  ){
                             // auto self = this->shared_from_this();
                             // //so cache_buffer is safe in network loop thread only
                             // asio::post(io_context, [this, self]() {
@@ -300,10 +300,8 @@ namespace knet {
                     }
 
                     bool do_async_write() { 
-                        
-                        if (!send_buffer.empty()){
-                            send_buffer.swap(cache_buffer);
-                        }                    
+                   
+                        send_buffer.swap(cache_buffer); 
                         
                         // if (write_mutex.try_lock()) {
                         //     send_buffer.swap(cache_buffer);

@@ -113,7 +113,7 @@ int main(int argc, char** argv)
             gettimeofday(&recvMsg.time,0); 
             recvMsg.index = index ++; 
             conn->send((const char *)&recvMsg, sizeof(TestMsg) );
-           usleep(10); 
+           usleep(100); 
 
 
         }
