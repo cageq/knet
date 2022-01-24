@@ -252,50 +252,11 @@ namespace knet {
                         }
 
                     int32_t mpush() {
-                        if (cache_buffer.empty()  ){
-                            // auto self = this->shared_from_this();
-                            // //so cache_buffer is safe in network loop thread only
-                            // asio::post(io_context, [this, self]() {
-                            //     self->do_async_write(); 
-                            // }); 
-
+                        if (cache_buffer.empty()  ){ 
                              do_async_write(); 
                         }
-                           write_mutex.unlock();  
-                        // auto self = this->shared_from_this();
-                        // //so cache_buffer is safe in network loop thread only
-                        // asio::post(io_context, [this, self]() {
-                        //         if (!this->is_open()) {
-                        //              elog("socket is not open"); 
-                        //             return ; 
-                        //         }
-                        //         if (cache_buffer.empty())
-                        //         {
-                        //             if (write_mutex.try_lock()) {
-                        //                 send_buffer.swap(cache_buffer);
-                        //                 write_mutex.unlock();
-                        //             } 
-                        //         }   
-                        //         if (!cache_buffer.empty()){
-                        //         //One or more buffers containing the data to be written. Although the buffers object may be copied as necessary, 
-                        //         //ownership of the underlying memory blocks is retained by the caller, 
-                        //         //which must guarantee that they remain valid until the handler is called.
-                        //         asio::async_write(tcp_sock, asio::const_buffer(cache_buffer.data(), cache_buffer.length()), [this](std::error_code ec, std::size_t length) {
-                        //                 if (!ec){
-                        //                 cache_buffer.clear(); 
-                        //                 }else 
-                        //                 {
-                        //                 elog("send error : {} , {}", ec.value(), ec.message());
-                        //                 this->do_close();
-                        //                 }
-                        //                 });
-
-                        //         //Write all of the supplied data to a stream before returning.
-                        //         //asio::write(self->tcp_sock, asio::const_buffer(cache_buffer.data(), cache_buffer.size()));
-                        //         //cache_buffer.clear(); 
-                        //         }							
-
-                        // });
+                        write_mutex.unlock();  
+                       
                         return 0; 
                     }
 
@@ -311,7 +272,9 @@ namespace knet {
                         if (!cache_buffer.empty())
                         {
                             auto self = this->shared_from_this();
-              
+							//One or more buffers containing the data to be written. Although the buffers object may be copied as necessary, 
+							//ownership of the underlying memory blocks is retained by the caller, 
+							//which must guarantee that they remain valid until the handler is called.              
                             asio::async_write(tcp_sock,asio::const_buffer(cache_buffer.data(), cache_buffer.size()),
                                     [this, self](std::error_code ec, std::size_t length) {
                                     if (!ec ) {
@@ -344,7 +307,7 @@ namespace knet {
 
                     void rewind_buffer(int32_t readPos){
                         if (read_buffer_pos >= readPos) {
-                            dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
+                            //dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
                             memmove(read_buffer, (const char*)read_buffer + readPos, read_buffer_pos - readPos);
                             read_buffer_pos -= readPos;
                         }

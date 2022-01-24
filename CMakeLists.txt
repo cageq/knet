@@ -30,35 +30,35 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 #add the executable
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
-# add_executable(tcpserver samples/tcpserver.cpp  ) 
+add_executable(tcpserver samples/tcpserver.cpp  ) 
 
-# add_executable(tcpclient samples/tcpclient.cpp) 
+add_executable(tcpclient samples/tcpclient.cpp) 
 
-# add_executable(fserver  samples/factory_server.cpp)  
+add_executable(fserver  samples/factory_server.cpp)  
 
-# add_executable(webserver samples/webserver.cpp   ) 
+add_executable(webserver samples/webserver.cpp   ) 
 
-# add_executable(webclient samples/webclient.cpp   ) 
+add_executable(webclient samples/webclient.cpp   ) 
 
-# add_executable(wsclient samples/wsclient.cpp    ) 
+add_executable(wsclient samples/wsclient.cpp    ) 
 
-# add_executable(wsserver samples/wsserver.cpp    )
+add_executable(wsserver samples/wsserver.cpp    )
 
-# add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
- 
-# add_executable(udpclient samples/udpclient.cpp  ) 
+add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
 
-# add_executable(udpserver samples/udpserver.cpp  ) 
+add_executable(udpclient samples/udpclient.cpp  ) 
 
-# add_executable(pipeserver samples/pipe_server.cpp  ) 
+add_executable(udpserver samples/udpserver.cpp  ) 
 
-# add_executable(pipeclient samples/pipe_client.cpp  ) 
+add_executable(pipeserver samples/pipe_server.cpp  ) 
 
-# add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  ) 
+add_executable(pipeclient samples/pipe_client.cpp  ) 
 
-# add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  ) 
+add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  ) 
 
-# add_executable(testurl samples/test_url.cpp  )
+add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  ) 
+
+add_executable(testurl samples/test_url.cpp  )
 
 
 add_executable(timeclient samples/timeclient.cpp)
