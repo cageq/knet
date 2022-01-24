@@ -23,7 +23,7 @@ public:
         if (len < sizeof (TestMsg) ){
             return -1; 
         }
-		dlog("data length {} default {}", len, sizeof(TestMsg)); 
+ 
 		return sizeof(TestMsg);
 	}
 

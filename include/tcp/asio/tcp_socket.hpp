@@ -300,9 +300,11 @@ namespace knet {
                     }
 
                     bool do_async_write() { 
-
-                    
-                        send_buffer.swap(cache_buffer);
+                        
+                        if (!send_buffer.empty()){
+                            send_buffer.swap(cache_buffer);
+                        }                    
+                        
                         // if (write_mutex.try_lock()) {
                         //     send_buffer.swap(cache_buffer);
                         //     write_mutex.unlock();

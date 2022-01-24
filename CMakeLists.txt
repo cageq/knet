@@ -30,55 +30,37 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 #add the executable
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
-add_executable(tcpserver samples/tcpserver.cpp  )
-#target_link_libraries(tcpserver fmt )
+# add_executable(tcpserver samples/tcpserver.cpp  ) 
 
-add_executable(tcpclient samples/tcpclient.cpp)
-#target_link_libraries(tcpclient fmt)
+# add_executable(tcpclient samples/tcpclient.cpp) 
+
+# add_executable(fserver  samples/factory_server.cpp)  
+
+# add_executable(webserver samples/webserver.cpp   ) 
+
+# add_executable(webclient samples/webclient.cpp   ) 
+
+# add_executable(wsclient samples/wsclient.cpp    ) 
+
+# add_executable(wsserver samples/wsserver.cpp    )
+
+# add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
+ 
+# add_executable(udpclient samples/udpclient.cpp  ) 
+
+# add_executable(udpserver samples/udpserver.cpp  ) 
+
+# add_executable(pipeserver samples/pipe_server.cpp  ) 
+
+# add_executable(pipeclient samples/pipe_client.cpp  ) 
+
+# add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  ) 
+
+# add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  ) 
+
+# add_executable(testurl samples/test_url.cpp  )
+
 
 add_executable(timeclient samples/timeclient.cpp)
 
-add_executable(fserver  samples/factory_server.cpp)
-#target_link_libraries(fserver fmt)
- 
-
-add_executable(webserver samples/webserver.cpp   )
-#target_link_libraries(webserver fmt  dl)
-
-add_executable(webclient samples/webclient.cpp   )
-#target_link_libraries(webclient fmt)
-
-add_executable(wsclient samples/wsclient.cpp    )
-#target_link_libraries(wsclient fmt   )
-
-add_executable(wsserver samples/wsserver.cpp    )
-#target_link_libraries(wsserver fmt )
-
-
-add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
-#target_link_libraries(kcpserver fmt )
-
-add_executable(kcpclient samples/kcpclient.cpp  kcp/ikcp.c)
-#target_link_libraries(kcpclient fmt )
- 
-add_executable(udpclient samples/udpclient.cpp  )
-#target_link_libraries(udpclient fmt)
-
-add_executable(udpserver samples/udpserver.cpp  )
-#target_link_libraries(udpserver fmt)
-
-add_executable(pipeserver samples/pipe_server.cpp  )
-#target_link_libraries(pipeserver fmt)
-
-add_executable(pipeclient samples/pipe_client.cpp  )
-#target_link_libraries(pipeclient fmt)
-
-add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  )
-#target_link_libraries(unbindpipeclient fmt)
-
-add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  )
-#target_link_libraries(unbindpipeserver fmt)
-
-
-
-add_executable(testurl samples/test_url.cpp  )
+add_executable(timeserver samples/timeserver.cpp)
