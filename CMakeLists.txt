@@ -30,7 +30,7 @@ ADD_DEFINITIONS(-DASIO_STANDALONE)
 #add the executable
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )
-# add_executable(tcpserver samples/tcpserver.cpp  ) 
+ add_executable(tcpserver samples/tcpserver.cpp  ) 
 
 # add_executable(tcpclient samples/tcpclient.cpp) 
 

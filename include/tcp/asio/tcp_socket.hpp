@@ -214,7 +214,8 @@ namespace knet {
 
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
-                            std::lock_guard<std::mutex> lock(this->write_mutex); 
+                            //std::lock_guard<std::mutex> lock(this->write_mutex); 
+                            write_mutex.lock(); 
                             return this->mpush(first, rest...);
                         }
 
@@ -253,40 +254,40 @@ namespace knet {
                     int32_t mpush() {
                         if (cache_buffer.empty()  ){ 
                              do_async_write(); 
-                        } 
+                        } else{
+                             write_mutex.unlock(); 
+                        }
                          
                         return 0; 
                     }
 
                     bool do_async_write() { 
                    
-                        send_buffer.swap(cache_buffer);  
-                  
-                        if (!cache_buffer.empty())
-                        {
-                            auto self = this->shared_from_this();
-              
-                            asio::async_write(tcp_sock,asio::const_buffer(cache_buffer.data(), cache_buffer.size()),
-                                    [this, self](std::error_code ec, std::size_t length) {
-                                    if (!ec ) {
-                                    //	connection->process_event(EVT_SEND);
-                                   // dlog("cache size {} , sent size {}",cache_buffer.length() , length); 
-                                    
-                                        std::lock_guard<std::mutex> lock(this->write_mutex); 
-                                        cache_buffer.clear(); 
-                                        if (send_buffer.empty()) {
-                                            return;
-                                        }
-                                        self->do_async_write(); 
-                                   
-                                    }else {
-                                    dlog("write error , do close , socket_status is {}", self->socket_status); 
-                                    self->do_close();
+                        send_buffer.swap(cache_buffer);   
+                        asio::const_buffer wBuf(cache_buffer.data(), cache_buffer.size()); 
+                        write_mutex.unlock(); 
+                        auto self = this->shared_from_this();
+                        asio::async_write(tcp_sock,wBuf,
+                                [this, self](std::error_code ec, std::size_t length) {
+                                if (!ec ) {
+                                //	connection->process_event(EVT_SEND);
+                                // dlog("cache size {} , sent size {}",cache_buffer.length() , length); 
+                                
+                                    //std::lock_guard<std::mutex> lock(this->write_mutex); 
+                                    this->write_mutex.lock();
+                                    cache_buffer.clear(); 
+                                    if (send_buffer.empty()) {
+                                        this->write_mutex.unlock();
+                                        return;
                                     }
-                                    });
-
-                        }
-                        return true;
+                                    self->do_async_write(); 
+                                
+                                }else {
+                                dlog("write error , do close , socket_status is {}", self->socket_status); 
+                                self->do_close();
+                                }
+                                });
+                        return true;  
                     }
 
                     inline bool is_open() {
