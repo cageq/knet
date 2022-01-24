@@ -214,8 +214,7 @@ namespace knet {
 
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
-                            write_mutex.lock(); 
-                
+                            std::lock_guard<std::mutex> lock(this->write_mutex); 
                             return this->mpush(first, rest...);
                         }
 
@@ -252,28 +251,16 @@ namespace knet {
                         }
 
                     int32_t mpush() {
-                        if (cache_buffer.empty()  ){
-                            // auto self = this->shared_from_this();
-                            // //so cache_buffer is safe in network loop thread only
-                            // asio::post(io_context, [this, self]() {
-                            //     self->do_async_write(); 
-                            // }); 
-
+                        if (cache_buffer.empty()  ){ 
                              do_async_write(); 
-                        }
-                           write_mutex.unlock();  
+                        } 
                          
                         return 0; 
                     }
 
                     bool do_async_write() { 
                    
-                        send_buffer.swap(cache_buffer); 
-                        
-                        // if (write_mutex.try_lock()) {
-                        //     send_buffer.swap(cache_buffer);
-                        //     write_mutex.unlock();
-                        // } 
+                        send_buffer.swap(cache_buffer);  
                   
                         if (!cache_buffer.empty())
                         {
@@ -286,7 +273,7 @@ namespace knet {
                                    // dlog("cache size {} , sent size {}",cache_buffer.length() , length); 
                                     
                                         std::lock_guard<std::mutex> lock(this->write_mutex); 
-                                        cache_buffer.resize(0); 
+                                        cache_buffer.clear(); 
                                         if (send_buffer.empty()) {
                                             return;
                                         }
