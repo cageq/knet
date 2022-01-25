@@ -199,6 +199,7 @@ namespace knet {
 
 
                     int32_t send(const char* pData, uint32_t dataLen) { 
+                        std::cout << worker_tid << " my tid is "<< std::this_thread::get_id() << std::endl; 
                         if (is_inloop()) {
                             return send_inloop(pData, dataLen);
                         }
@@ -206,7 +207,9 @@ namespace knet {
                     }
 
                     int32_t send(const std::string_view& msg) {
+                        
                         if (is_inloop()) {
+                             
                             return send_inloop(msg.data(), msg.length());
                         }
                         return msend(msg);
