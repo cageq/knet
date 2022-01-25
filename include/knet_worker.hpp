@@ -95,7 +95,6 @@ namespace knet
 
 		inline void* get_user_data() { return user_data; }
 
-	protected:
 
 		void run()
 		{			
@@ -113,6 +112,7 @@ namespace knet
 			dlog("exit event worker");
 		}
 
+	protected:
 		std::once_flag init_flag;
 		std::once_flag deinit_flag;
 
