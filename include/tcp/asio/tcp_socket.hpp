@@ -182,33 +182,13 @@ namespace knet {
                         }
                     }
 
-                    int32_t send_inloop(const char* pData, uint32_t dataLen) {
-                        if (tcp_sock.is_open() ) {					
-                            asio::async_write(tcp_sock, asio::buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
-                                    if (ec) {
-                                    elog("send in loop error : {} , {}", ec.value(), ec.message());
-                                    this->do_close();
-                                    }
-                                    });
-
-                            //asio::write(tcp_sock, asio::const_buffer(pData, dataLen));
-                            return 0;
-                        }
-                        return -1; 
-                    }
 
 
                     int32_t send(const char* pData, uint32_t dataLen) { 
-                        if (is_inloop()) {
-                            return send_inloop(pData, dataLen);
-                        }
                         return msend(std::string_view(pData, dataLen));
                     }
 
                     int32_t send(const std::string_view& msg) {
-                        if (is_inloop()) {
-                            return send_inloop(msg.data(), msg.length());
-                        }
                         return msend(msg);
                     }
 
@@ -289,7 +269,7 @@ namespace knet {
                                         self->do_async_write(); 
                                    
                                     }else {
-                                    dlog("write error , do close , socket_status is {}", self->socket_status); 
+                                    dlog("write error , do close , socket_status is {}", static_cast<uint32_t>(self->socket_status)); 
                                     self->do_close();
                                     }
                                     });
@@ -376,7 +356,7 @@ namespace knet {
                     void close() { 
 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("close, already in closing socket_status {}", socket_status);
+                            dlog("close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
                             return;
                         }
 
@@ -409,7 +389,7 @@ namespace knet {
 
                     void do_close( ) {			 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("do close, already in closing socket_status {}", socket_status);
+                            dlog("do close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
                             return;
                         }  
                         socket_status = SocketStatus::SOCKET_CLOSING;   
