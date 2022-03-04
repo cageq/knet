@@ -68,7 +68,7 @@ namespace knet
 				asio::ip::udp::endpoint remotePoint(remoteAddr, url_info.port);
 
 				std::string bindAddr = url_info.get("bind_addr"); 
-				uint16_t bindPort = std::stoi(url_info.get("bind_port","0")); 
+				uint16_t bindPort = url_info.get<uint16_t>("bind_port",8888); 
 				
 				if (remoteAddr.is_multicast())
 				{

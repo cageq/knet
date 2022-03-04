@@ -1,5 +1,4 @@
 
-
 #pragma once 
 #include <string> 
 #include <vector>
@@ -54,6 +53,14 @@ options:
             return rst; 
         }
     };
+
+    template<> 
+    struct TypeCaster<const char *> {
+        inline const char *  operator()(const std::string &val ) {
+            return val.c_str(); 
+        }
+    };
+
 
     template<> 
     struct TypeCaster<bool> {
@@ -223,5 +230,3 @@ struct KNetUrl{
 
 } //namespace utils 
 } //namespace knet 
-
-
