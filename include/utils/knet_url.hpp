@@ -122,6 +122,7 @@ struct KNetUrl{
 
     bool parse(const std::string &channel)
     { 
+        reset(); 
         auto pos = channel.find("://");
         if (pos != std::string::npos){
             protocol = channel.substr(0, pos);
@@ -225,6 +226,13 @@ struct KNetUrl{
             dumpStr +=  param.first + " : " + param.second +"\n";
         }
         return dumpStr; 
+    }
+    void reset(){
+        params.clear(); 
+        protocol.clear(); 
+        host.clear(); 
+        port = 0; 
+
     }
 
     private: 

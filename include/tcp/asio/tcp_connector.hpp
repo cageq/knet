@@ -99,7 +99,7 @@ namespace knet
 				if (conn)
 				{
 					KNetUrl urlInfo; 
-					urlInfo.encode(url); 
+					urlInfo.parse(url); 
 					auto worker = this->get_worker();
 					auto sock =
 						std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
