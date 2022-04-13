@@ -108,9 +108,9 @@ options:
 struct KNetUrl{
     std::string protocol;
     std::string host; 
-    uint16_t    port; 
+    uint16_t    port  = 0 ; 
     KNetUrl(const std::string & url = ""){
-        encode(url); 
+        parse(url); 
     }
     
     KNetUrl(const std::string & proto ,const  std::string & host , uint16_t port =0 ){
@@ -120,7 +120,7 @@ struct KNetUrl{
     }
 
 
-    bool encode(const std::string &channel)
+    bool parse(const std::string &channel)
     { 
         auto pos = channel.find("://");
         if (pos != std::string::npos){
@@ -131,6 +131,10 @@ struct KNetUrl{
         pos += 2; //skip "//" after ":"
         
         auto pPos = channel.find('?',pos); 
+        if (pPos == std::string::npos)
+        {
+            pPos = channel.size(); 
+        }
         std::string hostInfo = std::string (channel.begin() + pos +1 , channel.begin() + pPos); 
         auto cPos = hostInfo.find(":"); 
         if (cPos != std::string::npos){

@@ -184,11 +184,11 @@ namespace knet {
 
 
 
-                    int32_t send(const char* pData, uint32_t dataLen) { 
+                    inline int32_t send(const char* pData, uint32_t dataLen) { 
                         return msend(std::string_view(pData, dataLen));
                     }
 
-                    int32_t send(const std::string_view& msg) {
+                    inline int32_t send(const std::string_view& msg) {
                         return msend(msg);
                     }
 
