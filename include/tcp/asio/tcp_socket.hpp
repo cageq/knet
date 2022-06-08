@@ -269,8 +269,9 @@ namespace knet {
                                         self->do_async_write(); 
                                    
                                     }else {
-                                    dlog("write error , do close , socket_status is {}", static_cast<uint32_t>(self->socket_status)); 
-                                    self->do_close();
+                                        cache_buffer.clear(); 
+                                      dlog("write error , do close , socket_status is {}", static_cast<uint32_t>(self->socket_status)); 
+                                      self->do_close();
                                     }
                                     });
 
