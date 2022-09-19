@@ -79,9 +79,13 @@ namespace knet
 
 			bool vsend(const std::vector<asio::const_buffer> &bufs) { return tcp_socket->vsend(bufs); }
 
-			void close()
+			void close(bool force = true )
 			{
-				reconn_flag = false;
+				if (force){
+					//force stop reconnect 
+					reconn_flag = false;
+				}
+				
 				if (tcp_socket)	
 				{
 					tcp_socket->close();
