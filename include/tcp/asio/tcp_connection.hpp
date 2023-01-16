@@ -16,23 +16,23 @@ namespace knet
 {
 	namespace tcp
 	{ 
-
-
-		template <class T>
+		template <class T , class Sock = TcpSocket<T>>
 		class TcpConnection : public std::enable_shared_from_this<T>
 		{
 		public:
-			friend class TcpSocket<T> ; 
-			using EventHandler = std::function<bool( NetEvent)>;
+			using ConnSock  = Sock; 
+		    friend Sock; 
+
+			using KNetEventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
 
 			using PackageHandler = std::function<int32_t(const char *  &, uint32_t len  )>;
 			using SelfPackageHandler = int32_t (T::*)(const char *  &, uint32_t len  );
 
-			using DataHandler = std::function<bool(const std::string & )>;
+			using KNetDataHandler = std::function<bool(const std::string & )>;
 			using SelfDataHandler = bool (T::*)(const std::string & );
 
-			using SocketPtr = std::shared_ptr<TcpSocket<T> >; 
+			using SocketPtr = std::shared_ptr<Sock >; 
 
 			// for passive connection 
 			template <class ... Args>
@@ -43,15 +43,7 @@ namespace knet
 
 			virtual ~TcpConnection()
 			{
-				//clear all conn_timers to keep safety
-				if (event_worker)
-				{
-					for (auto &tid : conn_timers)
-					{
-						event_worker->stop_timer(tid);
-					}
-					conn_timers.clear();
-				}
+				//clear all conn_timers to keep safety				
 			}
 
 			void init(NetOptions opts,  SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
@@ -59,9 +51,13 @@ namespace knet
                 
 				event_worker = worker;			 
 				tcp_socket   = sock;
-				tcp_socket->init(this->shared_from_this() , opts ); 
-				user_event_handler = evtHandler; 
-				handle_event(EVT_CREATE);
+				user_event_handler = evtHandler;
+				tcp_socket->init(this->shared_from_this() , opts ); 				
+				handle_event(EVT_CREATE);//TODO process_event(EVT_CREATE);	
+			}
+			
+			void deinit() {
+				user_event_handler = nullptr; 
 			}
 
 			inline int32_t send(const char *pData, uint32_t dataLen) { 	return tcp_socket->send(pData, dataLen); }
@@ -79,15 +75,13 @@ namespace knet
 
 			bool vsend(const std::vector<asio::const_buffer> &bufs) { return tcp_socket->vsend(bufs); }
 
-			void close(bool force = true )
+			void close(bool force = false )
 			{
 				if (force){
 					//force stop reconnect 
-					reconn_flag = false;
-				}
-				
-				if (tcp_socket)	
-				{
+                    disable_reconnect(); 
+				}				
+				if (tcp_socket)	{
 					tcp_socket->close();
 				}
 			}
@@ -113,14 +107,14 @@ namespace knet
 				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
 			}
 
-			inline void bind_data_handler(const DataHandler & handler) { data_handler = handler; }
+			inline void bind_data_handler(const KNetDataHandler & handler) { data_handler = handler; }
 			void bind_data_handler(const SelfDataHandler & handler)
 			{
 				T *child = static_cast<T *>(this);
 				data_handler = std::bind(handler, child, std::placeholders::_1);
 			}
 
-			inline void bind_event_handler(const EventHandler & handler) { event_handler = handler; }
+			inline void bind_event_handler(const KNetEventHandler & handler) { event_handler = handler; }
 			void bind_event_handler(const SelfEventHandler & handler)
 			{
 				T *child = static_cast<T *>(this);
@@ -132,7 +126,7 @@ namespace knet
 
 			bool connect(const KNetUrl & urlInfo    )
 			{		 
-				dlog("start to connect {}", urlInfo.dump()); 
+				dlog("start to connect {}:{}", urlInfo.get_host(), urlInfo.get_port()); 
 				passive_mode = false; 
 				return tcp_socket->connect(urlInfo);
 			}		
@@ -297,8 +291,8 @@ namespace knet
 			bool passive_mode = true;
 			std::set<uint64_t> conn_timers; 
 			SocketPtr tcp_socket = nullptr;
-			EventHandler    event_handler   = nullptr;
-			DataHandler     data_handler    = nullptr;
+			KNetEventHandler    event_handler   = nullptr;
+			KNetDataHandler     data_handler    = nullptr;
 			PackageHandler  package_handler = nullptr;  
 			KNetWorkerPtr   event_worker = nullptr;
 			KNetHandler<T>* user_event_handler = nullptr;

@@ -23,7 +23,7 @@ namespace knet
 			virtual bool handle_event(TPtr conn, NetEvent evt)
 			{
 				auto session = conn->get_session();
-				ilog("pipe factory event {} {} ", evt, event_string(evt) );
+				//ilog("pipe factory event {} {} ", evt, event_string(evt) );
 				switch (evt)
 				{
 				case EVT_CONNECT:
@@ -36,13 +36,14 @@ namespace knet
 				break;
 				case EVT_DISCONNECT:
 				{
-					if (session)
-					{
-						session->handle_event(NetEvent::EVT_DISCONNECT);
-						session->unbind();
+						if (session)
+						{
+							session->handle_event(NetEvent::EVT_DISCONNECT);
+							session->unbind();
+						}
+					    remove_unbind_pipe(conn->get_cid());
+						return false; 
 					}
-					remove_unbind_pipe(conn->get_cid());
-				}
 				break;
 				default:;
 				}
@@ -88,14 +89,14 @@ namespace knet
 				auto session = conn->get_session();
 				if (session)
 				{
-					session->handle_message(std::string_view(buf.data() + sizeof(PipeMsgHead), msg->length), msg->data);
+					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length), msg->data);
 				}
 				else
 				{
 					if (conn->is_passive())
 					{
 						wlog("connection has no session, send shakehand challenge");
-						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND); //challenge client to send shakehand again
+						PipeMsgHead shakeMsg{0, PIPE_MSG_SHAKE_HAND}; //challenge client to send shakehand again
 						conn->msend(shakeMsg);
 					}
 				}
@@ -117,12 +118,14 @@ namespace knet
 					auto pipe = find_bind_pipe(pipeId);
 					if (pipe)
 					{
-						pipe->bind(conn);
-						ilog("bind pipe {} success", pipeId);
-						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
-						conn->msend(shakeMsg, pipeId);
-						pipe->handle_event(NetEvent::EVT_CONNECT);
-						pipe->on_ready(); 
+						if (!pipe->is_ready()){
+							pipe->bind(conn);
+							ilog("bind pipe {} success", pipeId);
+							PipeMsgHead shakeMsg{(uint32_t)pipeId.length(), PIPE_MSG_SHAKE_HAND, 0 };
+							conn->msend(shakeMsg, pipeId);
+							pipe->handle_event(NetEvent::EVT_CONNECT);
+							pipe->on_ready(); 
+						}						
 					}
 					else
 					{
@@ -150,7 +153,7 @@ namespace knet
 
 					if (session)
 					{
-						PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
+						PipeMsgHead shakeMsg{(uint32_t)pipeId.length(), PIPE_MSG_SHAKE_HAND, 0};
 						conn->msend(shakeMsg, pipeId);
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
@@ -166,10 +169,12 @@ namespace knet
 					PipeSessionPtr session = find_bind_pipe(pipeId);
 					if (session)
 					{					 
-						session->bind(conn);
-						session->update_pipeid(pipeId);
-						dlog("bind pipe session success, {}", pipeId);
-						session->handle_event(NetEvent::EVT_CONNECT);
+						if (!session->is_ready()){
+							session->bind(conn);
+							session->update_pipeid(pipeId);
+							dlog("bind pipe session success, {}", pipeId);
+							session->handle_event(NetEvent::EVT_CONNECT);
+						}
 					}
 					else
 					{						

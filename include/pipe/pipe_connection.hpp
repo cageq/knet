@@ -24,7 +24,7 @@ namespace knet{
 		
 					PipeMsgHead* msg = (PipeMsgHead*)data;
 					if (msg->length + sizeof(PipeMsgHead) > len) {			 
-						wlog("demarcate message length {}  message head length {} ", len , msg->length);
+						//wlog("demarcate message length {}  message head length {} ", len , msg->length);
 						return 0;
 					}
 					return sizeof(PipeMsgHead) + msg->length;
@@ -34,7 +34,7 @@ namespace knet{
 				void send_shakehand(const std::string &pipeId)
 				{
 					dlog("shakehande request pipe id {}  ", pipeId);
-					PipeMsgHead shakeMsg(PIPE_MSG_SHAKE_HAND, pipeId.length());
+					PipeMsgHead shakeMsg{ static_cast<uint32_t>(pipeId.length()), PIPE_MSG_SHAKE_HAND,0};
 					this->msend(shakeMsg, pipeId);
 					// if (!pipeId.empty()) {
 					// conn->send(shakeMsg.begin(), shakeMsg.length());
@@ -44,7 +44,7 @@ namespace knet{
 
 				int32_t send_heartbeat(const std::string &msg= "")
 				{
-					PipeMsgHead head(PIPE_MSG_HEART_BEAT, msg.length());			 
+					PipeMsgHead head{ static_cast<uint32_t>(msg.length()), PIPE_MSG_HEART_BEAT, 0 };			 
 					return msend(head, msg);		  
 				}
 

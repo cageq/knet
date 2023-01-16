@@ -34,7 +34,8 @@ namespace knet
 			inline uint32_t parse(const char *data, uint32_t len, bool inplace = false)
 			{
 				http_decoder.init_http_message(this);
-				return http_decoder.parse_response(data, len, inplace);
+				length  =  http_decoder.parse_response(data, len, inplace);
+				return length; 
 			}
 
 			void add_header(const std::string &key, const std::string &value)
@@ -56,6 +57,7 @@ namespace knet
 			std::string uri;
 			std::string content;
 			uint32_t status_code = 0;
+			uint32_t length = 0; 
 		private:
 			
 			HttpDecoder<HttpResponse> http_decoder;

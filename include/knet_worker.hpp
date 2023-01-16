@@ -40,34 +40,48 @@ namespace knet
 
 		void start(WorkStarter starter = nullptr, uint32_t thrds = 1)
 		{
-			//dlog("start event work {}", std::this_thread::get_id());
-			work_starter = starter;
-			if (self_context != nullptr)
+			if (!is_running)
 			{
-				for (uint32_t i = 0;i < thrds;i++) {
-					//	wlog("real start event work here {}", std::this_thread::get_id());
-					work_threads.emplace_back(std::thread(&KNetWorker::run, this));
+				is_running = true; 
+				// dlog("start event work {}", std::this_thread::get_id());
+				work_starter = starter;
+				if (self_context != nullptr)
+				{
+					for (uint32_t i = 0; i < thrds; i++)
+					{
+						//	wlog("real start event work here {}", std::this_thread::get_id());
+						work_threads.emplace_back(std::thread(&KNetWorker::run, this));
+					}
 				}
-			}else {
-				//it's outer context, user should start it in other place 
-			}
+				else
+				{
+					// it's outer context, user should start it in other place
+				}
 
-			if (work_starter){
-				asio::dispatch(*io_context, work_starter);
+				if (work_starter)
+				{
+					asio::dispatch(*io_context, work_starter);
+				}
 			}
 		}
 		void stop()
 		{
-            if (self_context) {
-                self_context->stop();
-                self_context = nullptr; 
-            }
-			for (auto& thrd : work_threads) {
-                if (thrd.joinable()) {
-                    thrd.join();
-                }
-			}
-			work_threads.clear(); 
+			if (self_context)
+			{
+				auto ctx = self_context; 
+				self_context = nullptr;
+				event_timer->clear(); 
+				ctx->stop();
+				for (auto& thrd : work_threads)
+				{
+					if (thrd.joinable())
+					{
+						thrd.join();
+					}
+				}
+			 	work_threads.clear();		
+			}	 			
+			is_running = false; 
 		}
 
 		virtual void init() {}
@@ -99,15 +113,11 @@ namespace knet
 		void run()
 		{			
 			auto ioWorker = asio::make_work_guard(*io_context);
-			std::call_once(init_flag, [&]() {
-				this->init();
-				});
+			std::call_once(init_flag, [&](){ this->init(); });
 			main_thread_id = std::this_thread::get_id();
 			io_context->run();
 
-			std::call_once(deinit_flag, [&]() {
-				this->deinit();
-				});
+			std::call_once(deinit_flag, [&](){ this->deinit(); });
 
 			dlog("exit event worker");
 		}
@@ -123,7 +133,8 @@ namespace knet
 		IOContextPtr io_context = nullptr;
 		std::thread::id main_thread_id;
 		IOContextPtr self_context = nullptr;
-        std::unique_ptr<utils::Timer> event_timer;
+		std::unique_ptr<utils::Timer> event_timer;
+		bool is_running = false;
 	};
 	using KNetWorkerPtr = std::shared_ptr<KNetWorker>;
 } // namespace knet

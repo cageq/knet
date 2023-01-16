@@ -25,7 +25,8 @@ namespace knet
 				using TPtr = std::shared_ptr<T>;
 				using FactoryPtr = Factory *;
 				using WorkerPtr = std::shared_ptr<Worker>;
-				using SocketPtr = std::shared_ptr<TcpSocket<T>>;
+				using Socket = typename T::ConnSock; 
+				using SocketPtr = std::shared_ptr<typename T::ConnSock>;
 
 				TcpListener(FactoryPtr fac = nullptr, WorkerPtr lisWorker = nullptr)
 				{
@@ -36,8 +37,7 @@ namespace knet
 						listen_worker = lisWorker;
 					}
 
-					if (fac != nullptr)
-					{					
+					if (fac != nullptr) {					
 						net_factory = fac;
 						add_factory_event_handler(std::is_base_of<KNetHandler<T>, Factory>(), fac);
 					}
@@ -95,21 +95,19 @@ namespace knet
 
 							asio::error_code ec;
 							this->tcp_acceptor->bind(endpoint, ec);
-							if (ec)
-							{
+							if (ec) {
 								elog("bind address failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
 								return false;
 							}
 							this->tcp_acceptor->listen(net_options.backlogs, ec);
 
-							if (ec)
-							{
+							if (ec) {
 								elog("start listen failed");
 								is_running = false;
 								return false;
 							}
-							this->do_accept();
+							return this->do_accept();
 						}
 						else
 						{
@@ -119,17 +117,15 @@ namespace knet
 					return true;
 				}
 
-				bool start(uint16_t port){
-					return start(KNetUrl{"tcp","0.0.0.0",port}); 
+				bool start(uint16_t port, void * ssl = nullptr){
+					return start(KNetUrl{"tcp","0.0.0.0",port},{}, ssl ); 
 				}
 		 
-				bool start(const std::string & url , void *ssl = nullptr)
-				{					
-					return start(KNetUrl{url}, ssl);
+				bool start(const std::string & url , void *ssl = nullptr) {					
+					return start(KNetUrl{url}, {},  ssl);
 				}
 
-				void stop()
-				{
+				void stop() {
 					dlog("stop listener thread");
 					if (is_running)
 					{
@@ -230,40 +226,35 @@ namespace knet
 
 				void release(const TPtr &  conn)
 				{
-					if (net_factory) 
-					{
+					if (net_factory != nullptr) {
 						asio::post(listen_worker->context(), [this, conn]() {
-								if (net_factory)
-								{
-								net_factory->release(conn);
-								}
+                                    if (net_factory) {
+                                        net_factory->release(conn);
+                                    }
 								});
 					}
 				}
-				void do_accept()
+
+				bool do_accept()
 				{
 					auto worker = this->get_worker();
-					if (!worker)
-					{
+					if (!worker) {
 						elog("no event worker, can't start");
-						return;
+						return false ;
 					}
 
-					auto socket = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context(), ssl_context);
+					auto socket = std::make_shared<Socket>(worker->thread_id(), worker, ssl_context);
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
-							if (!ec)
-							{
-
-								socket->socket().set_option(asio::ip::tcp::no_delay(true));
-								dlog("accept new connection ");
-								this->init_conn(worker, socket);
-								do_accept();
-							}
-							else
-							{
-							elog("accept error");
-							}
+                                if (!ec) {
+                                    socket->socket().set_option(asio::ip::tcp::no_delay(true));
+                                    dlog("accept new connection");
+                                    this->init_conn(worker, socket);
+                                    do_accept();
+                                } else {
+                                    elog("accept error");
+                                }
 							});
+                    return true; 
 				}
 
 				WorkerPtr get_worker()
@@ -287,7 +278,7 @@ namespace knet
 						asio::dispatch(worker->context(), [=]() {
 								auto conn = create_connection(socket, worker);				 
                                     if (!this->net_options.sync ) {
-                                        socket->init_read();
+                                        socket->init_read(true);
                                     }
 								});
 					}
@@ -296,7 +287,7 @@ namespace knet
 				TPtr create_connection(SocketPtr sock, WorkerPtr worker)
 				{
 					TPtr  conn = nullptr; 
-					if (net_factory) {
+					if (net_factory != nullptr) {
 						conn = net_factory->create();						
 					} else {
 						conn = std::make_shared<T>(); 						
@@ -315,8 +306,8 @@ namespace knet
 				FactoryPtr net_factory = nullptr;
 				std::vector<KNetHandler<T> *> event_handler_chain;
 				WorkerPtr listen_worker;	
-
 				std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
+				
 		};
 
 		template <typename T>

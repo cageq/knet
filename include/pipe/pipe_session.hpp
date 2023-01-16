@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
+#include <string>
+#include <functional>
 #include "pipe_proto.hpp"
+
 
 namespace knet
 {
@@ -15,25 +18,41 @@ namespace knet
 			PIPE_HEARTBEAT_REQUEST,
 			PIPE_HEARTBEAT_RESPONSE
 		};
+ 
+		using PipeEventHandler = std::function<bool(NetEvent , void *  )> ; 
+		using PipeDataHandler  = std::function<int32_t (const std::string& , uint64_t , void * )>; 
 
 		class PipeSession : public std::enable_shared_from_this<PipeSession>
 		{
 		public:
 			PipeSession(const std::string &pid = "", const std::string &h = "", uint16_t p = 0)
 			{
-				m.host = h;
-				m.port = p;
-				m.pipeid = pid;
+				peer_host = h;
+				peer_port = p;
+				pipe_id = pid;
 				ready_flag = false; 
 			}
 
 			virtual ~PipeSession() {}
+
+			void use_handlers(const PipeEventHandler & evtHandler, const PipeDataHandler & dataHandler , void * ctx ){
+				pipe_event_handler = evtHandler; 
+				pipe_data_handler = dataHandler; 
+				pipe_handler_context = ctx; 
+			}
+
 			virtual bool handle_event(NetEvent evt)
 			{				
+				if (pipe_event_handler){
+					return pipe_event_handler(evt , pipe_handler_context); 
+				}
 				return true;
 			}
-			virtual int32_t handle_message(const std::string_view &msg, uint64_t obdata = 0)
+			virtual int32_t handle_message(const std::string &msg, uint64_t obdata = 0)
 			{				 
+				if (pipe_data_handler ){
+					return pipe_data_handler(msg, obdata, pipe_handler_context); 
+				}
 				return 0;
 			} 
 
@@ -41,7 +60,7 @@ namespace knet
 			{
 				if (is_ready())
 				{
-					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
+					PipeMsgHead head{ (uint32_t)msg.length(), PIPE_MSG_DATA, 0 };
 					head.data = obdata;
 					return connection->msend(head, msg);
 				}
@@ -54,7 +73,7 @@ namespace knet
 				{
 					return connection->is_connected();
 				}else {
-					wlog("pipe is not ready, {}",m.pipeid); 
+					wlog("pipe is not ready, {}",pipe_id); 
 				}
 				return false;
 			}
@@ -63,7 +82,7 @@ namespace knet
 			{
 				if (is_ready())
 				{
-					PipeMsgHead head(PIPE_MSG_DATA, msg.length());
+					PipeMsgHead head{ (uint32_t)msg.length(), PIPE_MSG_DATA, 0 };
 					return connection->msend(head, msg);
 				}
 				return -1;
@@ -76,7 +95,7 @@ namespace knet
 				if (is_ready())
 				{
 					uint32_t bodyLen = pipe_data_length(first, rest...);					
-					PipeMsgHead head(PIPE_MSG_DATA, bodyLen);
+					PipeMsgHead head{ bodyLen, PIPE_MSG_DATA, 0 };
 					head.data = obdata;
 					return connection->msend(head, first, rest...);
 				}
@@ -92,7 +111,7 @@ namespace knet
 			void bind(const PipeConnectionPtr &  conn)
 			{
 				this->connection = conn;
-				conn->pipeid = m.pipeid;
+				conn->pipeid = pipe_id;
 				conn->session = this->shared_from_this();
 				ready_flag  = true;				 
 			}
@@ -104,48 +123,48 @@ namespace knet
 
 			inline void set_host(const std::string &h)
 			{
-				m.host = h;
+				peer_host = h;
 			}
 
 			inline void set_port(uint16_t p)
 			{
-				m.port = p;
+				peer_port = p;
 			}
 
 			inline void set_pipeid(const std::string &pid)
 			{
-				m.pipeid = pid;
+				pipe_id = pid;
 			}
 
 			inline void update_pipeid(const std::string &pid)
 			{
-				if (m.pipeid.empty())
+				if (pipe_id.empty())
 				{
-					m.pipeid = pid;
+					pipe_id = pid;
 				}
 			}
 
 			inline const std::string &get_pipeid() const
 			{
-				return m.pipeid;
+				return pipe_id;
 			}
 			inline uint16_t get_port() const
 			{
-				return m.port;
+				return peer_port;
 			}
 
 			inline const std::string &get_host() const
 			{
-				return m.host;
+				return peer_host;
 			}
 
 			void on_ready(){
 				if (connection && connection->is_connected() ){
 					if (connection->is_passive())
 					{
-						m.hb_timerid = connection->start_timer([this](){ 
+						heartbeat_timeid = connection->start_timer([this](){ 
 							if (connection->is_connected()){
-								connection->send_heartbeat(m.pipeid); 
+								connection->send_heartbeat(pipe_id); 
 								return true; 
 							} 
 							return false; 
@@ -154,14 +173,14 @@ namespace knet
 				}				
 			}
 		private:
-			struct
-			{
-				std::string pipeid;
-				std::string host;
-				uint16_t port;
-				uint64_t hb_timerid; 
-			} m;
-
+	 
+			uint64_t heartbeat_timeid; 
+			uint16_t peer_port;
+			std::string peer_host;
+			std::string pipe_id;
+			PipeEventHandler pipe_event_handler; 
+			PipeDataHandler  pipe_data_handler; 
+			void * pipe_handler_context = nullptr ; 
 		 	std::atomic<bool> ready_flag; 
 			PipeConnectionPtr connection;
 		};

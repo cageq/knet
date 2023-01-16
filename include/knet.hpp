@@ -7,8 +7,9 @@
 #define __KNET_H__
 
 #include <thread>
-#include "utils/knet_log.hpp"
 #include <functional>
+#include "utils/knet_log.hpp"
+#include "utils/knet_url.hpp"
 #include "knet_handler.hpp"
 namespace knet
 {
@@ -27,6 +28,24 @@ namespace knet
 		std::string chain_file = "cert/server.pem";
 		std::string dh_file = "cert/dh2048.pem";
 	};
+
+    inline NetOptions options_from_url(const utils::KNetUrl & urlInfo){
+        NetOptions opts ;
+        opts.tcp_delay = urlInfo.get<bool>("tcp_delay"); 
+        opts.sync = urlInfo.get<bool>("sync"); 
+        opts.reuse = urlInfo.get<bool>("reuse"); 
+        opts.backlogs = urlInfo.get<uint32_t >("backlogs"); 
+        opts.send_buffer_size = urlInfo.get<uint32_t >("sbuf_size"); 
+        opts.recv_buffer_size = urlInfo.get<uint32_t >("rbuf_size"); 
+        opts.chain_file = urlInfo.get("cert"); 
+        opts.dh_file    = urlInfo.get("cert_key"); 
+        return opts; 
+    }
+
+    inline NetOptions options_from_url(const std::string & url){
+        utils::KNetUrl urlInfo(url); 
+        return options_from_url(urlInfo); 
+    }
 
 
 } // namespace knet

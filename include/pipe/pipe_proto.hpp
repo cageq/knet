@@ -18,9 +18,7 @@ namespace knet
 			uint32_t length;
 			uint32_t type;
 			uint64_t data; //user data 
-
-			PipeMsgHead(uint32_t t = 0, uint32_t len = 0)
-				: length(len), type(t) {}
+			char body[0]; 			
 		};
 
 		template <class T> 

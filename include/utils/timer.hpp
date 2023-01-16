@@ -40,6 +40,8 @@ namespace knet
 				for (auto &item : timers)
 				{
 					item.second->alive = false; 
+					//add cancel 
+					item.second->timer.cancel(); 
 				}
 				timers.clear();
 			}

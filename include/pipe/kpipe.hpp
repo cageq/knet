@@ -35,9 +35,11 @@ namespace knet {
 							}
 						}
 
+					virtual ~KPipe(){						
+					}
 					void start(const std::string& host = "0.0.0.0", uint16_t port = 9999) {
 
-						if ((pipe_mode & PIPE_SERVER_MODE) && port != 0) {
+						if ((pipe_mode & PIPE_SERVER_MODE) && port > 0) {
 							dlog("start pipe on server mode {}", port);
 							listener->start(port);
 						}
@@ -61,10 +63,15 @@ namespace knet {
 							if (port != 0) { 
 								pipe->set_port(port);  
 								if (is_started) { 
-									auto conn = connector->add_connection({"tcp",pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
-									conn->enable_reconnect();
+									if (pipe_mode & PIPE_CLIENT_MODE) {
+										auto conn = connector->add_connection({"tcp",pipe->get_host(), pipe->get_port()}, pipe->get_pipeid());
+										conn->enable_reconnect();
+									}									
 								}
 							}
+							pipe_worker->post([=](){								 
+								pipe->handle_event(NetEvent::EVT_THREAD_INIT); 
+							}); 
 						}
 					}
 
@@ -74,6 +81,9 @@ namespace knet {
 						conn->enable_reconnect(); 
 						dlog("register unbind pipe {}",conn->get_cid()); 
 						pipe_factory.register_pipe(pipe,conn->get_cid());
+						pipe_worker->post([=](){								 
+								pipe->handle_event(NetEvent::EVT_THREAD_INIT); 
+						}); 
 						return pipe; 
 					}
 

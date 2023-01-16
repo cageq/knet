@@ -1,25 +1,27 @@
 #pragma once 
+#include <string> 
+#include <memory> 
 
 
 namespace knet
 {
     enum NetEvent
     {
-        EVT_THREAD_INIT,
-        EVT_THREAD_EXIT,
-        EVT_LISTEN_START,
-        EVT_LISTEN_FAIL,
-        EVT_LISTEN_STOP,
-        EVT_CREATE,
-        EVT_RELEASE,
-        EVT_CONNECT,
-        EVT_CONNECT_FAIL,
-        EVT_RECV,
-        EVT_SEND,
-        EVT_DISCONNECT,
-        EVT_RECYLE_TIMER,
-        EVT_USER1,
-        EVT_USER2,
+        EVT_THREAD_INIT  = 0,
+        EVT_THREAD_EXIT  = 1,
+        EVT_LISTEN_START = 2,
+        EVT_LISTEN_FAIL  = 3,
+        EVT_LISTEN_STOP  = 4,
+        EVT_CREATE       = 5,
+        EVT_RELEASE      = 6 ,
+        EVT_CONNECT      = 7 ,
+        EVT_CONNECT_FAIL = 8 ,
+        EVT_RECV         = 9 ,
+        EVT_SEND         = 10,
+        EVT_DISCONNECT   = 11,
+        EVT_RECYLE_TIMER = 12,
+        EVT_USER1        = 13,
+        EVT_USER2        = 14,
         EVT_END
     };
 

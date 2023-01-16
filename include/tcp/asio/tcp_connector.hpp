@@ -21,6 +21,8 @@ namespace knet
 			using TPtr = std::shared_ptr<T>;
 			using WorkerPtr = std::shared_ptr<Worker>;
 			using FactoryPtr = Factory *;
+            using Socket  = typename T::ConnSock; 
+			using ConnectionMap =  std::unordered_map<uint64_t, TPtr>; 
 
 			TcpConnector(FactoryPtr fac = nullptr, WorkerPtr worker = nullptr)
 			{
@@ -38,8 +40,17 @@ namespace knet
 				if (net_factory)
 				{
 					add_factory_event_handler(std::integral_constant<bool, std::is_base_of<KNetHandler<T>, Factory>::value>(), fac);
-				}
-				
+				}				
+			}
+
+
+			TcpConnector(WorkerPtr worker)
+			{  
+				if (worker == nullptr){
+					worker = std::make_shared<Worker>(nullptr , this );//use this as worker's owner 
+					worker->start();
+				} 
+				user_workers.emplace_back(worker);
 			}
 
 			virtual ~TcpConnector() {}
@@ -52,14 +63,13 @@ namespace knet
 				}
 			}
 
-			bool start(  NetOptions opts = {}, FactoryPtr fac = nullptr)
+			bool start(FactoryPtr fac = nullptr, uint32_t threads = 0)
             {
-                net_options = opts; 
                 if (fac != nullptr)
 				{
 					net_factory = fac;
 				}
-                for (uint32_t i = 0; i < opts.threads ; i++)
+                for (uint32_t i = 0; i < threads ; i++)
 				{
 					auto worker = std::make_shared<Worker>(nullptr , this );
 					user_workers.emplace_back(worker);
@@ -70,14 +80,17 @@ namespace knet
 
 			void stop()
 			{
+			//	event_handler_chain.clear(); 
 				for (auto &elem : connections)
 				{
-					elem.second->close();
+					elem.second->deinit(); 
+					elem.second->close(true);
 				}
+				connections.clear(); 
 				
 				for(auto & worker: user_workers){
-					if (worker->get_user_data() == this){
-						worker->stop(); 
+					if (worker->get_user_data() == this){//inner worker
+					 	worker->stop(); 
 					}
 				}			
 				user_workers.clear(); 
@@ -94,16 +107,14 @@ namespace knet
 				return false;
 			}
 
-			bool add_connection(TPtr conn, const std::string& url )
+			bool add_connection(TPtr conn, const KNetUrl &urlInfo )
 			{
 				if (conn)
-				{
-					KNetUrl urlInfo; 
-					urlInfo.parse(url); 
+				{		 
 					auto worker = this->get_worker();
-					auto sock =
-						std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
-					conn->init(net_options, sock, worker, this);					 
+					auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
+                    auto opts = options_from_url(urlInfo); 
+					conn->init(opts, sock, worker, this);					 
 					conn->connect(urlInfo );
 					connections[conn->get_cid()] = conn;
 					return true;
@@ -111,11 +122,22 @@ namespace knet
 				return false;
 			}
 
+			TPtr find_connection(uint64_t sid ){
+				auto itr = connections.find(sid); 
+				if (itr != connections.end()){
+					return itr->second; 
+				}
+				return nullptr; 				
+			}
+			inline ConnectionMap get_connections() const {
+				return connections; 
+			}
+
 			template <class... Args>
 			TPtr add_connection(const KNetUrl &urlInfo, Args... args)
 			{
 				auto worker = this->get_worker();
-				auto sock = std::make_shared<TcpSocket<T>>(worker->thread_id(), worker->context());
+				auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
 				TPtr conn = nullptr;
 				if (net_factory)
 				{
@@ -126,7 +148,8 @@ namespace knet
 					conn = std::make_shared<T>(args...);
 				}
 
-				conn->init(net_options, sock, worker, this);
+                auto opts = options_from_url(urlInfo); 
+				conn->init(opts, sock, worker, this);  //init add this to event handler
 				conn->connect(urlInfo);
 				connections[conn->get_cid()] = conn;
 				return conn;
@@ -248,7 +271,6 @@ namespace knet
 			uint32_t worker_index = 0;
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
-            NetOptions net_options;  
 			FactoryPtr net_factory = nullptr;
 			std::vector<KNetHandler<T> *> event_handler_chain;
 		 

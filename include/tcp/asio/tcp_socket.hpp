@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <string_view> 
 #include "utils/knet_url.hpp"
+#include "knet_worker.hpp"
 #include <asio/use_future.hpp>
 using namespace knet::utils; 
 
@@ -31,16 +32,16 @@ namespace knet {
                         SOCKET_RECONNECT,
                         SOCKET_CLOSED,
                     };
-                    enum { kReadBufferSize = 1024 * 8, kMaxPackageLimit = 8 * 1024  };
+
+                    enum { kReadBufferSize = 1024 * 16, kMaxPackageLimit = 16 * 1024  };
                     using TPtr = std::shared_ptr<T>;//NOTICY not weak_ptr 
-                    TcpSocket(const std::thread::id& tid, asio::io_context& ctx, void* = nullptr)
-                        : io_context(ctx)
-                          , tcp_sock(ctx) {
+                    TcpSocket(const std::thread::id& tid, knet::KNetWorkerPtr worker , void * = nullptr): io_worker(worker), 
+                          tcp_sock(worker->context()) {
                               worker_tid = tid;
                               socket_status = SocketStatus::SOCKET_INIT; 
-                              send_buffer.reserve(1024); 
-                              cache_buffer.reserve(1024); 
-                          }
+                              send_buffer.reserve(1024*4); 
+                              cache_buffer.reserve(1024*4); 
+                    }
 
                     inline void init(TPtr conn, NetOptions opts) {
                         net_options = opts; 
@@ -53,12 +54,26 @@ namespace knet {
 
                     bool connect(const KNetUrl & urlInfo  ) {                       
                         url_info = urlInfo; 
-                        tcp::resolver resolver(io_context);
-                        auto result = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
+                        tcp::resolver resolver(io_worker->context()); 
+                        tcp::resolver::results_type addrResult ; 
+                        try {
+                            addrResult = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
+                            if (addrResult.empty()){
+                                wlog("resolve address {} failed", urlInfo.host); 
+                                return false; 
+                            }
+                            dlog("resolve result :"); 
+                            for(auto &e : addrResult){
+                                dlog("  ip {}", e.endpoint().address().to_string()); 
+                            }
+                        }catch(... ){
+                            wlog("resolve address {}:{} failed", urlInfo.host, urlInfo.port); 
+                            return false; 
+                        }
                         dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);
                         
                         tcp_sock.close(); 
-                        tcp_sock = std::move(tcp::socket(io_context)); 
+                        tcp_sock = tcp::socket(io_worker->context()); 
                         if ( urlInfo.has("bind_port")) {
                             std::string bindAddr = urlInfo.get("bind_addr"); 
                             std::string bindPort = urlInfo.get("bind_port"); 
@@ -69,38 +84,35 @@ namespace knet {
                         auto self = this->shared_from_this();
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
                         if (!net_options.sync){
-                               async_connect(tcp_sock, result,
-                                    [self, this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
+                               async_connect(tcp_sock, addrResult,
+                                    [self, this ](asio::error_code ec, typename decltype(addrResult)::endpoint_type endpoint) {
                                     if (!ec) {
                                         if (!self->net_options.tcp_delay)
                                         {
                                             self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
                                         }
                                         
-                                        dlog("connect to {}:{} success",url_info.host,url_info.port);       
-                                        self->init_read(); 
+                                        dlog("connect to {}:{} success {}",url_info.host,url_info.port, self->tcp_sock.is_open());       
+                                        self->init_read(false); 
                                                                            
                                     }else {
-                                       dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
+                                        wlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
                                         self->tcp_sock.close();
                                         self->socket_status = SocketStatus::SOCKET_CLOSED; 
                                     }
                                 }); 
 
                             return true; 
-                            
                         }else {                                      
                             try {
-                                std::future<asio::ip::tcp::endpoint> cf =  async_connect(tcp_sock, result, asio::use_future); 
+                                std::future<asio::ip::tcp::endpoint> cf =  async_connect(tcp_sock, addrResult, asio::use_future); 
                                 cf.get();             
-
-                                if (!net_options.tcp_delay)
-                                {
+                                if (!net_options.tcp_delay) {
                                     tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
                                 }                    
                                 socket_status = SocketStatus::SOCKET_OPEN;
                             }catch(std::system_error& e){
-                                dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, e.what() );
+                                wlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, e.what() );
                                 self->tcp_sock.close();
                                 self->socket_status = SocketStatus::SOCKET_CLOSED; 
                                 return false; 
@@ -111,15 +123,17 @@ namespace knet {
 
                     template <class F>
                         void run_inloop(const F & fn) {
-                            asio::dispatch(io_context, fn);
+                            asio::dispatch(io_worker->context(), fn);
                         }
-                    void init_read(){
+
+                    void init_read(bool isPassive){
                         if (connection) {
                             socket_status = SocketStatus::SOCKET_OPEN;
                             connection->process_event(EVT_CONNECT);
                             do_read(); 
                         }				
                     }
+
                     int32_t do_sync_read(const std::function<int32_t (const char * data, uint32_t len) > & handler){
                         if(tcp_sock.is_open()){
                             asio::error_code error;                            
@@ -155,21 +169,19 @@ namespace knet {
                             auto self = this->shared_from_this();
                             auto buf = asio::buffer((char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
                             if (kReadBufferSize > read_buffer_pos){
-                                tcp_sock.async_read_some(
-                                        buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
-                                        if (!ec) {
-                                        //dlog("received data length {}", bytes_transferred);								 
+                                tcp_sock.async_read_some(buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+                                    if (!ec) {                                        				 
                                         process_data(bytes_transferred);
                                         self->do_read();
-                                        }
-                                        else {
-                                            elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
-                                            do_close();
-                                        }
-                                        });
+                                    }else {
+                                        ilog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+                                        cache_buffer.clear(); //drop cache buffer
+                                        do_close();
+                                    }
+                                });
 
                             }else {						
-                                wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", kReadBufferSize, read_buffer_pos); 
+                                wlog("read buffer {} is full, increase buffer size, read pos is {}", kReadBufferSize, read_buffer_pos); 
                                 process_data(0);
                                 if (read_buffer_pos >= kReadBufferSize ){
                                     //packet size exceed the limit, so we close it. 
@@ -194,53 +206,56 @@ namespace knet {
 
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
-                            write_mutex.lock(); 
-                
-                            return this->mpush(first, rest...);
+                            if (is_open()){
+                                write_mutex.lock();                 
+                                return this->mpush(first, rest...);
+                            }
+                            return -1;                         
                         }
 
                     template <typename P >  
-                        inline int32_t write_data( const P & data  ){
+                        inline uint32_t write_data( const P & data  ){
                             send_buffer.append(std::string_view((const char*)&data, sizeof(P)));
-                            return sizeof(P); 
+                            return send_buffer.size(); 
                         } 
 
 
-                    inline int32_t  write_data(const std::string_view &  data ){
+                    inline uint32_t  write_data(const std::string_view &  data ){
                         send_buffer.append(data ); 
-                        return std::size(data); 
+                        return send_buffer.size(); 
                     }
 
-                    inline int32_t write_data(const std::string &  data ){
+                    inline uint32_t write_data(const std::string &  data ){
                         send_buffer.append(data ); 
-                        return std::size(data); 
+                        return send_buffer.size(); 
                     }
 
-                    inline int32_t write_data(const char* data ){
+                    inline uint32_t write_data(const char* data ){
                         if (data != nullptr ){
                             send_buffer.append(std::string(data) ); 
-                            return strlen(data); 
+                            return send_buffer.size(); 
                         }
                         return 0;                         
                     }
  
                     template <typename F, typename ... Args>
                         int32_t mpush(const F &  data, Args... rest) { 					
-                           int32_t ret =   this->write_data(data  ) ;                            
-                           int32_t lastRet =  mpush(rest...);
-                           return lastRet <0?lastRet:ret; 
+                            this->write_data(data  ) ;                            
+                            return mpush(rest...);
                         }
 
                     int32_t mpush() {
-                        if (cache_buffer.empty()  ){ 
-                             do_async_write(); 
-                        }
-                        write_mutex.unlock();  
-                       
-                        return 0; 
+                        int32_t ret = (int32_t)send_buffer.size(); 
+                        if (cache_buffer.empty() ){ 						
+ 
+							do_async_write(); 
+                        }else {
+                            write_mutex.unlock(); 
+                        }                        
+                        return ret; 
                     }
 
-                    bool do_async_write() { 
+                    int32_t do_async_write() { 
                    
                         send_buffer.swap(cache_buffer); 
                         
@@ -276,7 +291,7 @@ namespace knet {
                                     });
 
                         }
-                        return true;
+                        return 0;
                     }
 
                     inline bool is_open() {
@@ -305,7 +320,7 @@ namespace knet {
                         //package size is larger than data we have 
                         if (pkgLen >  read_buffer_pos){
                             if (pkgLen > kReadBufferSize) {
-                                elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
+                                wlog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
                                 this->do_close(); 
                                 return false;
                             }
@@ -337,7 +352,7 @@ namespace knet {
                                 if (pkgLen <= 0 ||  pkgLen > dataLen) {
 
                                     if (pkgLen > kReadBufferSize) {
-                                        elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
+                                        wlog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
                                         this->do_close(); 
                                         return false; 
                                     }
@@ -355,33 +370,39 @@ namespace knet {
                     }
 
                     void close() { 
-
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
+                            wlog("close, status is {}", static_cast<uint32_t>(socket_status));
                             return;
                         }
 
                         auto self = this->shared_from_this();
-                        asio::post(io_context, [this, self]() { 
-
+                        asio::post(io_worker->context(), [this, self]() { 
                                 self->socket_status = SocketStatus::SOCKET_CLOSING;
                                 auto & conn = self->connection; 
                                 if (conn) {
-                                if (send_buffer.size() > 0 && !send_buffer.empty()) {
-                                do_async_write(); //try last write
-                                }
-                                conn->process_event(EVT_DISCONNECT); 
-                                self->socket_status = SocketStatus::SOCKET_CLOSED;
-                                if (tcp_sock.is_open()) {
-                                  tcp_sock.close();
-                                }
-                                conn->release();
-                                conn.reset(); 
-                                }else {
-                                self->socket_status = SocketStatus::SOCKET_CLOSED;
-                                if (tcp_sock.is_open()) {
-                                    tcp_sock.close();							
-                                } 
+                                    if (send_buffer.size() > 0 && !send_buffer.empty()) {
+                                        do_async_write(); //try last write
+                                    }
+                                    if (self->socket_status <=  SocketStatus::SOCKET_CLOSING ){
+                                        conn->process_event(EVT_DISCONNECT); 
+                                    }
+                                    
+                                    self->socket_status = SocketStatus::SOCKET_CLOSED;
+                                    if (tcp_sock.is_open()) {
+                                        tcp_sock.close();
+                                    }
+                        
+                                    if (conn->need_reconnect()) {
+                                        socket_status = SocketStatus::SOCKET_RECONNECT;
+                                    }else {
+                                        conn->release();
+                                        conn.reset(); 
+                                    }
+                                } else {
+                                    self->socket_status = SocketStatus::SOCKET_CLOSED;
+                                    if (tcp_sock.is_open()) {
+                                        tcp_sock.close();							
+                                    } 
                                 }
                                 self->read_buffer_pos = 0;
                         });
@@ -390,22 +411,26 @@ namespace knet {
 
                     void do_close( ) {			 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("do close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
+                            wlog("do close, in status {}", static_cast<uint32_t>(socket_status) );
                             return;
                         }  
-                        socket_status = SocketStatus::SOCKET_CLOSING;   
-                        auto & conn = connection; 
-                        if (conn) {
-                            conn->process_event(EVT_DISCONNECT);					
-                            if (conn->need_reconnect()) {
+                        if (socket_status < SocketStatus::SOCKET_CLOSING){
+                            socket_status = SocketStatus::SOCKET_CLOSING;   
+                        }  
+ 
+                        if (connection) {
+                            if (socket_status <=  SocketStatus::SOCKET_CLOSING ){
+                                connection->process_event(EVT_DISCONNECT); 
+                            }			
+                            if (connection->need_reconnect()) {
                                 socket_status = SocketStatus::SOCKET_RECONNECT;
                             }else {
                                 socket_status = SocketStatus::SOCKET_CLOSED;
                                 if (tcp_sock.is_open()) {
                                     tcp_sock.close();
                                 }
-                                conn->release();
-                                conn.reset();
+                                connection->release();
+                                connection.reset();
                             }
                         }else {
                             socket_status = SocketStatus::SOCKET_CLOSED;
@@ -430,13 +455,10 @@ namespace knet {
                     inline bool is_inloop() const  {
                         return worker_tid == std::this_thread::get_id();
                     }
-
-                    inline asio::io_context& get_context() { return io_context; }
                 private:
-                    asio::io_context& io_context;
+                    knet::KNetWorkerPtr  io_worker;
                     tcp::socket tcp_sock;		
                     TPtr connection;		
-
                     char read_buffer[kReadBufferSize+4];
                     int32_t read_buffer_pos = 0;
                     std::mutex write_mutex; 
@@ -446,7 +468,6 @@ namespace knet {
                     std::thread::id worker_tid;
                     KNetUrl url_info; 
                     NetOptions net_options; 
-                    bool is_writing = false; 
             };
 
 
