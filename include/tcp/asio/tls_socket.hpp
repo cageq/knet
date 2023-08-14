@@ -466,66 +466,7 @@ namespace knet {
                     } 
 					
 					
-                    bool process_data1(uint32_t nread) {
-                        if (!connection  || nread <= 0) {
-                            return false;
-                        }
-                        connection->process_event(EVT_RECV);				
-                        read_buffer_pos += nread; 
-                        int32_t pkgLen = this->connection->process_package((char*)read_buffer, read_buffer_pos); 
-
-                        //package size is larger than data we have 
-                        if (pkgLen >  read_buffer_pos){
-                            if (pkgLen > kReadBufferSize) {
-                                elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
-                                this->do_close(); 
-                                return false;
-                            }
-                            //dlog("need more data to get one package"); 
-                            return true; 
-                        }
-
-                        int32_t readPos = 0;
-                        while (pkgLen > 0) {
-                            //dlog("process data size {} ,read buffer pos {}  readPos {}", pkgLen, read_buffer_pos, readPos);
-                            if (readPos + pkgLen <= read_buffer_pos) {
-                                char* pkgEnd = (char*)read_buffer + readPos + pkgLen + 1;
-                                char endChar = *pkgEnd;
-                                *pkgEnd = 0;
-                                this->connection->process_data(std::string((const char*)read_buffer + readPos, pkgLen));
-                                *pkgEnd = endChar;
-                                readPos += pkgLen;
-                            } else {
-                                if (read_buffer_pos > readPos )
-                                {
-                                    rewind_buffer(readPos);
-                                    break;
-                                } 
-                            }
-
-                            if (readPos < read_buffer_pos) {
-                                int32_t  dataLen = read_buffer_pos - readPos; 
-                                pkgLen = this->connection->process_package( (char*)read_buffer + readPos, dataLen); 	
-                                if (pkgLen <= 0 ||  pkgLen > dataLen) {
-
-                                    if (pkgLen > kReadBufferSize) {
-                                        elog("single package size {} exceeds max buffer size ({}) , please increase it", pkgLen, kReadBufferSize);
-                                        this->do_close(); 
-                                        return false; 
-                                    }
-
-                                    rewind_buffer(readPos);
-                                    break;
-                                }  
-
-                            }else {
-                                read_buffer_pos = 0;
-                                break;
-                            }
-                        } 
-                        return true; 
-                    }
-
+                   
                     void close() { 
 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
