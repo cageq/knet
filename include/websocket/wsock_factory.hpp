@@ -26,7 +26,7 @@ public:
 	WSockFactory() {  }
 	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
-		ilog("handle event in http factory ", evt);
+		ilog("handle event in http factory ", static_cast<uint32_t>(evt));
 
 		switch (evt) {
 		case EVT_THREAD_INIT:

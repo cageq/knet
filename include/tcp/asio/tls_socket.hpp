@@ -187,7 +187,7 @@ namespace knet {
                                         });
 
                             }else {						
-                                wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", kReadBufferSize, read_buffer_pos); 
+                                wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
                                 process_data(0);
                                 if (read_buffer_pos >= kReadBufferSize ){
                                     //packet size exceed the limit, so we close it. 
@@ -406,14 +406,7 @@ namespace knet {
                         return  socket_status == SocketStatus::SOCKET_CONNECTING;
                     }
 
-                    void rewind_buffer(int32_t readPos){
-                        if (read_buffer_pos >= readPos) {
-                            //dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
-                            memmove(read_buffer, (const char*)read_buffer + readPos, read_buffer_pos - readPos);
-                            read_buffer_pos -= readPos;
-                        }
-                    }
-					bool process_data(uint32_t nread) {
+		    bool process_data(uint32_t nread) {
                         read_buffer_pos += nread; 
 
                         int32_t readPos = 0; 

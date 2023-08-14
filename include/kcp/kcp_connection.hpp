@@ -55,7 +55,7 @@ public:
 	}
  
 	int32_t send(const char * data ,uint32_t len){
-		dlog("send user message on status {}", status);
+		dlog("send user message on status {}", static_cast<uint32_t>(status));
 		if (status == CONN_KCP_READY) {
 			if (kcp) {
 				return ikcp_send(kcp, data, len);
@@ -200,7 +200,7 @@ private:
 		}
 
 		status = CONN_KCP_READY;
-		dlog("init kcp success , change status  to ready {}", status);
+		dlog("init kcp success , change status  to ready {}", static_cast<uint32_t>(status) );
 	}
 
 

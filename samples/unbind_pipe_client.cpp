@@ -14,7 +14,7 @@ class MyChannel : public PipeSession{
 		virtual ~MyChannel(){}
 		virtual bool handle_event(knet::NetEvent evt) { 
 			
-			dlog("handle net event {}", evt);
+			dlog("handle net event {}", static_cast<uint32_t>(evt));
 			
 			if (evt == knet::NetEvent::EVT_CONNECT){
 

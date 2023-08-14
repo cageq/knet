@@ -50,7 +50,7 @@ namespace knet
 
 				if (session)
 				{
-					dlog("handle session event {}", evt);
+					dlog("handle session event {}", static_cast<uint32_t>(evt));
 					session->handle_event(evt);
 				}
 				return false;

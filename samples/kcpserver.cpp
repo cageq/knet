@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 
 	KcpListener<MyConnection> kcpLis(worker);
 	kcpLis.start(8700, [](MyConnection::TPtr, knet::NetEvent evt, const std::string & dv) {
-		ilog("received connection event {} , {}", evt,event_string(evt));
+		ilog("received connection event {} , {}", static_cast<uint32_t>(evt),event_string(evt));
 		return nullptr;
 	});
 

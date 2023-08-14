@@ -396,13 +396,6 @@ namespace knet {
                         return  socket_status == SocketStatus::SOCKET_CONNECTING;
                     } 
 
-                    void rewind_buffer(int32_t readPos){
-                        if (read_buffer_pos >= readPos) {
-                            //dlog("rewind buffer to front {} ", read_buffer_pos - readPos);
-                            memmove(read_buffer, (const char*)read_buffer + readPos, read_buffer_pos - readPos);
-                            read_buffer_pos -= readPos;
-                        }
-                    }
 
                     bool process_data(uint32_t nread) {
                         read_buffer_pos += nread; 
