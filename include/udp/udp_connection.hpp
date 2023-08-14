@@ -13,6 +13,7 @@
 #include "utils/timer.hpp"
 #include "utils/knet_url.hpp"
 #include "knet_worker.hpp"
+#include "utils/loop_buffer.hpp"
 
 using namespace knet::utils;
 using namespace std::chrono;
@@ -110,8 +111,12 @@ namespace knet
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &...rest)
 			{
-				auto sendBuffer = std::make_shared<std::string>(); //calc all params size
-				return mpush(sendBuffer, first, rest...);
+				{
+				
+					std::lock_guard<std::mutex> lock (write_mutex); 				
+					mpush( first, rest...);
+				}
+				return do_send(); 
 			}
 
 			virtual PackageType handle_package(const std::string &msg)
@@ -155,68 +160,65 @@ namespace knet
 		private:
 
 		
-			template <typename P>
-			inline int32_t write_data(SendBufferPtr &sndBuf, const P &data)
-			{
-				sndBuf->append(std::string_view((const char *)&data, sizeof(P)));
-				return sizeof(P); 
-			}
-
-			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string_view &data)
-			{
-				sndBuf->append(data);
-				return data.length(); 
-			}
-
-			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string &data)
-			{
-				sndBuf->append(data);
-				return data.length(); 
-			}
-
-			inline int32_t write_data(SendBufferPtr &sndBuf, const char *data)
-			{
-				sndBuf->append(std::string(data));
-				return strlen(data); 
-			}
+				template <typename P >  
+					inline uint32_t write_data( const P & data  ){
+						return send_buffer.push((const char*)&data, sizeof(P));  
+					} 
 
 
-			template <typename F, typename... Args>
-			int32_t mpush(SendBufferPtr &sndBuf, const F &data, Args... rest)
-			{
-				auto ret = this->write_data(sndBuf, data);
-				auto rst = mpush(sndBuf, rest...);
-				if (rst < 0)
-				{
-					return -1; 
+				inline uint32_t  write_data(const std::string_view &  data ){
+					return send_buffer.push(data.data(), data.length());  
 				}
-				return ret + rst; 
-			}
 
-			int32_t mpush(SendBufferPtr &sndBuf)
+				inline uint32_t write_data(const std::string &  data ){
+					return send_buffer.push(data.data(), data.length()); 
+
+				}
+
+				inline uint32_t write_data(const char* data ){
+					if (data != nullptr ){ 
+						return send_buffer.push(data , strlen(data));  
+					}
+					return 0;                         
+				}
+
+				template <typename F, typename ... Args>
+					int32_t mpush(const F &  data, Args... rest) { 					
+						this->write_data(data  ) ;    
+						return mpush(rest...);
+					} 
+ 
+
+
+			int32_t mpush()
 			{
+				return 0; 
+			}
+			
+			int32_t do_send(){
+			 
 				if (!udp_socket)
 				{
 					return -1;
 				}
 
-				if (!sndBuf->empty())
-				{
-					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), 
-											  remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
-											  {
-												  if (!ec)
-												  {
-													  //dlog("sent out thread id is {}", std::this_thread::get_id());
-												  }
-												  else
-												  {
-													  elog("sent message error : {}, {}", ec.value(), ec.message());
-												  }
-											  });
-					return sndBuf->length();
-				}
-				return 0;
+				auto sentLen  = send_buffer.read([this](const char * data,uint32_t dataLen ){
+					udp_socket->async_send_to(asio::const_buffer(data, dataLen), 
+						remote_point, [this, dataLen](std::error_code ec, std::size_t len /*bytes_sent*/)
+						{
+							if (!ec)
+							{
+								send_buffer.commit(dataLen); 
+								dlog("send msg to {}  len {}",remote_point.address().to_string(), dataLen); 
+							}
+							else
+							{
+								elog("sent message error : {}, {}, {}", ec.value(), ec.message(),dataLen);
+							}
+						});
+						return dataLen; 
+				});  
+				return sentLen;
 			}
 
 
@@ -265,38 +267,44 @@ namespace knet
 				this->udp_socket = std::make_shared<udp::socket>(event_worker->context());
 				if (udp_socket)
 				{
-					asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
-					udp_socket->open(lisPoint.protocol());
-					udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
-					if (localPort > 0)
-					{
-						udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
-						udp_socket->bind(lisPoint);
-					}
-
-					net_timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(event_worker->context()));
-					net_timer->start_timer(
-						[this]()
-						{
-							std::chrono::steady_clock::time_point nowPoint =
-								std::chrono::steady_clock::now();
-							auto elapseTime = std::chrono::duration_cast<std::chrono::duration<double>>(
-								nowPoint - last_msg_time);
-
-							if (elapseTime.count() > 3)
-							{
-								this->release();
-							}
-							return true;
-						},
-						4000000);
-					net_status = CONN_OPEN;
+					dlog("local address is {}:{}", localAddr, localPort); 
+					udp_socket->open(pt.protocol()); 
 
 					if (remote_point.address().is_multicast())
-					{
-						join_group(remote_point.address().to_string());
+					{				 
+						dlog("bind local multi address {}:{}", localAddr, remote_point.port());
+						asio::ip::udp::endpoint bindAddr(asio::ip::make_address(localAddr.empty()?"0.0.0.0":localAddr), remote_point.port());				
+				//		udp_socket->open(bindAddr.protocol());
+						udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
+						udp_socket->bind(bindAddr);  
+				 
+						join_group(remote_point.address().to_string() );
+					}else {
+						if (localPort > 0){
+							asio::ip::udp::endpoint lisPoint(asio::ip::make_address(localAddr), localPort);
+							udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
+							udp_socket->bind(lisPoint);
+						}
+						net_timer = std::unique_ptr<knet::utils::Timer>(new knet::utils::Timer(event_worker->context()));
+						net_timer->start_timer(
+							[this]()
+							{
+								std::chrono::steady_clock::time_point nowPoint =
+									std::chrono::steady_clock::now();
+								auto elapseTime = std::chrono::duration_cast<std::chrono::duration<double>>(
+									nowPoint - last_msg_time);
+
+								if (elapseTime.count() > 3)
+								{
+									this->release();
+								}
+								return true;
+							},
+							4000000);
+
 					}
 
+					net_status = CONN_OPEN;
 					do_receive();
 				}
 			}
@@ -349,6 +357,9 @@ namespace knet
 			KNetWorkerPtr event_worker = nullptr;
 			ConnectionStatus net_status;
 			std::unique_ptr<knet::utils::Timer> net_timer = nullptr;
+			std::mutex write_mutex;  
+            LoopBuffer<8192> send_buffer;  
+
 			
 		};
 

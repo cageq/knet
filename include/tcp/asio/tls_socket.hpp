@@ -11,10 +11,10 @@
 #include <chrono>
 #include <type_traits>
 #include <string_view> 
-#include "utils/knet_url.hpp"
-#include "knet_worker.hpp"
 #include <asio/use_future.hpp>
 #include <asio/ssl.hpp>
+#include "utils/knet_url.hpp"
+#include "knet_worker.hpp"
 #include "utils/loop_buffer.hpp"
 using namespace knet::utils; 
 
@@ -294,8 +294,14 @@ namespace knet {
 
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
-                        	write_mutex.lock();                 
-                            return this->mpush(first, rest...);
+                         
+							
+							{
+							
+							 	std::lock_guard<std::mutex> lock(write_mutex);          
+                            	 this->mpush(first, rest...);
+							}
+							return this->do_send(); 
                         }
 
                     template <typename P >  
@@ -331,7 +337,11 @@ namespace knet {
                         }
 
                     int32_t mpush() {
-                        this->write_mutex.unlock();	 
+						return 0; 
+					}
+					
+					int32_t do_send(){
+
                         if (!send_buffer.empty() ){ 	 
                             //#define USING_ASYNC_SEND 1 
                             #ifdef USING_ASYNC_SEND

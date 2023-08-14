@@ -150,8 +150,8 @@ namespace knet
 
                 auto opts = options_from_url(urlInfo); 
 				conn->init(opts, sock, worker, this);  //init add this to event handler
-				conn->connect(urlInfo);
 				connections[conn->get_cid()] = conn;
+				conn->connect(urlInfo);
 				return conn;
 			}
 			template <class... Args>
@@ -170,6 +170,20 @@ namespace knet
 					conn->connect(urlInfo);
 					return conn;
 			}
+
+            uint64_t start_timer(const knet::utils::Timer::TimerHandler &  handler, uint64_t interval, bool bLoop = true){
+                auto worker = this->get_worker();
+                if (worker){
+                    return  worker->start_timer(handler, interval, bLoop); 
+                }
+                return 0; 
+            }
+            void stop_timer(uint64_t timerId){
+                auto worker = this->get_worker();
+                if (worker){
+                    worker->stop_timer(timerId); 
+                }
+            }
 
 			WorkerPtr get_worker(int32_t idx = 0)
 			{

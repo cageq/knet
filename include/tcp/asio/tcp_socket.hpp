@@ -291,8 +291,11 @@ namespace knet {
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
                             if (is_open()){
-                                write_mutex.lock();                 
-                                return this->mpush(first, rest...);
+								{
+                                	std::lock_guard<std::mutex> lock(write_mutex);             
+                                	this->mpush(first, rest...);
+								}
+								return this->do_send(); 
                             }
                             return -1;                         
                         }
@@ -330,7 +333,11 @@ namespace knet {
                         }
 
                     int32_t mpush() {
-                        this->write_mutex.unlock();	 
+						return 0; 
+					}
+					
+					int32_t do_send(){
+                        
                         if (!send_buffer.empty() ){ 	 
                             //#define USING_ASYNC_SEND 1 
                             #ifdef USING_ASYNC_SEND
