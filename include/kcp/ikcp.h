@@ -236,8 +236,8 @@ const IUINT32 IKCP_RTO_DEF = 200;
 const IUINT32 IKCP_RTO_MAX = 60000;
 const IUINT32 IKCP_CMD_PUSH = 81;		// cmd: push data
 const IUINT32 IKCP_CMD_ACK  = 82;		// cmd: ack
-const IUINT32 IKCP_CMD_WASK = 83;		// cmd: window probe (ask)
-const IUINT32 IKCP_CMD_WINS = 84;		// cmd: window size (tell)
+const IUINT32 IKCP_CMD_WASK = 83;		// cmd: window probe (ask) 窗口探测报文，询问对端剩余接收窗口的大小.
+const IUINT32 IKCP_CMD_WINS = 84;		// cmd: window size (tell) 窗口通知报文, 通知对端剩余接收窗口的大小.
 const IUINT32 IKCP_ASK_SEND = 1;		// need to send IKCP_CMD_WASK
 const IUINT32 IKCP_ASK_TELL = 2;		// need to send IKCP_CMD_WINS
 const IUINT32 IKCP_WND_SND = 32;
@@ -298,51 +298,77 @@ const IUINT32 IKCP_FASTACK_LIMIT = 5;		// max times to trigger fastack
 struct IKCPSEG
 {
 	struct IQUEUEHEAD node;
-	IUINT32 conv;
-	IUINT32 cmd;
-	IUINT32 frg;
-	IUINT32 wnd;
-	IUINT32 ts;
-	IUINT32 sn;
-	IUINT32 una;
-	IUINT32 len;
-	IUINT32 resendts;
-	IUINT32 rto;
-	IUINT32 fastack;
-	IUINT32 xmit;
+	IUINT32 conv;     //4 字节: 连接标识
+	IUINT32 cmd;      //1 字节: Command.
+	IUINT32 frg;      //1 字节: 分片数量. 表示随后还有多少个报文属于同一个包.
+	IUINT32 wnd;      //2 字节: 发送方剩余接收窗口的大小.
+	IUINT32 ts;       //4 字节: 时间戳.
+	IUINT32 sn;       //4 字节: 报文编号.
+	IUINT32 una;      //4 字节: 发送方的接收缓冲区中最小还未收到的报文段的编号. 也就是说, 编号比它小的报文段都已全部接收.
+	IUINT32 len;      //4 字节: 数据段长度.
+	IUINT32 resendts; // 重传时间戳. 超过这个时间表示该报文超时, 需要重传.
+	IUINT32 rto;      // 该报文的 RTO.
+	IUINT32 fastack;  // ACK 失序次数. 也就是 KCP Readme 中所说的 "跳过" 次数.
+	IUINT32 xmit;     //该报文传输的次数.
 	char data[1];
 };
 
-
+//https://luyuhuang.tech/2020/12/09/kcp.html
 //---------------------------------------------------------------------
 // IKCPCB
 //---------------------------------------------------------------------
 struct IKCPCB
 {
-	IUINT32 conv, mtu, mss, state;
-	IUINT32 snd_una, snd_nxt, rcv_nxt;
-	IUINT32 ts_recent, ts_lastack, ssthresh;
-	IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;
-	IUINT32 snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe;
+	//4 字节: 连接标识, MTU, MSS, 状态. 最大传输单元 (Maximum Transmission Unit) 和最大报文段大小. mss = mtu - 包头长度(24).
+	//state: 连接状态, 0 表示连接建立, -1 表示连接断开. (注意 state 是 unsigned int, -1 实际上是 0xffffffff)
+	IUINT32 conv, mtu, mss, state;  
+	IUINT32 snd_una, snd_nxt, rcv_nxt; //发送缓冲区中最小还未确认送达的报文段的编号. 也就是说, 编号比它小的报文段都已确认送达. snd_nxt 下一个等待发送的报文段的编号. rcv_nxt 下一个等待接收的报文段的编号.
+	IUINT32 ts_recent, ts_lastack, ssthresh;  //ssthresh: Slow Start Threshold, 慢启动阈值.
+	IINT32 rx_rttval, rx_srtt, rx_rto, rx_minrto;  //Retransmission TimeOut(RTO), 超时重传时间.  rx_rttval 计算 rx_rto 的中间变量.
+	//snd_wnd, rcv_wnd 发送窗口和接收窗口的大小. 
+	//rmt_wnd  对端剩余接收窗口的大小. 
+	//cwnd congestion window, 拥塞窗口. 用于拥塞控制. 
+	//probe 是否要发送控制报文的标志.
+	IUINT32 snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe;  
+	//current 当前时间.
+	//interval  flush 的时间粒度.
+	//ts_flush 下次需要 flush 的时间.
+	//xmit 该链接超时重传的总次数.
 	IUINT32 current, interval, ts_flush, xmit;
+	//接收缓冲区, 发送缓冲区, 接收队列, 发送队列的长度. 
 	IUINT32 nrcv_buf, nsnd_buf;
 	IUINT32 nrcv_que, nsnd_que;
+	//nodelay: 是否启动快速模式. 用于控制 RTO 增长速度.
+	//updated: 是否调用过 ikcp_update.
 	IUINT32 nodelay, updated;
+	//ts_probe, probe_wait: 确定何时需要发送窗口询问报文
 	IUINT32 ts_probe, probe_wait;
+	//dead_link: 当一个报文发送超时次数达到 dead_link 次时认为连接断开.
+	//incr: 
 	IUINT32 dead_link, incr;
+	//snd_queue, rcv_queue: 发送队列和接收队列.
 	struct IQUEUEHEAD snd_queue;
 	struct IQUEUEHEAD rcv_queue;
+	//snd_buf, rcv_buf: 发送缓冲区和接收缓冲区.
 	struct IQUEUEHEAD snd_buf;
 	struct IQUEUEHEAD rcv_buf;
+	//acklist, ackcount, ackblock: ACK 列表, ACK 列表的长度和容量. 待发送的 ACK 的相关信息会先存在 ACK 列表中, flush 时一并发送.
 	IUINT32 *acklist;
 	IUINT32 ackcount;
 	IUINT32 ackblock;
 	void *user;
+	//buffer: flush 时用到的临时缓冲区.
 	char *buffer;
+	//fastresend: ACK 失序 fastresend 次时触发快速重传.
 	int fastresend;
+	//fastlimit: 传输次数小于 fastlimit 的报文才会执行快速重传
 	int fastlimit;
+	//nocwnd: 是否不考虑拥塞窗口.
+	//stream: 是否开启流模式, 开启后可能会合并包
 	int nocwnd, stream;
+	//logmask: 用于控制日志. 
 	int logmask;
+	//output: 下层协议输出函数.
 	int (*output)(const char *buf, int len, struct IKCPCB *kcp, void *user);
 	void (*writelog)(const char *log, struct IKCPCB *kcp, void *user);
 };

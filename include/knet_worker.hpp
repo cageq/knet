@@ -105,9 +105,18 @@ namespace knet
 		{
 			return event_timer->start_timer(handler, interval, bLoop);
 		}
+
+		bool restart_timer(uint64_t timerId , uint64_t interval = 0 ){
+			return event_timer->restart_timer(timerId, interval); 
+		}
+
 		void stop_timer(uint64_t timerId) { event_timer->stop_timer(timerId); }
 
-		inline void* get_user_data() { return user_data; }
+		void clear_timers() {
+			event_timer->clear(); 
+		}
+
+		inline void *get_user_data() { return user_data; }
 
 
 		void run()
@@ -118,8 +127,7 @@ namespace knet
 			io_context->run();
 
 			std::call_once(deinit_flag, [&](){ this->deinit(); });
-
-			dlog("exit event worker");
+			//dlog("exit event worker");
 		}
 
 	protected:

@@ -60,7 +60,7 @@ namespace knet
 			{
 				if (is_ready())
 				{
-					PipeMsgHead head{ (uint32_t)msg.length(), PIPE_MSG_DATA, 0 };
+					PipeMsgHead head{static_cast<uint32_t>(msg.length()), PIPE_MSG_DATA,  0 };
 					head.data = obdata;
 					return connection->msend(head, msg);
 				}
@@ -82,12 +82,22 @@ namespace knet
 			{
 				if (is_ready())
 				{
-					PipeMsgHead head{ (uint32_t)msg.length(), PIPE_MSG_DATA, 0 };
+					PipeMsgHead head{static_cast<uint32_t>(msg.length()), PIPE_MSG_DATA, 0};
 					return connection->msend(head, msg);
 				}
 				return -1;
 			}
- 
+
+			template <class P, class... Args>
+			int32_t sync_msend(const P& first, const Args&... rest)  {
+				if (is_ready())
+				{
+					uint32_t bodyLen = pipe_data_length(first, rest...);				
+					PipeMsgHead head{bodyLen, PIPE_MSG_DATA, 0};
+					return connection->sync_msend(head, first, rest ... );
+				}
+				return -1;
+			}
 
 			template <class P, class... Args>
 			int32_t msend_with_obdata(uint64_t obdata, const P &first, const Args &...rest)
@@ -170,6 +180,12 @@ namespace knet
 							return false; 
 						}, 3000000); 	
 					}
+				}				
+			}
+
+			void update_remote_address(const KNetUrl &urlInfo ){
+				if (connection){
+					connection->set_remote_address(urlInfo); 
 				}				
 			}
 		private:

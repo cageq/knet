@@ -11,12 +11,11 @@ class MyConnection : public KcpConnection<MyConnection> {
 	public:
  
 	virtual ~MyConnection(){}
-    virtual PackageType handle_package(const char* data, uint32_t len) { 
-		ilog("on recv udp message {} , lenght is {} ,cid is {}", data, len,cid); 
+    virtual int32_t handle_package(const char* data, uint32_t len) { 
+		ilog("on message {} , lenght  {} ,cid is {}", data, len,cid); 
 		this->send("response from server"); 
-		return PACKAGE_USER;
+		return len;
 	}
-
 };
 
 int main(int argc, char* argv[]) {

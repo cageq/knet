@@ -14,9 +14,8 @@
 #include "ikcp.h"
 #include "kcp_message.hpp"
 #include "knet_worker.hpp"
-
-
-
+#include "knet_handler.hpp"
+#include <set> 
 namespace knet {
 namespace kcp {
 
@@ -29,7 +28,11 @@ using KcpSocketPtr = std::shared_ptr<udp::socket>;
 inline std::string addrstr(udp::endpoint pt) {
 	return pt.address().to_string() + ":" + std::to_string(pt.port());
 }
- 
+enum KcpPackageType {
+	KCP_PACKAGE_PING,
+	KCP_PACKAGE_PONG,
+	KCP_PACKAGE_USER,
+}; 
 
 template <typename T>
 class KcpConnection : public std::enable_shared_from_this<T> {
@@ -38,14 +41,10 @@ public:
 	using TPtr = std::shared_ptr<T>;
 	using EventHandler = std::function<TPtr(TPtr, NetEvent, const  std::string&)>; 
 
-	KcpConnection(){}
-	 
-	enum PackageType {
-		PACKAGE_PING,
-		PACKAGE_PONG,
-		PACKAGE_USER,
-	};
-
+	KcpConnection(){
+		static std::atomic<uint64_t>  index = 1024;
+		cid = ++index; 
+	} 
 	void init(KNetWorkerPtr w){
 		event_worker = w;  
 		shakehand_request_.cmd = KCP_SHAKEHAND_REQUEST;
@@ -122,10 +121,9 @@ public:
         return -1;
     }
 
-	virtual PackageType handle_package(const char* data, uint32_t len) {
-
-		dlog("on recv udp message {} , length is {}", data, len);
-		return PACKAGE_USER;
+	virtual int32_t handle_package(const char* data, uint32_t len) { 
+		dlog("on recv kcp message {} , length {}", data, len);
+		return len;
 	}
 
 	int32_t disconnect() {
@@ -158,13 +156,15 @@ public:
 		}
 		return -1;
 	} 
+
+	inline uint64_t get_cid() const { return cid; }
 	uint32_t cid = 0;
 	std::chrono::milliseconds last_msg_time;
 
 private:
-	template <class,class , class ...>
+	template <class,class, class >
 	friend class KcpListener;
-	template <class,class, class ...>
+	template <class,class, class >
 	friend class KcpConnector;
 
 	void init_kcp() { 
@@ -287,7 +287,7 @@ private:
 						self->send_heartbeat();
 					}
 
-					ilog("check heartbeat timer {}", elapseTime.count());
+					//ilog("check heartbeat timer {}", elapseTime.count());
 					return true; 
 				},
 				1000000);
@@ -321,7 +321,7 @@ private:
 						this->send_heartbeat();
 					}
 
-					ilog("check heartbeat timer {}", elapseTime.count());
+					//ilog("check heartbeat timer {}", elapseTime.count());
 					return true; 
 				},
 				1000000);
@@ -375,7 +375,7 @@ private:
 				asio::buffer((const char*)&heartbeat_message_, sizeof(KcpHeartbeat)), remote_point,
 				[this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-						dlog("send heartbeat message successful {}", shakehand_response_.conv);
+						//dlog("send heartbeat message successful {}", shakehand_response_.conv);
 					} else {
 						dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
@@ -386,7 +386,7 @@ private:
 		static uint32_t server_conv_index = 0x1000; 
 		KcpMsgHead* head = (KcpMsgHead*)pData;
 
-		dlog("check shakehand status is {}, type is {}", status, head->cmd);
+		//dlog("check shakehand status is {}, type is {}", status, head->cmd);
 		if (status == CONN_OPEN) {
 
 			switch (head->cmd) {
@@ -458,7 +458,7 @@ private:
 			} break;
 
 			case KCP_HEARTBEAT: {
-				dlog("receive heartbeat, ignore it on ready");
+				//dlog("receive heartbeat, ignore it on ready");
 			} break;
 			default:;
 			}
@@ -472,7 +472,7 @@ private:
 		kcp_sock->async_receive_from(asio::buffer(recv_buffer, kMaxMessageLength), sender_point,
 			[this](std::error_code ec, std::size_t bytes_recvd) {
 				if (!ec && bytes_recvd > 0) {
-					dlog("receive message length {}", bytes_recvd);
+					dlog("receive message from {} length {}", sender_point.address().to_string(), bytes_recvd);
 					recv_buffer[bytes_recvd] = 0;
 
 					auto timeNow = std::chrono::system_clock::now();
@@ -526,6 +526,8 @@ private:
 		}
 	}
 
+
+
 	KcpSocketPtr kcp_sock;
  
 	enum { kMaxMessageLength = 4096 };
@@ -538,7 +540,6 @@ private:
 	EventHandler event_handler = nullptr;
 
 	bool reconnect = false;
-
 	KcpShakeHandMsg shakehand_request_;
 	KcpShakeHandMsg shakehand_response_;
 	KcpShakeHandMsg disconnect_message_;

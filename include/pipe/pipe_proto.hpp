@@ -10,7 +10,8 @@ namespace knet
 		{
 			PIPE_MSG_SHAKE_HAND = 1,
 			PIPE_MSG_HEART_BEAT,
-			PIPE_MSG_DATA
+			PIPE_MSG_DATA, 
+			PIPE_MSG_ACK, 
 		};
 
 		struct PipeMsgHead

@@ -14,7 +14,7 @@ namespace knet
 	namespace kcp
 	{
 
-		template <typename T, typename Worker = KNetWorker, typename... Args>
+		template <typename T, class Factory = KNetFactory<T>, typename Worker = KNetWorker>
 		class KcpListener
 		{
 		public:
@@ -25,7 +25,8 @@ namespace knet
 			using TPtr = std::shared_ptr<T>;
 			using EventHandler = std::function<TPtr(TPtr, NetEvent, const std::string &)>;
 			using WorkerPtr = std::shared_ptr<Worker>;
-			KcpListener(WorkerPtr w = nullptr, Args... args) : conn_args(args...)
+			using FactoryPtr = Factory*;
+			KcpListener(WorkerPtr w = nullptr) 
 			{
 				default_worker = w;
 				if (default_worker == nullptr)
@@ -33,6 +34,13 @@ namespace knet
 					default_worker = std::make_shared<Worker>();
 					default_worker->start();
 				}
+			}
+			bool start(const KNetUrl &  url, EventHandler evtHandler = nullptr, FactoryPtr fac  = nullptr){
+				dlog("start kcp server at {}:{}",url.host,url.port); 
+				net_factory = fac; 
+				listen_port = url.port;  
+				run();
+				return true;
 			}
 
 			bool start(uint32_t port, EventHandler evtHandler = nullptr)
@@ -55,17 +63,19 @@ namespace knet
 
 			TPtr create_connection(const udp::endpoint &  pt)
 			{
-				TPtr conn = nullptr;
-				if (event_handler)
+				TPtr conn = nullptr; 
+
+				if (net_factory)
 				{
-					conn = event_handler(nullptr, EVT_CREATE, {});
+					conn = net_factory->create();
 				}
-				if (!conn)
+				else
 				{
-					auto worker = this->get_worker();
-					conn = std::apply(&KcpListener<T, Worker, Args...>::create_helper, conn_args);
-					conn->init(worker);
+					conn = std::make_shared<T>();
 				}
+				auto worker = this->get_worker();				
+				conn->init(worker);
+			 
 				conn->remote_point = pt;
 				conn->event_handler = event_handler;
 				connections[addrstr(pt)] = conn;
@@ -82,6 +92,13 @@ namespace knet
 				}
 				return false;
 			}
+			void broadcast(const std::string_view & msg){
+
+				for(auto &  conn: connections){
+					conn.second->msend(msg);
+				}
+
+			}
 
 			void stop()
 			{
@@ -92,10 +109,10 @@ namespace knet
 			}
 
 		private:
-			static TPtr create_helper(Args... args)
-			{
-				return std::make_shared<T>(args...);
-			}
+			// static TPtr create_helper(Args... args)
+			// {
+			// 	return std::make_shared<T>(args...);
+			// }
 			void do_receive()
 			{
 				server_socket->async_receive_from(asio::buffer(recv_buffer, MaxReceiveBufferSize), remote_point,
@@ -154,7 +171,8 @@ namespace knet
 			std::shared_ptr<udp::socket> server_socket;
 			std::unordered_map<std::string, TPtr> connections;
 			EventHandler event_handler;
-			std::tuple<Args...> conn_args;
+			FactoryPtr net_factory = nullptr;
+			//std::tuple<Args...> conn_args;
 			WorkerPtr default_worker;
 		};
 

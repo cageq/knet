@@ -107,9 +107,17 @@ namespace knet {
 						dlog("connection factory destroy connection in my factory ");
 					}
 
-					void broadcast(const char* pData, uint32_t len) { pipe_factory.broadcast(pData, len); }
 
-					void broadcast(const std::string & msg) { pipe_factory.broadcast(msg.data(), msg.length()); }
+					template <class P, class... Args>
+					inline int32_t broadcast(const P &first, const Args &...rest){
+						 return pipe_factory.broadcast(first, rest...);
+					}
+
+					
+					template <class P, class... Args>
+					inline int32_t send_to(const std::string & pipeId, const P &first, const Args &...rest){
+						return pipe_factory.send_to(pipeId, first, rest...); 
+					} 
 
 				private:
 					void connect() {

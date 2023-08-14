@@ -3,16 +3,15 @@ project (knet)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories("include")
-#include_directories("opt/asio/asio/include")
-include_directories("opt/asio-1.24.0/include")
-include_directories("opt/spdlog-1.11.0/include")
- 
-include_directories("kcp")
-
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+include_directories(include)
+include_directories(deps/fmt/include)
+include_directories(deps/asio)
+include_directories(deps/spdlog/include)
+ 
 
 if(APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall  -stdlib=libc++  -Wno-unused-function -g  ")
@@ -22,8 +21,6 @@ elseif(WIN32)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -D NDEBUG")
 endif()
 
-include_directories(opt/fmt-9.1.0/include) 
-add_subdirectory(opt/fmt-9.1.0 EXCLUDE_FROM_ALL) 
 
 ADD_DEFINITIONS(-DASIO_STANDALONE)
 
@@ -44,7 +41,7 @@ add_executable(wsclient samples/wsclient.cpp    )
 
 add_executable(wsserver samples/wsserver.cpp    )
 
-add_executable(kcpserver samples/kcpserver.cpp  kcp/ikcp.c)
+add_executable(kcpserver samples/kcpserver.cpp  include/kcp/ikcp.c)
 
 add_executable(udpclient samples/udpclient.cpp  ) 
 
@@ -59,6 +56,13 @@ add_executable(unbindpipeclient samples/unbind_pipe_client.cpp  )
 add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  ) 
 
 add_executable(testurl samples/test_url.cpp  )
+
+
+add_executable(tlsclient samples/tlsclient.cpp  )
+target_link_libraries(tlsclient ssl crypto dl) 
+
+add_executable(tlsserver samples/tlsserver.cpp  )
+target_link_libraries(tlsserver ssl crypto dl) 
 
 
 add_executable(timeclient samples/timeclient.cpp)

@@ -1,143 +1,155 @@
+
+
 //***************************************************************
-//	created:	2020/08/01
+//	created:	2023/08/01
 //	author:		arthur wong
 //***************************************************************
 
 #pragma once
-#include <vector>
-#include <functional>
+
 #include <array>
-#include "utils/knet_log.hpp"
-using namespace klog; 
+#include <atomic>
+#include <functional>
+#include <inttypes.h>
+#include <iostream>
+#include <mutex>
+#include <thread>
+
 namespace knet {
 namespace utils {
 
-template <typename T = char, std::size_t kMaxSize = 10240>
+//https://blog.csdn.net/erazy0/article/details/6210569
+
+#if defined(__linux__) || defined(__APPLE__)
+
+#define __MEM_BARRIER__ \
+    __asm__ __volatile__("mfence":::"memory")
+ 
+#define __READ_BARRIER__ \
+    __asm__ __volatile__("lfence":::"memory")
+ 
+#define __WRITE_BARRIER__ \
+    __asm__ __volatile__("sfence":::"memory")
+ 
+#endif // __linux__
+ 
+
+
+#ifdef _WIN64 
+#include <windows.h>
+#include <immintrin.h>
+#include <intrin.h>
+#include <chrono> 
+#define __MEM_BARRIER__ \
+    _mm_mfence()
+
+#define __READ_BARRIER__ \
+    _ReadBarrier()
+
+#define __WRITE_BARRIER__ \
+    _WriteBarrier() 
+
+inline bool atomic_compare_and_swap(uint32_t *ptr, uint32_t expected,
+                                    uint32_t new_value) {
+  return (InterlockedCompareExchange((LONG volatile *)ptr, new_value,
+                                     expected) == expected);
+}
+ 
+#endif // _WIN64
+ 
+
+struct NonMutex{
+    inline void lock(){}
+    inline void unlock(){}
+}; 
+
+template <std::size_t kMaxSize = 4096, class Mutex = NonMutex>
 class LoopBuffer {
 public:
-	using DataHandler = std::function<void(const T*, uint32_t)>;
+  using DataHandler = std::function<uint32_t(const char *, uint32_t)>;
+  // https://www.techiedelight.com/round-next-highest-power-2/
+  static constexpr inline uint32_t get_power_of_two(uint32_t n) {
+    // decrement `n` (to handle the case when `n` itself is a power of 2)
+    n--;
+    // set all bits after the last set bit
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    // increment `n` and return
+    return ++n;
+  }
 
-	bool push_back(const T* data, uint32_t len) {
-		int32_t tailPos = tail_pos;
-		uint32_t disSize = tailPos + kMaxSize - head_pos;
-		uint32_t usedSize = disSize >= kMaxSize ? (disSize - kMaxSize) : disSize;
-		// ilog("push length is {}  used size {}  ", len,  usedSize);
-		if (len + usedSize > kMaxSize - 1) {
-			wlog("push failed   length is {}  used size {}  ", len, usedSize);
-			return false;
-		}
-		if (tailPos + len > kMaxSize) {
-			uint32_t tailLeft = kMaxSize - tailPos;
-			std::copy(data, data + tailLeft, buffer.begin() + tailPos);
-			std::copy(data + tailLeft, data + len, buffer.begin());
-			tailPos = len - tailLeft;
-		} else {
-			std::copy(data, data + len, buffer.begin() + tailPos);
-			tailPos += len;
-			tailPos = tailPos % kMaxSize;
-		}
-		tail_pos = tailPos;
-		return true;
-	}
+  static constexpr uint32_t BufferSize =
+      kMaxSize & (kMaxSize - 1) ? get_power_of_two(kMaxSize) : kMaxSize;
 
-	bool push_one(T& item) {
-		uint32_t tailPos = tail_pos;
-		uint32_t disSize = tailPos + kMaxSize - head_pos;
-		uint32_t usedSize = disSize >= kMaxSize ? (disSize - kMaxSize) : disSize;
-		if (usedSize + 1 > kMaxSize - 1) {
-			wlog("push failed   length is {}  used size {}  ", 1, usedSize);
-			return false;
-		}
-		buffer[tail_pos] = item;
-		tail_pos = (tail_pos + 1) % kMaxSize;
-		return true;
-	}
+  uint32_t push(const char *data, uint32_t dataLen) {
+    std::lock_guard<Mutex> lock(write_mutex);
+    uint32_t bufLen = BufferSize - (tail - head);
+    if (bufLen < dataLen) {
+      // printf("left buffer length %d\n", bufLen);
+      return 0;
+    }
 
-	T pop_one() {
-		uint32_t headPos = head_pos;
-		uint32_t disSize = tail_pos + kMaxSize - headPos;
-		uint32_t usedSize = disSize >= kMaxSize ? (disSize - kMaxSize) : disSize;
-		if (usedSize > 1) {
-			int32_t oPos = head_pos;
-			head_pos = (head_pos + 1) % kMaxSize;
-			return buffer[oPos];
-		}
+    __MEM_BARRIER__;
+    uint32_t writePos = tail & (BufferSize - 1);
+    uint32_t tailSize = BufferSize - writePos;
+    if (dataLen > tailSize) {
+      memcpy(&buffer[writePos], data, tailSize);
+      memcpy(&buffer[0], &data[tailSize], dataLen - tailSize);
+    } else {
+      memcpy(&buffer[writePos], data, dataLen);
+    }
+    __WRITE_BARRIER__;
+    tail += dataLen;
+    return dataLen;
+  }
 
-		return T();
-	}
+  int32_t pop(DataHandler handler = nullptr) {
+    uint32_t dataLen = tail - head;
+    if (dataLen == 0) {
+      return 0;
+    }
+    uint32_t readPos = (head & (BufferSize - 1));
+    __READ_BARRIER__;
+    uint32_t len = std::min(dataLen, BufferSize - readPos);
+    handler(&buffer[readPos], len);
+    head += len;
+    return len;
+  }
 
-	int32_t pop_front(uint32_t len = 1, DataHandler handler = nullptr) {
+  // should commit after read
+  int32_t read(DataHandler handler = nullptr) {
+    uint32_t dataLen = tail - head;
+    if (dataLen == 0) {
+      return 0;
+    }
+    uint32_t readPos = (head & (BufferSize - 1));
+    __READ_BARRIER__;
+    uint32_t len = std::min(dataLen, BufferSize - readPos);
+    handler(&buffer[readPos], len);
+    return len;
+  }
 
-		int32_t headPos = head_pos;
-		int32_t disSize = tail_pos + kMaxSize - headPos;
-		int32_t usedSize = disSize >= kMaxSize ? (disSize - kMaxSize) : disSize;
-		if (len == 0) {
-			len = usedSize;
-		}
+  uint32_t commit(uint32_t len) { head += len;return len;  }
 
-		ilog("pop  length is {}  used size {}  ", len, usedSize);
-		if (len > usedSize) {
-			elog("pop  failed length is {}  used size {}  ", len, usedSize);
-			return 0;
-		}
-		std::vector<T> popData(len);
-		if (headPos + len > kMaxSize) {
-			uint32_t tailLeft = kMaxSize - headPos;
-			if (headPos < kMaxSize) {
-				std::copy(buffer.begin() + headPos, buffer.begin() + kMaxSize, popData.begin());
-			}
-			std::copy(buffer.begin(), buffer.begin() + (len - tailLeft), popData.end());
-			headPos = len - tailLeft;
-		} else {
-			std::copy(buffer.begin() + headPos, buffer.begin() + headPos + len, popData.begin());
-			headPos += len;
-			headPos = headPos % kMaxSize;
-		}
+  bool empty() const { return head == tail; } 
 
-		if (handler) {
-			handler(popData.data(), popData.size());
-		}
-		head_pos = headPos;
-		return len;
-	};
+  bool peek() { return head != tail; }
 
-	bool empty() { return head_pos == tail_pos; }
+  uint32_t size() const{
+	return tail - head; 
+  }
 
-	int32_t pop_segment(DataHandler handler = nullptr) {
-		int32_t headPos = head_pos;
-		int32_t tailPos = tail_pos; // tail_pos may change in pop thread
-		tailPos = (tailPos >= headPos) ? tailPos : kMaxSize;
-		if (tailPos > headPos) {
-			handler(buffer.data() + headPos, tailPos - headPos);
-		} else {
-			elog("pop segment is 0,  head {}  tail {}", headPos, tailPos);
-			return 0;
-		}
-		return tailPos - headPos;
-	};
-
-	bool drop_front(uint32_t len) {
-		head_pos = (head_pos + len) % kMaxSize;
-		return true;
-	}
-
-	// bool drop_front(uint32_t len) {
-	//	int32_t headPos = head_pos + len ;
-	//	int32_t tailPos = tail_pos;
-	//	if (tailPos + kMaxSize >= headPos)
-	//	{
-	//		head_pos = (headPos >=  kMaxSize)? (headPos - kMaxSize):headPos;
-	//		return true;
-	//	}
-	//	return false;
-	//}
+  void clear(){ head = tail = 0; }
 
 private:
-	volatile uint32_t head_pos = 0;
-	volatile uint32_t tail_pos = 0;
-	//		uint32_t head_pos = 0;
-	//		uint32_t tail_pos = 0;
-	std::array<T, kMaxSize + 1> buffer;
+  // https://stackoverflow.com/questions/8819095/concurrency-atomic-and-volatile-in-c11-memory-model
+  std::atomic<uint32_t> head{0};
+  std::atomic<uint32_t> tail{0};
+  std::array<char, BufferSize> buffer;
+  Mutex write_mutex;
 };
 
 } // namespace utils

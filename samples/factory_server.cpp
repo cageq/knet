@@ -37,7 +37,7 @@ class MyFactory: public knet::KNetFactory<TcpSession>, public knet::KNetHandler<
 
 
 		virtual bool handle_event(TPtr conn, knet::NetEvent evt) {
-			ilog("handle event in connection my factory {}", evt ); 
+			ilog("handle event in connection my factory {}", static_cast<uint32_t>(evt)  ); 
 			return true; 
 		}
 

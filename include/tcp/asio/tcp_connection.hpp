@@ -8,6 +8,10 @@
 #include <set>
 #include <unordered_map>
 #include "tcp_socket.hpp"
+#ifdef KNET_WITH_OPENSSL
+#include "tls_socket.hpp"
+#endif 
+#include <thread> 
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
 using asio::ip::tcp;
@@ -37,8 +41,8 @@ namespace knet
 			// for passive connection 
 			template <class ... Args>
 			TcpConnection(Args ... args){ 
-				static uint64_t index = 1024;
-				cid = ++index; 
+				static  std::atomic_uint64_t  conn_index{1024};
+				cid = ++conn_index; 
 			}	 
 
 			virtual ~TcpConnection()
@@ -131,7 +135,10 @@ namespace knet
 				return tcp_socket->connect(urlInfo);
 			}		
 
-			bool connect() { return tcp_socket->connect(); }
+			bool connect() { 
+				passive_mode = false; 
+                return tcp_socket->connect(); 
+            }
 
 			inline tcp::endpoint local_endpoint() const{ return tcp_socket->local_endpoint(); }
 			inline tcp::endpoint remote_endpoint() const { return tcp_socket->remote_endpoint(); }
@@ -149,6 +156,42 @@ namespace knet
 				}
 				return 0; 				
 			}
+
+			void set_remote_address(const KNetUrl &urlInfo ){
+				if (tcp_socket){
+					tcp_socket->set_remote_url(urlInfo); 
+				}				
+			}
+
+
+			int32_t sync_sendv(const std::vector<std::string_view > & buffers){
+				if (tcp_socket){
+					return tcp_socket->sync_sendv(buffers); 
+				 }
+				 return 0; 
+			}
+
+			int32_t sync_sendv(const std::vector<std::string > & buffers){
+				if (tcp_socket){
+					return tcp_socket->sync_sendv(buffers); 
+				 }
+				 return 0; 
+			}
+			
+			int32_t sync_send(const char* pData, uint32_t dataLen) {
+				 if (tcp_socket){
+					return tcp_socket->sync_send(pData, dataLen); 
+				 }
+				 return 0; 
+			 }
+
+			  template <class P, class... Args>
+				int32_t sync_msend(const P& first, const Args&... rest)  {
+					 if (tcp_socket){	
+						return tcp_socket->mpush_sync(first, rest ...); 
+					}
+					return 0; 
+				}
  
             int32_t sync_read(const std::function<uint32_t (const char *, uint32_t len )> & handler )    {
                 if(tcp_socket){  
@@ -191,9 +234,7 @@ namespace knet
 				}
 			}		 
 
-			inline KNetWorkerPtr get_worker() { return event_worker; }
- 
-
+			inline KNetWorkerPtr get_worker() { return event_worker; } 
  
 			virtual int32_t handle_package(const char * data, uint32_t len ){
 				return len  ; 
@@ -215,7 +256,12 @@ namespace knet
 				if (event_worker)
 				{
 					uint64_t tid = event_worker->start_timer(handler, interval, bLoop);
-					conn_timers.insert(tid);
+
+					{
+						std::lock_guard<std::mutex> guard(timer_mutex);
+						conn_timers.push_back(tid);
+					}
+					  
 					return tid;
 				}
 				return 0;
@@ -226,12 +272,27 @@ namespace knet
 				if (event_worker)
 				{
 					event_worker->stop_timer(timerId);
-					conn_timers.erase(timerId);
+					//needn't to remove the timerid  from conn_timers
 				}
+			}
+			void clear_timers() {			
+				if (event_worker) {
+					event_worker->clear_timers();
+					conn_timers.clear();
+				}
+				
 			}
 	
 			inline void release(){
-				process_event(EVT_RELEASE); 
+				dlog("release connection, timer size {} ", conn_timers.size()); 
+				//for(auto tid : conn_timers){
+				//	stop_timer(tid); 
+				//}
+				if (event_worker) {
+					event_worker->clear_timers();
+					conn_timers.clear();
+				}
+                process_event(EVT_RELEASE); 
 			} 
 
 	
@@ -289,7 +350,9 @@ namespace knet
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
 			bool passive_mode = true;
-			std::set<uint64_t> conn_timers; 
+
+			std::mutex  timer_mutex; 
+			std::vector<uint64_t> conn_timers;  //timerid should not duplicated 
 			SocketPtr tcp_socket = nullptr;
 			KNetEventHandler    event_handler   = nullptr;
 			KNetDataHandler     data_handler    = nullptr;

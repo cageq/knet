@@ -96,7 +96,7 @@ namespace knet
 					if (conn->is_passive())
 					{
 						wlog("connection has no session, send shakehand challenge");
-						PipeMsgHead shakeMsg{0, PIPE_MSG_SHAKE_HAND}; //challenge client to send shakehand again
+						PipeMsgHead shakeMsg{0, PIPE_MSG_SHAKE_HAND, 0 }; //challenge client to send shakehand again
 						conn->msend(shakeMsg);
 					}
 				}
@@ -114,14 +114,14 @@ namespace knet
 				if (msg->length > 0)
 				{
 					std::string pipeId = std::string((const char *)msg + sizeof(PipeMsgHead), msg->length);
-					dlog("get handshake from client,  pipeid is {}", pipeId);
+					dlog("handshake from client,  pipeid is {}", pipeId);
 					auto pipe = find_bind_pipe(pipeId);
 					if (pipe)
 					{
 						if (!pipe->is_ready()){
 							pipe->bind(conn);
 							ilog("bind pipe {} success", pipeId);
-							PipeMsgHead shakeMsg{(uint32_t)pipeId.length(), PIPE_MSG_SHAKE_HAND, 0 };
+							PipeMsgHead shakeMsg{ static_cast<uint32_t>(pipeId.length()),PIPE_MSG_SHAKE_HAND,0};
 							conn->msend(shakeMsg, pipeId);
 							pipe->handle_event(NetEvent::EVT_CONNECT);
 							pipe->on_ready(); 
@@ -153,7 +153,7 @@ namespace knet
 
 					if (session)
 					{
-						PipeMsgHead shakeMsg{(uint32_t)pipeId.length(), PIPE_MSG_SHAKE_HAND, 0};
+						PipeMsgHead shakeMsg{static_cast<uint32_t>(pipeId.length()),PIPE_MSG_SHAKE_HAND, 0 };
 						conn->msend(shakeMsg, pipeId);
 						session->handle_event(NetEvent::EVT_CONNECT);
 					}
@@ -249,23 +249,30 @@ namespace knet
 				std::lock_guard<std::mutex> guard(bind_mutex);
 				return bind_pipes.erase(pipeId) > 0;
 			}
- 
-			void broadcast(const char *pData, uint32_t len)
-			{
+	
+
+			template <class P, class... Args>
+			inline int32_t  broadcast(const P &first, const Args &...rest){
+				uint32_t sucessCount = 0; 
 				std::lock_guard<std::mutex> guard(bind_mutex);
 				for (auto &item : bind_pipes)
 				{
 					if (item.second)
 					{
-						item.second->msend(std::string_view(pData, len));
+						sucessCount +=	(item.second->msend(first, rest ...)  >0) ;
 					}
 				}
+				return sucessCount; 
+			}
 
-				// for (auto& item : unbind_pipes) {
-				// 	if (item.second) {
-				// 		item.second->transfer(pData, len);
-				// 	}
-				// }
+
+			template <class P, class... Args>
+			inline int32_t  send_to(const std::string & pipeId, const P &first, const Args &...rest){
+				auto session = find_bind_pipe(pipeId); 
+				if (session){
+					return session->msend(first, rest...); 
+				}
+				return -1; 
 			}
 			void register_pipe(PipeSessionPtr pipe, uint64_t cid = 0)
 			{

@@ -19,6 +19,7 @@ namespace kcp {
 		using TPtr = std::shared_ptr<T>;
 		using EventHandler = std::function<TPtr(TPtr, NetEvent, std::string_view)>;
 		using WorkerPtr = std::shared_ptr<Worker>; 
+			using FactoryPtr = Factory *;
 
 		KcpConnector(WorkerPtr w = nullptr  )   {
 			if (!w ){
@@ -34,6 +35,33 @@ namespace kcp {
 			return true;
 		}
 
+		 
+			template <class... Args>
+			TPtr add_connection(const KNetUrl &urlInfo, Args... args)
+			{	
+				TPtr conn = nullptr;
+				if (net_factory)
+				{
+					conn = net_factory->create(args...);
+				}
+				else
+				{
+					conn = std::make_shared<T>(args...);
+				}
+		 
+				conn->init(net_worker); 
+				connections[conn->cid] = conn;
+
+              	conn->event_handler = event_handler;
+				udp::resolver resolver(net_worker->context());
+				udp::resolver::results_type endpoints =
+					resolver.resolve(udp::v4(), urlInfo.host, std::to_string(urlInfo.port));
+				if (!endpoints.empty())
+				{
+					conn->connect(*endpoints.begin());
+				}
+				return conn;
+			}
 		TPtr connect(const std::string& host, uint16_t port , uint64_t id =0) {
 
 			TPtr conn = nullptr;
@@ -45,11 +73,11 @@ namespace kcp {
 			{
 				conn = std::make_shared<T>();
 			}
-
-			
-			conn->cid = id;
+				if (id > 0){
+					conn->cid = id;
+				} 
 	        conn->init(net_worker); 
-			connections[id] = conn;
+				connections[conn->cid] = conn;
 
 			conn->event_handler = event_handler;
 			udp::resolver resolver(net_worker->context());
