@@ -15,6 +15,7 @@
 #include "kcp_message.hpp"
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
+#include "utils/loop_buffer.hpp"
 #include <set> 
 namespace knet {
 namespace kcp {
@@ -69,27 +70,27 @@ public:
 	int32_t send(const std::string& msg) {
 		return send(msg.data(), msg.length()); 
 	}
- 
-   	template <typename P>
-	inline void write_data(std::string &sndBuf, const P &data)
-	{
-		sndBuf.append(std::string_view((const char *)&data, sizeof(P)));
-	}
+  	template <typename P >  
+		inline uint32_t write_data( const P & data  ){
+			return send_buffer.push((const char*)&data, sizeof(P));  
+		} 
 
-	inline void write_data(std::string &sndBuf, const std::string_view &data)
-	{
-		sndBuf.append(data);
-	}
 
-	inline void write_data(std::string &sndBuf, const std::string &data)
-	{
-		sndBuf.append(data);
-	}
+		inline uint32_t  write_data(const std::string_view &  data ){
+			return send_buffer.push(data.data(), data.length());  
+		}
 
-	inline void write_data(std::string &sndBuf, const char *data)
-	{
-		sndBuf.append(std::string(data));
-	}
+		inline uint32_t write_data(const std::string &  data ){
+			return send_buffer.push(data.data(), data.length()); 
+
+		}
+
+		inline uint32_t write_data(const char* data ){
+			if (data != nullptr ){ 
+				return send_buffer.push(data , strlen(data));  
+			}
+			return 0;                         
+		}
 
     template <class P, class... Args>
         int32_t msend(const P &first, const Args &...rest)
@@ -99,23 +100,22 @@ public:
         }
 
     template <typename F, typename... Args>
-        int32_t mpush(std::string & sndBuf, const F &data, Args... rest)
+        int32_t mpush(  const F &data, Args... rest)
         {
-            this->write_data(sndBuf, data);
-            return mpush(sndBuf, rest...);
+            this->write_data(   data);
+            return mpush(  rest...);
         }
 
-    int32_t mpush(std::string  &sndBuf)
+    int32_t mpush( )
     {
-        if (status == CONN_KCP_READY)
-        {
-            if (kcp)
-            {
-                return ikcp_send(kcp, sndBuf.data(), sndBuf.length());
+        if (status == CONN_KCP_READY) {
+            if (kcp) {
+				auto sentLen = send_buffer.read([this ](const char * data, uint32_t dataLen){
+					return ikcp_send(kcp, data, dataLen);
+				}); 
+                return sentLen; 
             }
-        }
-        else
-        {
+        } else {
             this->shakehand_request();
         }
         return -1;
@@ -502,7 +502,6 @@ private:
 				return;
 			}
 			uint32_t recvLen = 0; 
-
 			while (recvLen < dataLen)
 			{
 				int32_t msgLen = ikcp_peeksize(kcp);
@@ -538,7 +537,9 @@ private:
 	udp::endpoint sender_point;
 	udp::endpoint remote_point;
 	EventHandler event_handler = nullptr;
-
+	
+	std::mutex write_mutex; 
+	LoopBuffer send_buffer; 
 	bool reconnect = false;
 	KcpShakeHandMsg shakehand_request_;
 	KcpShakeHandMsg shakehand_response_;
