@@ -38,7 +38,6 @@ env.cmake
 Makefile
 .DS_Store
 build
-deps
 opt/asio-1.18.0
 opt/fmt-7.0.3
 bin
