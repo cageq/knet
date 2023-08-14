@@ -166,33 +166,7 @@ namespace knet {
                             do_read(); 
                         }				
                     }
-                    // int32_t do_sync_read(const std::function<int32_t (const char * data, uint32_t len) > & handler){
-                    //     if(sslsock.lowest_layer().is_open()){
-                    //         // asio::error_code error;                            
-                    //         // asio::mutable_buffer  readBuffer ( (char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos); 
-                    //         // std::future<size_t> len = sslsock.async_read_some(readBuffer, asio::use_future);
-                    //         // size_t dataLen = len.get(); 
-                    //         // read_buffer_pos += dataLen ; 
 
-                    //         // int32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
-                    //         // if (readLen > 0 && readLen < read_buffer_pos) {
-                    //         //     memmove((char*)read_buffer, (char *)read_buffer + readLen, read_buffer_pos - readLen); 
-                    //         //     read_buffer_pos = read_buffer_pos - readLen; 
-                    //         // }
-                    //         // return dataLen; 
-                    //         size_t dataLen = len.get(); 
-                    //         read_buffer_pos += dataLen ; 
-
-                    //         int32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
-                    //         if (readLen > 0 && readLen < read_buffer_pos) {
-                    //             memmove((char*)read_buffer, (char *)read_buffer + readLen, read_buffer_pos - readLen); 
-                    //             read_buffer_pos = read_buffer_pos - readLen; 
-                    //         }
-                    //         return dataLen; 
-                    //     }
-
-                    //     return 0; 
-                    // }
 
                     void do_read() {
                         if (sslsock.lowest_layer().is_open() ) {					                           
