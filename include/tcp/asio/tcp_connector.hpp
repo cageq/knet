@@ -154,6 +154,22 @@ namespace knet
 				connections[conn->get_cid()] = conn;
 				return conn;
 			}
+			template <class... Args>
+				TPtr add_ssl_connection(const KNetUrl &urlInfo, const std::string& caFile, Args... args) {
+					auto worker = this->get_worker();
+					auto sock =
+						std::make_shared<Socket>(worker->thread_id(), worker, caFile);
+					TPtr conn = nullptr;
+					if (net_factory) {
+						conn = net_factory->create(args...);
+					} else {
+						conn = std::make_shared<T>(args...);
+					}
+					conn->init({},  sock, worker, this);				 
+					connections[conn->get_cid()] = conn;
+					conn->connect(urlInfo);
+					return conn;
+			}
 
 			WorkerPtr get_worker(int32_t idx = 0)
 			{

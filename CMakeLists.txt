@@ -43,7 +43,9 @@ add_executable(wsserver samples/wsserver.cpp    )
 
 add_executable(kcpserver samples/kcpserver.cpp  include/kcp/ikcp.c)
 
-add_executable(udpclient samples/udpclient.cpp  ) 
+add_executable(kcpclient samples/kcpclient.cpp  include/kcp/ikcp.c)
+ 
+add_executable(udpclient samples/udpclient.cpp  )
 
 add_executable(udpserver samples/udpserver.cpp  ) 
 
@@ -57,6 +59,12 @@ add_executable(unbindpipeserver samples/unbind_pipe_server.cpp  )
 
 add_executable(testurl samples/test_url.cpp  )
 
+
+add_executable(wssclient samples/wssclient.cpp    )
+target_link_libraries(wssclient ssl crypto dl ) 
+
+add_executable(wssserver samples/wssserver.cpp    )
+target_link_libraries(wssserver ssl crypto dl) 
 
 add_executable(tlsclient samples/tlsclient.cpp  )
 target_link_libraries(tlsclient ssl crypto dl) 
