@@ -539,7 +539,7 @@ private:
 	EventHandler event_handler = nullptr;
 	
 	std::mutex write_mutex; 
-	LoopBuffer send_buffer; 
+	LoopBuffer<8192> send_buffer; 
 	bool reconnect = false;
 	KcpShakeHandMsg shakehand_request_;
 	KcpShakeHandMsg shakehand_response_;
