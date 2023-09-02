@@ -243,7 +243,7 @@ namespace knet
 						return false ;
 					}
 
-					auto socket = std::make_shared<Socket>(worker->thread_id(), worker, ssl_context);
+					auto socket = std::make_shared<Socket>(worker, ssl_context);
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
                                 if (!ec) {
                                     socket->socket().set_option(asio::ip::tcp::no_delay(true));

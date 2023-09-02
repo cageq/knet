@@ -34,13 +34,13 @@ namespace knet {
                         SOCKET_RECONNECT,
                         SOCKET_CLOSED,
                     };
-                    enum { kReadBufferSize = 1024 * 8, kMaxPackageLimit = 8 * 1024  };
+                    enum { kReadBufferSize = 1024 * 8,kWriteBufferSize = 1024 * 16, kMaxPackageLimit = 8 * 1024  };
                     using TPtr = std::shared_ptr<T>;//NOTICY not weak_ptr 
-                    TlsSocket(const std::thread::id& tid, knet::KNetWorkerPtr worker, const std::string & caFile = "cert/ca.pem")
+                    TlsSocket( knet::KNetWorkerPtr worker, const std::string & caFile = "cert/ca.pem")
                         : io_worker(worker)
                           , ssl_context(new asio::ssl::context(asio::ssl::context::sslv23))
 		                  , sslsock(worker->context(), *ssl_context) {
-                            worker_tid = tid;
+                            worker_tid = worker->thread_id();
                             ssl_context->load_verify_file(caFile);
 		                    sslsock.set_verify_mode(asio::ssl::verify_peer);
 		                    sslsock.set_verify_callback(std::bind(
@@ -50,11 +50,10 @@ namespace knet {
           
                           }
 
-                    TlsSocket(const std::thread::id& tid, knet::KNetWorkerPtr worker, void* sslCtx)
+                    TlsSocket(  knet::KNetWorkerPtr worker, void* sslCtx)
                         :io_worker(worker), sslsock(worker->context(), *(asio::ssl::context*)sslCtx) {
-                        worker_tid = tid;
-                        socket_status = SocketStatus::SOCKET_INIT; 
- 
+                        worker_tid = worker->thread_id();
+                        socket_status = SocketStatus::SOCKET_INIT;  
                     }
 
                     inline void init(TPtr conn, NetOptions opts) {
@@ -91,46 +90,28 @@ namespace knet {
                      
                         auto self = this->shared_from_this();
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
-                        if (!net_options.sync){
-                               async_connect(sslsock.lowest_layer(), result,
-                                    [self, this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
-                                    if (!ec) {
-                                        if (!self->net_options.tcp_delay)
-                                        {
-                                            self->sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
-                                        }
-                                        
-                                        dlog("connect to {}:{} success",remote_url.host,remote_url.port);       
-                                        self->init_read(true); 
-                                                                           
-                                    }else {
-                                        dlog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
-                                        self->sslsock.lowest_layer().close();
-                                        self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                                    }
-                                }); 
-
-                            return true; 
-                            
-                        }else {                                      
-                            try {
-                                std::future<asio::ip::tcp::endpoint> cf =  async_connect(sslsock.lowest_layer(), result, asio::use_future); 
-                                cf.get();             
-
-                                if (!net_options.tcp_delay)
+                       
+                        async_connect(sslsock.lowest_layer(), result,
+                            [self, this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
+                            if (!ec) {
+                                if (!self->net_options.tcp_delay)
                                 {
-                                    sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
-                                }                    
-                                socket_status = SocketStatus::SOCKET_OPEN;
-                            }catch(std::system_error& e){
-                                dlog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, e.what() );
+                                    self->sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
+                                }
+                                
+                                dlog("connect to {}:{} success",remote_url.host,remote_url.port);       
+                                self->init_read(true); 
+                                                                    
+                            }else {
+                                dlog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
                                 self->sslsock.lowest_layer().close();
                                 self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                                return false; 
-                            }                          
-                        }                     
-                        return true;
+                            }
+                        }); 
+
+                        return true;  
                     }
+
                     void handshake(bool isClient = false) {
                         dlog("start ssl handshake");
                        
@@ -155,6 +136,7 @@ namespace knet {
                         void run_inloop(const F & fn) {
                             asio::dispatch(io_worker->context(), fn);
                         }
+
                     void init_read(bool isClient = false ){
                         if (connection) {                            
                             if (!ssl_shakehand) {
@@ -201,18 +183,7 @@ namespace knet {
                         }
                     }
                     int32_t sync_send(const char* pData, uint32_t dataLen) {
-                        if (is_open() ) {					
-                            /*
-                            asio::async_write(tcp_sock, asio::const_buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
-                                    if (ec) {
-                                        ilog("send in loop error : {} , {}", ec.value(), ec.message());
-                                        this->do_close();
-                                    }
-                                    });
-                                    */
-                            // std::future<std::size_t> sentLen =  asio::async_write(tcp_sock,asio::const_buffer(pData, dataLen),  asio::use_future);   
-                            // return  sentLen.get(); // Blocks until the send is complete. Throws any errors.
-
+                        if (is_open() ) {	 
                             try {
                                 return asio::write(sslsock.lowest_layer(), asio::const_buffer(pData, dataLen));
                             }  catch(const  asio::system_error &ex ){
@@ -293,87 +264,57 @@ namespace knet {
                     }
 
                     template <class P, class... Args>
-                        int32_t msend(const P& first, const Args&... rest) {
-                         
-							
-							{
-							
-							 	std::lock_guard<std::mutex> lock(write_mutex);          
-                            	 this->mpush(first, rest...);
+                        int32_t msend(const P& first, const Args&... rest) {  
+                            if (is_open())
+							{ 
+                                uint32_t needLen = send_buffer.calc_data_length(first, rest...); 
+                                bool isWritting = !send_buffer.empty();   
+                                //will block here 
+                                if (needLen > send_buffer.peek() ){
+                                    do {
+                                        send_buffer.wait(1);
+                                        isWritting = !send_buffer.empty();  
+                                    }while(needLen > send_buffer.peek());  
+                                } 
+                                auto len  = this->mpush(first, rest...); 
+                                if (!isWritting){
+                                     this->do_send(); 
+                                } 
+                                return len; 
 							}
-							return this->do_send(); 
+                            return -1; 
                         }
-
-                    template <typename P >  
-                        inline uint32_t write_data( const P & data  ){ 
-                            return send_buffer.push((const char*)&data, sizeof(P)); 
-                             
-                        } 
-
-
-                    inline uint32_t  write_data(const std::string_view &  data ){
-                        return send_buffer.push(data.data(), data.size()); 
-                      
-                    }
-
-                    inline uint32_t write_data(const std::string &  data ){
-                        return send_buffer.push(data.data(), data.size()); 
-                      
-                    }
-
-                    inline uint32_t write_data(const char* data ){
-                        if (data != nullptr ){
-                            return send_buffer.push(data,  strlen(data));  
-                        }
-                        return 0;                         
-                    }
  
                     template <typename F, typename ... Args>
                         int32_t mpush(const F &  data, Args... rest) { 					
-                            this->write_data(data  ) ;   
- 
-         
-                            return mpush(rest...);
+                             return send_buffer.mpush(data, rest ...); 
                         }
-
-                    int32_t mpush() {
-						return 0; 
-					}
-					
-					int32_t do_send(){
-
-                        if (!send_buffer.empty() ){ 	 
-                            //#define USING_ASYNC_SEND 1 
-                            #ifdef USING_ASYNC_SEND
-                                do_async_send(); 	     	            
-                            #else 						
-                                return do_async_write(); 
-                            #endif 
-                        }else {
-                             
-                        }                        
-                        return 0; 
+ 
+					int32_t do_send(){ 
+                        //#define USING_ASYNC_SEND 1 
+                        #ifdef USING_ASYNC_SEND
+                            return do_async_send(); 	     	            
+                        #else 						
+                            return do_async_write(); 
+                        #endif  
                     }
 
-                    int32_t do_async_write() {
-						 auto ret = send_buffer.read([this](const char * data, uint32_t dataLen){
- 
+                    int32_t do_async_write() { 
+                         auto [data, dataLen ] = send_buffer.read();  
+					 
+                        if(dataLen > 0){ 
                             auto self = this->shared_from_this();
-							//One or more buffers containing the data to be written. Although the buffers object may be copied as necessary, 
-							//ownership of the underlying memory blocks is retained by the caller, 
-							//which must guarantee that they remain valid until the handler is called.              
+                            //One or more buffers containing the data to be written. Although the buffers object may be copied as necessary, 
+                            //ownership of the underlying memory blocks is retained by the caller, 
+                            //which must guarantee that they remain valid until the handler is called.              
                             asio::async_write(sslsock,asio::const_buffer(data, dataLen),
-                                    [this, self, dataLen](std::error_code ec, std::size_t length) {
+                                    [this, self](std::error_code ec, std::size_t length) {
                                     if (!ec ) {
                                     //	connection->process_event(EVT_SEND);
-                                   // dlog("cache size {} , sent size {}",cache_buffer.length() , length); 
-                                        dlog("send websocket text success {}", length);
-                                        
-                                        send_buffer.commit(length); //assert(dataLen == length ) 
-                                        if (send_buffer.peek()) { 
-                                            self->do_async_write();          
-                                        }
-                                   
+                                // dlog("cache size {} , sent size {}",cache_buffer.length() , length);  
+                                        send_buffer.commit(length); //assert(dataLen == length )  
+                                        self->do_async_write();   
+                                
                                     }else {
                                         dlog("write error , do close , socket_status is {}", static_cast<uint32_t>(self->socket_status)); 
                                         send_buffer.clear(); 
@@ -381,9 +322,8 @@ namespace knet {
                                     }
                                     });
 
-                            return dataLen; 
-
-                        }); 
+                            return dataLen;  
+                          }
 						
                         return true;
 					}
@@ -416,7 +356,7 @@ namespace knet {
                         return  socket_status == SocketStatus::SOCKET_CONNECTING;
                     }
 
-		    bool process_data(uint32_t nread) {
+		            bool process_data(uint32_t nread) {
                         read_buffer_pos += nread; 
 
                         int32_t readPos = 0; 
@@ -457,21 +397,21 @@ namespace knet {
                                 self->socket_status = SocketStatus::SOCKET_CLOSING;
                                 auto & conn = self->connection; 
                                 if (conn) {
-                                if (send_buffer.size() > 0 && !send_buffer.empty()) {
-                                do_async_write(); //try last write
+                                    if (  !send_buffer.empty()) {
+                                        do_async_write(); //try last write
+                                    }
+                                    conn->process_event(EVT_DISCONNECT); 
+                                    self->socket_status = SocketStatus::SOCKET_CLOSED;
+                                    if (sslsock.lowest_layer().is_open()) {
+                                    sslsock.lowest_layer().close();
                                 }
-                                conn->process_event(EVT_DISCONNECT); 
-                                self->socket_status = SocketStatus::SOCKET_CLOSED;
-                                if (sslsock.lowest_layer().is_open()) {
-                                  sslsock.lowest_layer().close();
-                                }
-                                conn->release();
-                                conn.reset(); 
+                                    conn->release();
+                                    conn.reset(); 
                                 }else {
-                                self->socket_status = SocketStatus::SOCKET_CLOSED;
-                                if (sslsock.lowest_layer().is_open()) {
-                                    sslsock.lowest_layer().close();							
-                                } 
+                                    self->socket_status = SocketStatus::SOCKET_CLOSED;
+                                    if (sslsock.lowest_layer().is_open()) {
+                                        sslsock.lowest_layer().close();							
+                                    } 
                                 }
                                 self->read_buffer_pos = 0;
                         });
@@ -533,8 +473,8 @@ namespace knet {
 	                bool ssl_shakehand = false;
                     char read_buffer[kReadBufferSize+4];
                     int32_t read_buffer_pos = 0;
-                    std::mutex write_mutex; 
-                    LoopBuffer<8192> send_buffer;  
+               
+                    LoopBuffer<kWriteBufferSize, std::mutex> send_buffer;  
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
                     std::thread::id worker_tid;
                     KNetUrl remote_url; 

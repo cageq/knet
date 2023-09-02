@@ -112,7 +112,7 @@ namespace knet
 				if (conn)
 				{		 
 					auto worker = this->get_worker();
-					auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
+					auto sock = std::make_shared<Socket>(worker);
                     auto opts = options_from_url(urlInfo); 
 					conn->init(opts, sock, worker, this);					 
 					conn->connect(urlInfo );
@@ -137,7 +137,7 @@ namespace knet
 			TPtr add_connection(const KNetUrl &urlInfo, Args... args)
 			{
 				auto worker = this->get_worker();
-				auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
+				auto sock = std::make_shared<Socket>(worker);
 				TPtr conn = nullptr;
 				if (net_factory)
 				{
@@ -158,7 +158,7 @@ namespace knet
 				TPtr add_ssl_connection(const KNetUrl &urlInfo, const std::string& caFile, Args... args) {
 					auto worker = this->get_worker();
 					auto sock =
-						std::make_shared<Socket>(worker->thread_id(), worker, caFile);
+						std::make_shared<Socket>(worker, caFile);
 					TPtr conn = nullptr;
 					if (net_factory) {
 						conn = net_factory->create(args...);

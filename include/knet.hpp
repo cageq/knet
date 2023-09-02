@@ -30,15 +30,15 @@ namespace knet
 	};
 
     inline NetOptions options_from_url(const utils::KNetUrl & urlInfo){
-        NetOptions opts ;
-        opts.tcp_delay = urlInfo.get<bool>("tcp_delay"); 
-        opts.sync = urlInfo.get<bool>("sync"); 
-        opts.reuse = urlInfo.get<bool>("reuse"); 
-        opts.backlogs = urlInfo.get<uint32_t >("backlogs"); 
-        opts.send_buffer_size = urlInfo.get<uint32_t >("sbuf_size"); 
-        opts.recv_buffer_size = urlInfo.get<uint32_t >("rbuf_size"); 
-        opts.chain_file = urlInfo.get("cert"); 
-        opts.dh_file    = urlInfo.get("cert_key"); 
+        NetOptions opts {};
+        opts.tcp_delay = urlInfo.get<bool>("tcp_delay", opts.tcp_delay); 
+        opts.sync = urlInfo.get<bool>("sync",opts.sync); 
+        opts.reuse = urlInfo.get<bool>("reuse",opts.reuse); 
+        opts.backlogs = urlInfo.get<uint32_t >("backlogs",opts.backlogs); 
+        opts.send_buffer_size = urlInfo.get<uint32_t >("sbuf_size", opts.send_buffer_size); 
+        opts.recv_buffer_size = urlInfo.get<uint32_t >("rbuf_size", opts.recv_buffer_size); 
+        opts.chain_file = urlInfo.get("cert" , opts.chain_file); 
+        opts.dh_file    = urlInfo.get("cert_key",opts.dh_file); 
         return opts; 
     }
 

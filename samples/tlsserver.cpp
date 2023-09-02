@@ -36,7 +36,7 @@ class TcpSession : public TcpConnection<TcpSession, TlsSocket<TcpSession> >
 
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 
-		bool handle_data(const std::string_view & msg ) {
+		bool handle_data(const std::string & msg ) {
 			//		dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
 					dlog("received data {} ", msg);
                     return true; 

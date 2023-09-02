@@ -98,7 +98,7 @@ namespace knet
 
 		inline asio::io_context& context() { return *io_context; }
 		inline std::thread::id thread_id() const { 
-			return main_thread_id; 
+			return worker_thread_id; 
 		}
 
 		uint64_t start_timer(const knet::utils::Timer::TimerHandler& handler, uint64_t interval, bool bLoop = true)
@@ -123,12 +123,13 @@ namespace knet
 		{			
 			auto ioWorker = asio::make_work_guard(*io_context);
 			std::call_once(init_flag, [&](){ this->init(); });
-			main_thread_id = std::this_thread::get_id();
+			worker_thread_id = std::this_thread::get_id();
 			io_context->run();
 
 			std::call_once(deinit_flag, [&](){ this->deinit(); });
 			//dlog("exit event worker");
 		}
+		 
 
 	protected:
 		std::once_flag init_flag;
@@ -139,7 +140,7 @@ namespace knet
 		std::vector<std::thread> work_threads;
 
 		IOContextPtr io_context = nullptr;
-		std::thread::id main_thread_id;
+		std::thread::id worker_thread_id;
 		IOContextPtr self_context = nullptr;
 		std::unique_ptr<utils::Timer> event_timer;
 		bool is_running = false;

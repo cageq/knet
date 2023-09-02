@@ -34,13 +34,12 @@ namespace knet {
                         SOCKET_CLOSED,
                     };
 
-                    enum { kReadBufferSize = 1024 * 16, kMaxPackageLimit = 16 * 1024  };
+                    enum { kReadBufferSize = 1024 * 16,  kWriteBufferSize = 1024 * 16, kMaxPackageLimit = 16 * 1024  };
                     using TPtr = std::shared_ptr<T>;//NOTICY not weak_ptr 
-                    TcpSocket(const std::thread::id& tid, knet::KNetWorkerPtr worker , void * = nullptr): io_worker(worker), 
+                    TcpSocket(knet::KNetWorkerPtr worker , void * = nullptr): io_worker(worker), 
                           tcp_sock(worker->context()) {
-                              worker_tid = tid;
-                              socket_status = SocketStatus::SOCKET_INIT; 
-                            
+                            worker_tid = worker->thread_id();
+                            socket_status = SocketStatus::SOCKET_INIT;  
                     }
 
                     inline void init(TPtr conn, NetOptions opts) {
@@ -247,40 +246,13 @@ namespace knet {
                                 return len; 
                             }
                             return -1;                         
-                        }
-
-                    template <typename P >  
-                        inline uint32_t write_data( const P & data  ){ 
-                            return send_buffer.push((const char*)&data, sizeof(P));  
                         } 
-
-
-                    inline uint32_t  write_data(const std::string_view &  data ){
-                        return send_buffer.push(data.data(), data.size()); 
-                      
-                    }
-
-                    inline uint32_t write_data(const std::string &  data ){
-                        return send_buffer.push(data.data(), data.size()); 
-                      
-                    }
-
-                    inline uint32_t write_data(const char* data ){
-                        if (data != nullptr ){
-                            return send_buffer.push(data,  strlen(data));  
-                        }
-                        return 0;                         
-                    }
  
                     template <typename F, typename ... Args>
-                        int32_t mpush(const F &  data, Args... rest) { 					
-                            this->write_data(data  ) ;   
-                            return mpush(rest...);
+                        int32_t mpush(const F &  data, Args... rest) { 		
+                            return send_buffer.mpush(data, rest ...);  
                         }
-
-                    int32_t mpush() {
-						return 0; 
-					}
+ 
 					
 					int32_t do_send(){ 
                    	 
@@ -468,7 +440,7 @@ namespace knet {
                     char read_buffer[kReadBufferSize+4];
                     int32_t read_buffer_pos = 0;
               
-                    LoopBuffer<8192, std::mutex> send_buffer;  
+                    LoopBuffer<kWriteBufferSize, std::mutex> send_buffer;  
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
                     std::thread::id worker_tid;
                     KNetUrl remote_url; 
