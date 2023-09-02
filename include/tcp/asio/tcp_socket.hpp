@@ -82,45 +82,29 @@ namespace knet {
                         }   
                      
                         auto self = this->shared_from_this();
-                        socket_status = SocketStatus::SOCKET_CONNECTING; 
-                        if (!net_options.sync){
-                               async_connect(tcp_sock, addrResult,
-                                    [self, this ](asio::error_code ec, typename decltype(addrResult)::endpoint_type endpoint) {
-                                    if (!ec) {
-                                        if (!self->net_options.tcp_delay)
-                                        {
-                                            self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
-                                        }
+                        socket_status = SocketStatus::SOCKET_CONNECTING;  
+                        async_connect(tcp_sock, addrResult,
+                            [self, this ](asio::error_code ec, typename decltype(addrResult)::endpoint_type endpoint) {
+                            if (!ec) {
+                                if (!self->net_options.tcp_delay)
+                                {
+                                    self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
+                                }
 
-                                         //self->tcp_sock.set_option(asio::socket_base::keep_alive(true));
-                                        
-                                        dlog("connect to {}:{} success {}",remote_url.host,remote_url.port, self->tcp_sock.is_open());       
-                                        self->init_read(false); 
-                                                                           
-                                    }else {
-                                        ilog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
-                                        self->tcp_sock.close();
-                                        self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                                    }
-                                }); 
-
-                            return true; 
-                        }else {                                      
-                            try {
-                                std::future<asio::ip::tcp::endpoint> cf =  async_connect(tcp_sock, addrResult, asio::use_future); 
-                                cf.get();             
-                                if (!net_options.tcp_delay) {
-                                    tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
-                                }                    
-                                socket_status = SocketStatus::SOCKET_OPEN;
-                            }catch(std::system_error& e){
-                                ilog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, e.what() );
+                                    //self->tcp_sock.set_option(asio::socket_base::keep_alive(true));
+                                
+                                dlog("connect to {}:{} success {}",remote_url.host,remote_url.port, self->tcp_sock.is_open());       
+                                self->init_read(false); 
+                                                                    
+                            }else {
+                                ilog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
                                 self->tcp_sock.close();
                                 self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                                return false; 
-                            }                          
-                        }                     
-                        return true;
+                            }
+                        }); 
+
+                        return true; 
+                    
                     }
 
                     template <class F>
@@ -135,36 +119,7 @@ namespace knet {
                             do_read(); 
                         }				
                     }
-
-                    int32_t do_sync_read(const std::function<int32_t (const char * data, uint32_t len) > & handler){
-                        if(tcp_sock.is_open()){
-                            asio::error_code error;                            
-                            asio::mutable_buffer  readBuffer ( (char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos); 
-                            std::future<size_t> len = tcp_sock.async_read_some(readBuffer, asio::use_future);
-
-                            // if (error == asio::error::eof)
-                            // {
-                            //     return -1; 
-
-                            // } else if (error)
-                            // {
-                            //     //throw asio::system_error(error); // Some other error.
-                            //     return -1; 
-                            // }
-                            //len.wait(); 
-                            size_t dataLen = len.get(); 
-                            read_buffer_pos += dataLen ; 
-
-                            int32_t readLen = handler((char *) read_buffer, read_buffer_pos); 
-                            if (readLen > 0 && readLen < read_buffer_pos) {
-                                memmove((char*)read_buffer, (char *)read_buffer + readLen, read_buffer_pos - readLen); 
-                                read_buffer_pos = read_buffer_pos - readLen; 
-                            }
-                            return dataLen; 
-                        }
-
-                        return 0; 
-                    }
+ 
 
                     void do_read() {
                         if (tcp_sock.is_open() ) {					                           
@@ -198,17 +153,7 @@ namespace knet {
 
                     int32_t sync_send(const char* pData, uint32_t dataLen) {
                         if (is_open() ) {					
-                            /*
-                            asio::async_write(tcp_sock, asio::const_buffer(pData, dataLen), [this](std::error_code ec, std::size_t length) {
-                                    if (ec) {
-                                        ilog("send in loop error : {} , {}", ec.value(), ec.message());
-                                        this->do_close();
-                                    }
-                                    });
-                                    */
-                            // std::future<std::size_t> sentLen =  asio::async_write(tcp_sock,asio::const_buffer(pData, dataLen),  asio::use_future);   
-                            // return  sentLen.get(); // Blocks until the send is complete. Throws any errors.
-
+                           
                             try {
                                 return asio::write(tcp_sock, asio::const_buffer(pData, dataLen));
                             }  catch(const  asio::system_error &ex ){
@@ -267,15 +212,10 @@ namespace knet {
                         }
 
                      int32_t mpush_sync() {                        
-                         try { 
-                            auto ret = send_buffer.pop([this](const char * data, uint32_t dataLen){
-                                 asio::write(tcp_sock, asio::const_buffer(data, dataLen));                        
-                            }); 
-                            return ret; 
-                        }  catch(const  asio::system_error &ex ){
-                            elog("mpush_sync failed {}", ex.what()); 
-                        }
-                        return -1; 
+                    
+                        auto [data, dataLen ] = send_buffer.read();   
+                        asio::write(tcp_sock, asio::const_buffer(data, dataLen));     
+                        return dataLen;  
                      }
 
 
@@ -291,19 +231,27 @@ namespace knet {
                     template <class P, class... Args>
                         int32_t msend(const P& first, const Args&... rest) {
                             if (is_open()){
-								{
-                                	std::lock_guard<std::mutex> lock(write_mutex);             
-                                	this->mpush(first, rest...);
-								}
-								return this->do_send(); 
+                                uint32_t needLen = send_buffer.calc_data_length(first, rest...); 
+                                bool isWritting = !send_buffer.empty();   
+                                //will block here 
+                                if (needLen > send_buffer.peek() ){
+                                    do {
+                                        send_buffer.wait(1);
+                                        isWritting = !send_buffer.empty();  
+                                    }while(needLen > send_buffer.peek());  
+                                } 
+                                auto len  = this->mpush(first, rest...); 
+                                if (!isWritting){
+                                     this->do_send(); 
+                                } 
+                                return len; 
                             }
                             return -1;                         
                         }
 
                     template <typename P >  
                         inline uint32_t write_data( const P & data  ){ 
-                            return send_buffer.push((const char*)&data, sizeof(P)); 
-                             
+                            return send_buffer.push((const char*)&data, sizeof(P));  
                         } 
 
 
@@ -327,8 +275,6 @@ namespace knet {
                     template <typename F, typename ... Args>
                         int32_t mpush(const F &  data, Args... rest) { 					
                             this->write_data(data  ) ;   
- 
-         
                             return mpush(rest...);
                         }
 
@@ -336,43 +282,39 @@ namespace knet {
 						return 0; 
 					}
 					
-					int32_t do_send(){
-                        
-                        if (!send_buffer.empty() ){ 	 
-                            //#define USING_ASYNC_SEND 1 
-                            #ifdef USING_ASYNC_SEND
-                                do_async_send(); 	     	            
-                            #else 						
-                                return do_async_write(); 
-                            #endif 
-                        }else {
-                             
-                        }                        
-                        return 0; 
+					int32_t do_send(){ 
+                   	 
+                        //#define USING_ASYNC_SEND 1 
+                        #ifdef USING_ASYNC_SEND
+                            return do_async_send(); 	     	            
+                        #else 						
+                            return do_async_write(); 
+                        #endif 
+                          
                     }
 
                     int32_t do_async_write() {  
-                        auto ret = send_buffer.read([this](const char * data, uint32_t dataLen){
+
+                        auto [data, dataLen ] = send_buffer.read();  
+                        if (dataLen > 0){ 
                             auto self = this->shared_from_this(); 
-                            asio::async_write(tcp_sock,asio::const_buffer(data, dataLen), [this, self,dataLen ](std::error_code ec, std::size_t length) {
+                            asio::async_write(tcp_sock,asio::const_buffer(data, dataLen), [this, self ](std::error_code ec, std::size_t length) {
                                     if (!ec ) {
                                     //	connection->process_event(EVT_SEND);
-                                        send_buffer.commit(length); //assert(dataLen == length ) 
-                                       
-                                        if (send_buffer.peek()) { 
-                                            self->do_async_write();          
-                                        }
-                                                               
+                                        //assert(dataLen == length ) 
+                                        send_buffer.commit(length); 
+                                        self->do_async_write();    
+                                                                
                                     }else {
                                         ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status));  
                                         send_buffer.clear(); 
                                         self->do_close();
                                     }
                                 });
-                                return dataLen; 
-                        }); 
-                       
-                        return ret;  
+
+                            return dataLen;  
+                        }
+                        return 0; 
                     }
  
 #ifdef USING_ASYNC_SEND
@@ -525,8 +467,8 @@ namespace knet {
                     TPtr connection;		
                     char read_buffer[kReadBufferSize+4];
                     int32_t read_buffer_pos = 0;
-                    std::mutex write_mutex;  
-                    LoopBuffer<8192> send_buffer;  
+              
+                    LoopBuffer<8192, std::mutex> send_buffer;  
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
                     std::thread::id worker_tid;
                     KNetUrl remote_url; 

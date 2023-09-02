@@ -14,6 +14,12 @@ include_directories(deps/spdlog/include)
  
 
 if(APPLE)
+    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
+    	FIND_PACKAGE(OpenSSL)
+    	if(${OpenSSL_FOUND})
+    	  include_directories(${OPENSSL_INCLUDE_DIR})
+    	link_directories(${OPENSSL_ROOT_DIR}/lib)
+    	endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall  -stdlib=libc++  -Wno-unused-function -g  ")
 elseif(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pthread   -g -Wno-unused-function -O2  -Wno-unused-variable ")

@@ -14,6 +14,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <condition_variable>
 
 namespace knet {
 namespace utils {
@@ -83,6 +84,68 @@ public:
 
   static constexpr uint32_t BufferSize =
       kMaxSize & (kMaxSize - 1) ? get_power_of_two(kMaxSize) : kMaxSize;
+ 
+      template <typename F, typename ... Args>
+        uint32_t calc_data_length(const F &  data, Args... rest) { 					
+            auto len = this->get_data_length(data) ;   
+            return len + calc_data_length(rest...);
+        }
+
+        inline uint32_t calc_data_length() {  
+            return 0; 
+        }
+
+        template <typename P >  
+            inline uint32_t get_data_length( const P & data  ){ 
+                return  sizeof(P);                              
+            }  
+
+        inline uint32_t get_data_length( const std::string_view &  data ){ 
+            return  data.size();                              
+        }     
+
+        inline uint32_t get_data_length( const std::string &  data ){ 
+            return  data.size();                              
+        }                   
+
+        inline uint32_t get_data_length( const char* data ){ 
+            return strlen(data) ;                        
+        }   
+
+            
+		template < typename ... Args>
+			int32_t mpush(  Args &&... rest) { 	
+        std::lock_guard<Mutex> lock(write_mutex);
+        return _mpush(std::forward<Args>(rest)...); 
+      }
+		template <typename F, typename ... Args>
+			int32_t _mpush(const F &  data, Args &&... rest) { 				
+    
+				auto ret = this->push(data) ;   
+				return ret > 0 ?(ret+mpush(std::forward<Args>(rest)...)):0;
+			}
+
+		inline int32_t _mpush() {  
+			return 0; 
+		}
+
+		template <class T> 
+			uint32_t push(const T & data ) {
+				return push((const char *)data, sizeof(T)); 
+			}
+		template <class T> 
+			uint32_t push(const std::vector<T>  & data ) {
+				return push(data.data(), data.length()* sizeof(T)); 
+			}
+
+		uint32_t push(const std::string  & data ) {
+			return push(data.data(), data.length()); 
+		}
+
+		uint32_t push(const char * data ) {
+			return push(data, strlen(data)); 
+		}
+
 
   uint32_t push(const char *data, uint32_t dataLen) {
     std::lock_guard<Mutex> lock(write_mutex);
@@ -120,7 +183,7 @@ public:
   }
 
   // should commit after read
-  int32_t read(DataHandler handler = nullptr) {
+  int32_t read(DataHandler handler ) {
     uint32_t dataLen = tail - head;
     if (dataLen == 0) {
       return 0;
@@ -131,16 +194,65 @@ public:
     handler(&buffer[readPos], len);
     return len;
   }
+  std::pair<char * , uint32_t>  read() {
+ 
+      uint32_t dataLen = tail - head;
+      if (dataLen == 0) {
+        return std::make_pair(nullptr, 0);
+      }
+      __READ_BARRIER__;
+      uint32_t readPos = (head & (BufferSize - 1));
 
-  uint32_t commit(uint32_t len) { head += len;return len;  }
+      uint32_t len = std::min(dataLen, BufferSize - readPos); 
+      return std::make_pair(&buffer[readPos], len);    
+  }
 
-  bool empty() const { return head == tail; } 
+  uint32_t commit(uint32_t len) { 
+    head += len;
+    notify();  
+    return len; 
+   }
 
-  bool peek() { return head != tail; }
+  bool empty()   { 
+    std::lock_guard<Mutex> lock(write_mutex);
+    return head == tail; 
+  } 
+
+
+  uint32_t peek() { 
+      if constexpr (std::is_same<NonMutex, Mutex>::value){
+				return BufferSize -(tail - head) ;
+			}else {
+				std::lock_guard<Mutex> lk(write_mutex);
+				return BufferSize -(tail - head) ;
+			}  
+  }
 
   uint32_t size() const{
 	return tail - head; 
   }
+
+  void  wait(uint32_t len,uint32_t msTimeOut = 0 )  {   
+			if constexpr  (std::is_same<NonMutex, Mutex>::value){ 
+				std::this_thread::sleep_for(std::chrono::microseconds(msTimeOut==0?1:msTimeOut));   
+			}else {
+				std::unique_lock<Mutex> lk(write_mutex);
+				if (msTimeOut > 0){
+					write_cond.wait_for(lk, std::chrono::microseconds(msTimeOut), [this, len  ]{return BufferSize -(tail - head)  >= len   ;});
+				}else {
+					write_cond.wait(lk, [this, len  ]{ return BufferSize -(tail - head)  >= len   ;});
+				}
+			}        
+		}
+		void notify(){
+			if constexpr  (std::is_same<NonMutex, Mutex>::value){
+				//
+			}else {
+				write_cond.notify_one();
+			}        
+		}
+
+
 
   void clear(){ head = tail = 0; }
 
@@ -150,6 +262,7 @@ private:
   std::atomic<uint32_t> tail{0};
   std::array<char, BufferSize> buffer;
   Mutex write_mutex;
+  	std::condition_variable write_cond;
 };
 
 } // namespace utils

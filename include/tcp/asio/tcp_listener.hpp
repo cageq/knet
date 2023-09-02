@@ -86,7 +86,7 @@ namespace knet
                             if (!net_options.tcp_delay) {
                                 this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
                             }
-							this->tcp_acceptor->non_blocking(true);
+							// this->tcp_acceptor->non_blocking(true);
 
 							asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
 							this->tcp_acceptor->set_option(SNDBUF);
