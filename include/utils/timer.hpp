@@ -5,6 +5,7 @@
 #include <chrono>
 #include "utils/knet_log.hpp"
 #include <atomic> 
+#include <mutex> 
 namespace knet
 {
 	namespace utils
@@ -29,7 +30,7 @@ namespace knet
 			};
 			using TimerNodePtr = std::shared_ptr<TimerNode>; 
 
-
+            using TimerMap = std::unordered_map<uint64_t, TimerNodePtr>; 
 			Timer(asio::io_context &ctx)
 				: context(ctx) {}
 				
@@ -39,13 +40,14 @@ namespace knet
 			}
 
 			void clear(){
-				for (auto &item : timers)
+                std::lock_guard<std::mutex> guard(timer_mutex); 
+				for (auto &item : timer_nodes)
 				{
 					item.second->alive = false; 
 					//add cancel 
 					item.second->timer.cancel(); 
 				}
-				timers.clear();
+				timer_nodes.clear();
 			}
 
 			void handle_timeout(TimerNodePtr node)
@@ -61,7 +63,10 @@ namespace knet
 							if (!ret){ 
 								node->alive = false; 
 								node->timer.cancel(); 
-								timers.erase(node->id);				
+                                {
+                                    std::lock_guard<std::mutex> guard(timer_mutex); 
+                                    timer_nodes.erase(node->id);				
+                                }
 								return; 
 							}
 						}
@@ -70,7 +75,11 @@ namespace knet
 					if (node->loop)
 					{
 						node->timer.expires_after(asio::chrono::microseconds(node->interval));
-						node->timer.async_wait(std::bind(&Timer::handle_timeout, this, node));
+						node->timer.async_wait([this,node](const asio::error_code & ec){
+                                    if (!ec){
+                                        handle_timeout(node); 
+                                    }
+                                });
 					}
 					else
 					{
@@ -78,7 +87,8 @@ namespace knet
 				}
 				else
 				{
-					timers.erase(node->id);					 
+                    std::lock_guard<std::mutex> guard(timer_mutex); 
+					timer_nodes.erase(node->id);					 
 				}
 			}
 
@@ -94,62 +104,78 @@ namespace knet
 				node->id = timer_index++;
 				node->loop = bLoop;
 
-				asio::dispatch(context, [this, node]() { timers[node->id] = node; });
+				//asio::dispatch(context, [this, node]() { timer_nodes[node->id] = node; });
+                {
+                    std::lock_guard<std::mutex> guard(timer_mutex); 
+                    timer_nodes[node->id] = node; 
+                }
 
 				node->timer.expires_after(asio::chrono::microseconds(interval));
-				//node->timer.async_wait(std::bind(&Timer::handle_timeout, this, node)); 
-				node->timer.async_wait([this, node ](asio::error_code){
-					this->handle_timeout(node); 
+				node->timer.async_wait([this, node ](const asio::error_code & ec ){
+                    if (!ec){
+                        this->handle_timeout(node); 
+                    }
 				}); 
 				return node->id;
 			}
 
-	        bool restart_timer(uint32_t timerId ,uint64_t interval = 0  ){
-				asio::post(context, [= ]() {
-					auto itr = timers.find(timerId);
-					if (itr != timers.end())
-					{						
-						itr->second->skip = true; 			
-						if (interval > 0){
-							itr->second->interval = interval; 
-						}	 
-					}
-				}); 
-				return true; 	 
-			}
+            bool restart_timer(uint32_t timerId ,uint64_t interval = 0  ){
+
+                TimerNodePtr timerNode = nullptr; 
+
+                {
+                    std::lock_guard<std::mutex> guard(timer_mutex); 
+                    timerNode = timer_nodes[timerId]; 
+                }
+
+                if (timerNode)
+                {						
+                    timerNode->skip = true; 			
+                    if (interval > 0){
+                        timerNode->interval = interval; 
+                    }	 
+                }
+                return true; 	 
+            }
 
 
 			void stop_timer(uint64_t timerId)
-			{ 
-				asio::post(context, [this, timerId]() {
-					auto itr = timers.find(timerId);
-					if (itr != timers.end())
-					{
-						itr->second->alive = false;
-						itr->second->timer.cancel();
-					}
-				});
-			}
-			void reset_interval(uint64_t timerId, uint64_t interval)
-			{
-				asio::post(context, [this, timerId, interval]() {
-					auto itr = timers.find(timerId);
-					if (itr != timers.end())
-					{						
-						itr->second->timer.cancel();
-						itr->second->interval = interval; 
-						itr->second->timer.expires_after(asio::chrono::microseconds(itr->second->interval));
+            { 
+                TimerNodePtr timerNode = nullptr; 
+                {
+                    std::lock_guard<std::mutex> guard(timer_mutex); 
+                    timerNode = timer_nodes[timerId]; 
+                }
+                if (timerNode)
+                {
+                    timerNode->alive = false; //not safe? 
+                    timerNode->timer.cancel();
+                }
+            }
 
-						itr->second->timer.async_wait([this, node = itr->second ](asio::error_code){
-							this->handle_timeout(node); 
-						}); 
-					}
-				}); 			 	 
-			}
+			void reset_interval(uint64_t timerId, uint64_t interval)
+            {
+                TimerNodePtr timerNode = nullptr; 
+                {
+                    std::lock_guard<std::mutex> guard(timer_mutex); 
+                    timerNode = timer_nodes[timerId]; 
+                }
+                if (timerNode)
+                {						
+                    timerNode->timer.cancel();
+                    timerNode->interval = interval; 
+                    timerNode->timer.expires_after(asio::chrono::microseconds(timerNode->interval));
+                    timerNode->timer.async_wait([this, timerNode ](const asio::error_code &ec){
+                                if (!ec){
+                                    this->handle_timeout(timerNode); 
+                                }
+                            }); 
+                }
+            }
 
 		private:
-
-			std::unordered_map<uint64_t, TimerNodePtr> timers;
+            std::mutex timer_mutex; 
+			TimerMap  timer_nodes;
 			asio::io_context &context;
 		};
 

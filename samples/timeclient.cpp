@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include "knet.hpp"
 #include <iostream>
+#include <chrono>
 #include <sys/time.h> 
 
 using namespace knet::tcp;
+
 struct TestMsg{
     uint32_t length; 
+    struct timeval server_time; 
     struct timeval time; 
     uint64_t index; 
+	char data[70]; 
 }; 
 
 class TcpSession : public TcpConnection<TcpSession >
@@ -23,27 +27,24 @@ public:
         if (len < sizeof (TestMsg) ){
             return -1; 
         }
- 
+
 		return sizeof(TestMsg);
 	}
 
-	virtual bool handle_data(const std::string& msg)
+	virtual bool handle_data(char * data, uint32_t dataLen)
 	{
-		
-	 
-        TestMsg * tMsg = (TestMsg*) msg.c_str(); 
+        TestMsg * tMsg = (TestMsg*) data; 
         TestMsg recvMsg; 
         gettimeofday(&recvMsg.time,0); 
-        total_time  +=  (recvMsg.time.tv_usec - tMsg->time.tv_usec) ; 
+        //total_time  +=  (recvMsg.time.tv_usec - tMsg->time.tv_usec) ; 
        // dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
 
-	    dlog("{}#  elapse {}",tMsg->index,   recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
+	    dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
         if (last_index +1 != tMsg->index){
             elog("wrong seqence"); 
             exit(0); 
         }
         last_index = tMsg->index; 
-
 		return true;
 	}
 	virtual bool handle_event(knet::NetEvent evt) {
@@ -52,6 +53,7 @@ public:
 
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
+            last_index = 0 ; 
             //TestMsg tMsg; 
             //gettimeofday(&tMsg.time,0); 
 			//this->send((const char *)&tMsg, sizeof(TestMsg) );
@@ -65,7 +67,7 @@ public:
 
 int main(int argc, char** argv)
 {
-	KNetLogIns.add_console(); 
+		KNetLogIns.add_console();  
 	dlog("init client ");
 	TcpConnector<TcpSession>  connector;
 
@@ -73,9 +75,19 @@ int main(int argc, char** argv)
 
     std::string host = "127.0.0.1"; 
 
+
+    bool asyncSend = true; 
+    uint16_t port = 8888; 
     if (argc > 1) 
     {
         host = argv[1]; 
+    }
+    if (argc > 2){
+        port = atoi(argv[2]); 
+    }
+
+    if (argc > 3){
+        asyncSend = atoi(argv[3]) > 0; 
     }
 
 	//([](NetEvent evt, std::shared_ptr<TcpSession> pArg) {
@@ -98,30 +110,50 @@ int main(int argc, char** argv)
 	// });
 
 
-    KNetUrl url{"tcp",host, 8888}; 
-    url.set("delay", "0"); 
+    //KNetUrl url{"tcp",host, 8888}; 
+    //url.set("delay", "0"); 
 
-	auto conn = connector.add_connection({"tcp", host, 8888});
-	//conn->enable_reconnect(); 
+	auto conn = connector.add_connection({"tcp", host, port});
+	conn->enable_reconnect(); 
 
     uint64_t index = 1; 
+	uint32_t speed = 2000; 
     while(true){
-
-        if (conn){
+        
+        //dlog("connection status {}", conn->is_connected()); 
+        if (conn && conn->is_connected()){
 
             TestMsg recvMsg; 
             gettimeofday(&recvMsg.time,0); 
             recvMsg.index = index ++; 
-            conn->send((const char *)&recvMsg, sizeof(TestMsg) );
-           usleep(10); 
+            if (asyncSend){
+                conn->send((const char *)&recvMsg, sizeof(TestMsg) );
+            }else {
+                conn->sync_send((const char *)&recvMsg, sizeof(TestMsg) );
+            }
+        }else{
+            dlog("not connected"); 
+        }
 
+		if (index %speed == 0)
+		{
+//			struct timespec interval{0}; 
+//			interval.tv_nsec = 2000000; 
+//			nanosleep(&interval, nullptr); 
+//			usleep(1000000); 
 
+			std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+		}
+
+        if ( index >= 4000000){
+			printf("finished\n"); 
+            break; 
         }
 
     }
 
 //
-//	char c = getchar();
+	char c = getchar();
 //	while (c)
 //	{
 //		if (c == 'q')
@@ -131,6 +163,7 @@ int main(int argc, char** argv)
 //		c = getchar();
 //	}
 //
+    connector.stop(); 
 	return 0;
 }
 

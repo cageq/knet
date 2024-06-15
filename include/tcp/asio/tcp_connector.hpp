@@ -129,6 +129,9 @@ namespace knet
 				}
 				return nullptr; 				
 			}
+			
+		
+
 			inline ConnectionMap get_connections() const {
 				return connections; 
 			}
@@ -154,6 +157,7 @@ namespace knet
 				conn->connect(urlInfo);
 				return conn;
 			}
+			
 			template <class... Args>
 				TPtr add_ssl_connection(const KNetUrl &urlInfo, const std::string& caFile, Args... args) {
 					auto worker = this->get_worker();

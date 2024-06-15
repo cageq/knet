@@ -9,20 +9,23 @@ using namespace knet::tcp;
 struct TestMsg
 {
 	uint32_t length;
+    struct timeval server_time; 
 	struct timeval time;
 	uint64_t index;
+	char  data[70]; 
 };
 
+bool asyncSend = true; 
 class TcpSession : public TcpConnection<TcpSession>
 {
 public:
 	typedef std::shared_ptr<TcpSession> TcpSessionPtr;
 	TcpSession()
 	{
-		// ilog("session create with {}", val);
+		// knet_ilog("session create with {}", val);
 		//  bind_data_handler(&TcpSession::on_recv );
 		// bind_event_handler([](   TcpSessionPtr, knet::NetEvent evt  ){
-		//		ilog("on recv event", evt);
+		//		knet_ilog("on recv event", evt);
 		//		return 0;
 		//		} );
 	}
@@ -33,6 +36,9 @@ public:
 	virtual bool handle_event(knet::NetEvent evt)
 	{
 
+        if (evt == knet::NetEvent::EVT_DISCONNECT){
+            last_index  = 0; 
+        }
 		//	dlog("handle my tcp event {}", evt);
 
 		return true;
@@ -48,24 +54,28 @@ public:
 	}
 
 	// will invoke in multi-thread , if you want to process it main thread , push it to msg queue
-	virtual bool handle_data(const std::string &msg)
+	virtual bool handle_data(char * data, uint32_t dataLen)
 	{
 
-		TestMsg *tMsg = (TestMsg *)msg.c_str();
+		TestMsg *tMsg = (TestMsg *)data;
 		TestMsg recvMsg;
 		gettimeofday(&recvMsg.time, 0);
-		total_time += (recvMsg.time.tv_usec - tMsg->time.tv_usec);
+		//total_time += (recvMsg.time.tv_usec - tMsg->time.tv_usec);
 		// dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  );
 
-		dlog("{}#  elapse {}", tMsg->index, recvMsg.time.tv_usec - tMsg->time.tv_usec);
+	    dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
 		if (last_index + 1 != tMsg->index)
 		{
 			elog("wrong seqence");
 			exit(0);
 		}
 		last_index = tMsg->index;
+        if (asyncSend){
+            this->send(data, dataLen );
+        }else{
+            this->sync_send(data, dataLen); 
+        }
 
-		this->send(msg);
 		return true;
 	}
 	uint64_t total_time = 0;
@@ -74,7 +84,15 @@ public:
 
 int main(int argc, char **argv)
 {
-	KNetLogIns.add_console();
+		KNetLogIns.add_console(); 
+
+	int port = 8888;
+    if (argc > 1){
+        port = atoi(argv[1]); 
+    }
+    if (argc > 2){
+        asyncSend = atoi(argv[2]) > 0; 
+    }
 
 	// dout << "test tcp server with cout format " << std::endl;
 	// iout << "test tcp server with cout format " << std::endl;
@@ -96,10 +114,12 @@ int main(int argc, char **argv)
 
 	std::shared_ptr<knet::KNetWorker> myworker = std::make_shared<knet::KNetWorker>();
 	myworker->start();
+
+	knet::NetOptions netOpts{}; 
+	netOpts.sync_accept_threads = 4; 
 	// TcpListener<TcpSession, ConnFactory<TcpSession>,  knet::KNetWorker, int32_t> listener(myworker,222);
 	DefaultTcpListener<TcpSession> listener(myworker);
-	int port = 8888;
-	bool ret = listener.start(port);
+	bool ret = listener.start(port, netOpts);
 
 	// tcpService.start();
 	//  static int index  = 0;
@@ -123,6 +143,10 @@ int main(int argc, char **argv)
 	dlog("start server on port {} , status {}", port, ret);
 	// co_sched.Start(4);
 
+	while(1){
+
+		std::this_thread::sleep_for(std::chrono::seconds(1)); 
+	}
 	char c = getchar();
 	while (c)
 	{

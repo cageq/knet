@@ -95,11 +95,19 @@ namespace knet {
                         async_connect(tcp_sock, addrResult,
                             [self, this ](asio::error_code ec, typename decltype(addrResult)::endpoint_type endpoint) {
                             if (!ec) {
-                                if (!self->net_options.tcp_delay)
-                                {
-                                    self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
-                                }
+	                                if (!self->net_options.tcp_delay)
+	                                {
+	                                    self->tcp_sock.set_option(asio::ip::tcp::no_delay(true));        
+	                                }
 
+                                    if (net_options.send_buffer_size > 0){
+                                        asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
+                                        tcp_sock.set_option(SNDBUF);
+                                    }
+                                    if (net_options.recv_buffer_size > 0){
+                                        asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
+                                        tcp_sock.set_option(RCVBUF);
+                                    }
                                     //self->tcp_sock.set_option(asio::socket_base::keep_alive(true));
                                 
                                 dlog("connect to {}:{} success {}",remote_url.host,remote_url.port, self->tcp_sock.is_open());       

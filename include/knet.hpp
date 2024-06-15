@@ -22,9 +22,8 @@ namespace knet
 		bool reuse { true} ;
 		uint32_t backlogs = 512;								// listening queue size
 		uint32_t workers =   std::thread::hardware_concurrency()  ; // iocp/epoll worker threads number
-		uint32_t send_buffer_size = 16 * 1024;
-		uint32_t recv_buffer_size = 14 * 1024;
-		uint32_t recv_size = 8 * 1024;
+		uint32_t send_buffer_size = 2 * 1024 *1024 ;
+		uint32_t recv_buffer_size = 2 * 1024 *1024 ; 
         uint32_t sync_accept_threads = 0 ; 
 		std::string chain_file = "cert/server.pem";
 		std::string dh_file = "cert/dh2048.pem";
