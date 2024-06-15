@@ -20,7 +20,7 @@ namespace knet
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
 
-			virtual bool handle_event(TPtr conn, NetEvent evt)
+			virtual bool handle_event(TPtr conn, NetEvent evt) override
 			{
 				auto session = conn->get_session();
 				//ilog("pipe factory event {} {} ", evt, event_string(evt) );
@@ -56,10 +56,10 @@ namespace knet
 				return false;
 			}
 
-			virtual bool handle_data(TPtr conn, const std::string &buf)
+			bool handle_data(TPtr conn, char *data, uint32_t dataLen) override
 			{
-				PipeMsgHead *msg = (PipeMsgHead *)buf.data();
-				if (msg->length + sizeof(PipeMsgHead) > buf.length())
+				PipeMsgHead *msg = (PipeMsgHead *)data;
+				if (msg->length + sizeof(PipeMsgHead) > dataLen)
 				{
 					wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
@@ -89,7 +89,7 @@ namespace knet
 				auto session = conn->get_session();
 				if (session)
 				{
-					session->handle_message(std::string(buf.data() + sizeof(PipeMsgHead), msg->length), msg->data);
+					session->handle_message(data + sizeof(PipeMsgHead), msg->length, msg->data);
 				}
 				else
 				{
@@ -123,9 +123,10 @@ namespace knet
 							ilog("bind pipe {} success", pipeId);
 							PipeMsgHead shakeMsg{ static_cast<uint32_t>(pipeId.length()),PIPE_MSG_SHAKE_HAND,0};
 							conn->msend(shakeMsg, pipeId);
+					
+							pipe->on_ready();
 							pipe->handle_event(NetEvent::EVT_CONNECT);
-							pipe->on_ready(); 
-						}						
+						}
 					}
 					else
 					{

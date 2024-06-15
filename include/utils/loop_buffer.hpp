@@ -138,6 +138,9 @@ public:
 				return push(data.data(), data.length()* sizeof(T)); 
 			}
 
+		uint32_t push(const std::string_view  & data ) {
+		        return push(data.data(), data.length()); 
+		}
 		uint32_t push(const std::string  & data ) {
 			return push(data.data(), data.length()); 
 		}

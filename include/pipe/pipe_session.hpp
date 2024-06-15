@@ -20,7 +20,7 @@ namespace knet
 		};
  
 		using PipeEventHandler = std::function<bool(NetEvent , void *  )> ; 
-		using PipeDataHandler  = std::function<int32_t (const std::string& , uint64_t , void * )>; 
+		using PipeDataHandler  = std::function<int32_t (char * , uint32_t , uint64_t , void * )>; 
 
 		class PipeSession : public std::enable_shared_from_this<PipeSession>
 		{
@@ -48,10 +48,11 @@ namespace knet
 				}
 				return true;
 			}
-			virtual int32_t handle_message(const std::string &msg, uint64_t obdata = 0)
+
+			virtual int32_t handle_message(char * data, uint32_t dataLen, uint64_t obdata = 0)
 			{				 
 				if (pipe_data_handler ){
-					return pipe_data_handler(msg, obdata, pipe_handler_context); 
+					return pipe_data_handler(data, dataLen, obdata, pipe_handler_context); 
 				}
 				return 0;
 			} 

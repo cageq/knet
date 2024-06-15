@@ -50,18 +50,18 @@ public:
 		return true; 
 	}
 
-	virtual bool handle_data(TPtr conn, const std::string& msg ) {  
-			const char * data = msg.data(); 
-			uint32_t len  = msg.length(); 	
+	virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen) {  
+
+			dlog("handle factory data , is websocket {}", conn->is_websocket); 
 			if (conn->is_websocket) {
-				auto readLen = conn->read_websocket(data, len );
-				dlog("read websocket data len is {}/{}", readLen, len);
+				auto readLen = conn->read_websocket(data, dataLen );
+				dlog("read websocket data len is {}/{}", readLen, dataLen);
 				return true;
 			}  	
 			
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
 				auto req = std::make_shared<HttpRequest>();
-				auto msgLen = req->parse(data, len, true);
+				auto msgLen = req->parse(data, dataLen, true);
 				if (msgLen > 0) {
 
 					HttpUrl urlInfo(req->url());
@@ -110,9 +110,9 @@ public:
 				return true;
 			} else if (conn->is_status(WSockStatus::WSOCK_CONNECTING)) {
 				HttpResponse rsp;
-				auto msgLen = rsp.parse(data, len);
+				auto msgLen = rsp.parse(data, dataLen);
 				if (msgLen > 0) {
-					dlog("parse response len is {},  {}", len, msgLen);
+					dlog("parse response len is {},  {}", dataLen, msgLen);
 					if (rsp.is_websocket()) {
 						dlog("upgrade to websocket success");
 						conn->is_websocket = true;

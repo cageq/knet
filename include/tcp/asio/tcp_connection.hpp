@@ -5,7 +5,7 @@
 
 #pragma once
 #include <vector>
-#include <set>
+#include <list>
 #include <unordered_map>
 #include "tcp_socket.hpp"
 #ifdef KNET_WITH_OPENSSL
@@ -30,11 +30,11 @@ namespace knet
 			using KNetEventHandler = std::function<bool( NetEvent)>;
 			using SelfEventHandler = bool (T::*)( NetEvent);
 
-			using PackageHandler = std::function<int32_t(const char *  &, uint32_t len  )>;
-			using SelfPackageHandler = int32_t (T::*)(const char *  &, uint32_t len  );
+			using PackageHandler = std::function<int32_t(const char * , uint32_t len  )>;
+			using SelfPackageHandler = int32_t (T::*)(const char * , uint32_t len  );
 
-			using KNetDataHandler = std::function<bool(const std::string & )>;
-			using SelfDataHandler = bool (T::*)(const std::string & );
+			using KNetDataHandler = std::function<bool(char *, uint32_t)>;
+			using SelfDataHandler = bool (T::*)(char * , uint32_t );
 
 			using SocketPtr = std::shared_ptr<Sock >; 
 
@@ -55,6 +55,14 @@ namespace knet
                 
 				event_worker = worker;			 
 				tcp_socket   = sock;
+				if (tcp_socket){
+					asio::error_code ec;
+					asio::ip::tcp::endpoint remoteAddr = tcp_socket->socket().remote_endpoint(ec);
+					if (!ec){
+						remote_host = remoteAddr.address().to_string(); 
+						remote_port = remoteAddr.port(); 
+					}  
+				}
 				user_event_handler = evtHandler;
 				tcp_socket->init(this->shared_from_this() , opts ); 				
 				handle_event(EVT_CREATE);//TODO process_event(EVT_CREATE);	
@@ -131,6 +139,8 @@ namespace knet
 			bool connect(const KNetUrl & urlInfo    )
 			{		 
 				dlog("start to connect {}:{}", urlInfo.get_host(), urlInfo.get_port()); 
+				remote_host = urlInfo.get_host(); 
+				remote_port = urlInfo.get_port(); 
 				passive_mode = false; 
 				return tcp_socket->connect(urlInfo);
 			}		
@@ -206,12 +216,15 @@ namespace knet
 
 			void enable_reconnect(uint32_t interval = 1000000)
 			{
-				if (!reconn_flag)
-				{
+				int randTime = (std::rand()%10 +1) * 100000; 
+				if (reconn_interval == 0){
+					reconn_interval = interval + randTime;
+				}
+
+				if (!reconn_flag){
 					reconn_flag = true; 
 					auto self = this->shared_from_this();
-					this->reconn_timer = this->start_timer(
-						[self]() {
+					this->reconn_timer = this->start_timer( [self]() {
 							if (self->tcp_socket ){
 								if ( !( self->tcp_socket->is_open() || self->tcp_socket->is_connecting() ))
 								{
@@ -219,8 +232,12 @@ namespace knet
 								}								
 							}
 							return true; 
-						},
-						interval);
+						}, reconn_interval);
+
+					reconn_interval = reconn_interval * 1.5 + randTime; 
+					if (reconn_interval > 30 * 1000000){
+						reconn_interval = 30 * 1000000 + randTime; 
+					}
 				}
 			}
 
@@ -246,7 +263,7 @@ namespace knet
 			}
 
 	
-			virtual bool handle_data(const std::string &msg )
+			virtual bool handle_data(char * data, uint32_t dataLen)
 			{
 				return true; 
 			}
@@ -276,22 +293,16 @@ namespace knet
 				}
 			}
 			void clear_timers() {			
-				if (event_worker) {
-					event_worker->clear_timers();
-					conn_timers.clear();
+                std::lock_guard<std::mutex> guard(timer_mutex);
+				//knet_tlog("release connection, timer size {} ", conn_timers.size()); 
+                for(auto tid : conn_timers){
+					stop_timer(tid); 
 				}
-				
+                conn_timers.clear();
 			}
 	
 			inline void release(){
-				dlog("release connection, timer size {} ", conn_timers.size()); 
-				//for(auto tid : conn_timers){
-				//	stop_timer(tid); 
-				//}
-				if (event_worker) {
-					event_worker->clear_timers();
-					conn_timers.clear();
-				}
+                clear_timers(); 
                 process_event(EVT_RELEASE); 
 			} 
 
@@ -308,20 +319,20 @@ namespace knet
 				 return handle_package(data, len); 
 			}
 
-			bool process_data(const std::string &msg ){
+			bool process_data(char * data, uint32_t dataLen ){
 				bool ret = true; 
 				if (data_handler)
 				{
-					ret = data_handler(msg);
+					ret = data_handler(data, dataLen);
 				}
 
 				if (ret && user_event_handler)
 				{
-					ret = user_event_handler->handle_data(this->shared_from_this(), msg );
+					ret = user_event_handler->handle_data(this->shared_from_this(), data, dataLen );
 				}		
 
 				if (ret) {
-					ret = handle_data(msg);
+					ret = handle_data(data, dataLen);
 				}
 		 		return ret; 				
 			}
@@ -349,7 +360,12 @@ namespace knet
 			bool reconn_flag = false;
 			uint64_t cid = 0;
 			uint64_t reconn_timer = 0;
-			bool passive_mode = true;
+			uint32_t reconn_interval = 0; 
+
+			bool passive_mode = true; 
+
+			std::string remote_host; 
+			uint16_t remote_port =0; 
 
 			std::mutex  timer_mutex; 
 			std::vector<uint64_t> conn_timers;  //timerid should not duplicated 

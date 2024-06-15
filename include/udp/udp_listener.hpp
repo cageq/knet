@@ -117,7 +117,7 @@ namespace knet {
 				connections.clear();
 			}
 
-			void add_event_handler(KNetHandler<T> *handler)
+			void add_net_handler(KNetHandler<T> *handler)
 			{
 				if (handler)
 				{
@@ -140,9 +140,9 @@ namespace knet {
 			}
 
 		private:			 
-			virtual bool handle_data(TPtr conn, const std::string &msg)
+			virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen)
 			{						
-				return invoke_data_chain(conn, msg);
+				return invoke_data_chain(conn, data, dataLen);
 			}
 
 			virtual bool handle_event(TPtr conn, NetEvent evt)
@@ -168,14 +168,14 @@ namespace knet {
 				}
 			}
 
-			bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
+			bool invoke_data_chain(const TPtr &  conn, char * data, uint32_t dataLen)
 			{
 				bool ret = true;
 				for (auto &handler : event_handler_chain)
 				{
 					if (handler)
 					{
-						ret = handler->handle_data(conn, msg);
+						ret = handler->handle_data(conn, data, dataLen);
 						if (!ret)
 						{
 							break;
@@ -232,9 +232,9 @@ namespace knet {
 							if (pkgType == PACKAGE_USER)
 							{								
 								recv_buffer[bytes_recvd] = 0;				 
-								bool ret = conn->handle_data(std::string((const char*)recv_buffer, bytes_recvd)); 
+								bool ret = conn->handle_data((char*)recv_buffer, bytes_recvd); 
 								if (ret){
-									this->handle_data(conn, std::string((const char*)recv_buffer, bytes_recvd)); 
+									this->handle_data(conn, (char*)recv_buffer, bytes_recvd); 
 								}
 								
 								ret = conn->handle_event(EVT_RECV);  

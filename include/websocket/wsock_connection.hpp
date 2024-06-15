@@ -334,5 +334,6 @@ private:
 	WSockStatus m_status = WSockStatus::WSOCK_INIT; 	
 };
 
-} // namespace websocket
+        using  WSockConnectionPtr = std::shared_ptr<WSockConnection>; 
+    } // namespace websocket
 } // namespace knet

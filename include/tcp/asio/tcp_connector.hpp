@@ -112,11 +112,11 @@ namespace knet
 				if (conn)
 				{		 
 					auto worker = this->get_worker();
-					auto sock = std::make_shared<Socket>(worker);
+					auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
                     auto opts = options_from_url(urlInfo); 
 					conn->init(opts, sock, worker, this);					 
-					conn->connect(urlInfo );
 					connections[conn->get_cid()] = conn;
+					conn->connect(urlInfo );
 					return true;
 				}
 				return false;
@@ -137,7 +137,7 @@ namespace knet
 			TPtr add_connection(const KNetUrl &urlInfo, Args... args)
 			{
 				auto worker = this->get_worker();
-				auto sock = std::make_shared<Socket>(worker);
+				auto sock = std::make_shared<Socket>(worker->thread_id(), worker);
 				TPtr conn = nullptr;
 				if (net_factory)
 				{
@@ -158,7 +158,7 @@ namespace knet
 				TPtr add_ssl_connection(const KNetUrl &urlInfo, const std::string& caFile, Args... args) {
 					auto worker = this->get_worker();
 					auto sock =
-						std::make_shared<Socket>(worker, caFile);
+						std::make_shared<Socket>(worker->thread_id(), worker, caFile);
 					TPtr conn = nullptr;
 					if (net_factory) {
 						conn = net_factory->create(args...);
@@ -205,26 +205,42 @@ namespace knet
 					return nullptr;
 				}
 			}
-			void add_event_handler(KNetHandler<T> *handler)
+
+			void add_net_handler(KNetHandler<T> *handler)
 			{
 				if (handler)
 				{
-					event_handler_chain.push_back(handler);
+					net_handler_chain.push_back(handler);
 				}
 			}
 
+			void remove_event_handler(KNetHandler<T>* handler)
+			{
+				if (handler)
+				{
+					for (auto itr = net_handler_chain.begin(); itr != net_handler_chain.end();)
+					{
+						if (*itr == handler) {
+							net_handler_chain.erase(itr); 
+							return; 
+						}
+					 
+					} 
+					
+				}
+			}
 			void push_front(KNetHandler<T> *handler){
 				if (handler)
 				{
-					auto beg = event_handler_chain.begin(); 
-					event_handler_chain.insert(beg, handler);
+					auto beg = net_handler_chain.begin(); 
+					net_handler_chain.insert(beg, handler);
 				}
 			}
 			
 			void push_back(KNetHandler<T> *handler){
 				if (handler)
 				{
-					event_handler_chain.push_back(handler);
+					net_handler_chain.push_back(handler);
 				}
 			}
 
@@ -234,17 +250,16 @@ namespace knet
 				auto evtHandler = static_cast<KNetHandler<T> *>(fac);
 				if (evtHandler)
 				{
-					add_event_handler(evtHandler);
+					add_net_handler(evtHandler);
 				}
 			}
 
 			inline void add_factory_event_handler(std::false_type, FactoryPtr fac)
 			{
 			}
-			virtual bool handle_data(std::shared_ptr<T> conn, const std::string &msg)
+			virtual bool handle_data(std::shared_ptr<T> conn, char *data, uint32_t dataLen)
 			{
-
-				return invoke_data_chain(conn, msg);
+				return invoke_data_chain(conn, data, dataLen);
 			}
 			virtual bool handle_event(std::shared_ptr<T> conn, NetEvent evt)
 			{
@@ -264,14 +279,14 @@ namespace knet
 				return ret;
 			}
 
-			bool invoke_data_chain(TPtr conn, const std::string &msg)
+			bool invoke_data_chain(TPtr conn, char * data, uint32_t dataLen)
 			{
 				bool ret = true;
-				for (auto handler : event_handler_chain)
+				for (auto handler : net_handler_chain)
 				{
 					if (handler)
 					{
-						ret = handler->handle_data(conn, msg);
+						ret = handler->handle_data(conn, data, dataLen);
 						if (!ret)
 						{
 							break;
@@ -284,7 +299,7 @@ namespace knet
 			bool invoke_event_chain(TPtr conn, NetEvent evt)
 			{
 				bool ret = true;
-				for (auto handler : event_handler_chain)
+				for (auto handler : net_handler_chain)
 				{
 					if (handler)
 					{
@@ -302,8 +317,7 @@ namespace knet
 			std::vector<WorkerPtr> user_workers;
 			std::unordered_map<uint64_t, TPtr> connections;
 			FactoryPtr net_factory = nullptr;
-			std::vector<KNetHandler<T> *> event_handler_chain;
-		 
+			std::vector<KNetHandler<T> *> net_handler_chain;
 		};
 
 	} // namespace tcp

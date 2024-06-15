@@ -151,7 +151,7 @@ namespace knet
 				return true;
 			}
 
-			virtual bool handle_data(const std::string &msg)
+			virtual bool handle_data(char * data, uint32_t dataLen)
 			{
 				return true;
 			}
@@ -223,17 +223,17 @@ namespace knet
 
 
 
-			bool process_data(const std::string &msg)
+			bool process_data(char * data, uint32_t dataLen)
 			{
 				bool ret = true;
 
 				if (ret && user_event_handler)
 				{
-					ret = user_event_handler->handle_data(this->shared_from_this(), msg);
+					ret = user_event_handler->handle_data(this->shared_from_this(), data, dataLen);
 				}
 				if (ret)
 				{
-					ret = handle_data(msg);
+					ret = handle_data(data, dataLen);
 				}
 				return ret;
 			}
@@ -324,7 +324,7 @@ namespace knet
 								auto pkgType = this->handle_package(std::string((const char *)recv_buffer, bytes_recvd));
 								if (pkgType == PACKAGE_USER)
 								{
-									process_data(std::string((const char *)recv_buffer, bytes_recvd));
+									process_data((char *)recv_buffer, bytes_recvd);
 								}
 
 								do_receive();

@@ -111,8 +111,8 @@ namespace knet
 			}
 
 
-			virtual bool handle_data(std::shared_ptr<T> conn, const std::string& msg) {
-				return invoke_data_chain(conn, msg);
+			virtual bool handle_data(std::shared_ptr<T> conn, char * data, uint32_t dataLen) {
+				return invoke_data_chain(conn, data, dataLen);
 				
 			}
 			virtual bool handle_event(std::shared_ptr<T> conn, NetEvent evt) {
@@ -124,9 +124,9 @@ namespace knet
 				return ret;
 			}
 
-			void add_event_handler(KNetHandler<T>* handler) {
+			void add_net_handler(KNetHandler<T>* handler) {
 				if (handler) {
-					event_handler_chain.push_back(handler);
+					net_handler_chain.push_back(handler);
 				}
 			}
 		private:
@@ -144,11 +144,11 @@ namespace knet
 			}
 
 
-			bool invoke_data_chain(TPtr conn, const std::string& msg) {
+			bool invoke_data_chain(TPtr conn, char * data, uint32_t dataLen) {
 				bool ret = true;
-				for (auto & handler : event_handler_chain) {
+				for (auto & handler : net_handler_chain) {
 					if (handler) {
-						ret = handler->handle_data(conn, msg);
+						ret = handler->handle_data(conn, data, dataLen);
 						if (!ret) {
 							break;
 						}
@@ -159,7 +159,7 @@ namespace knet
 
 			bool invoke_event_chain(TPtr conn, NetEvent evt) {
 				bool ret = true;
-				for (auto handler : event_handler_chain) {
+				for (auto handler : net_handler_chain) {
 					if (handler) {
 						ret = handler->handle_event(conn, evt);
 						if (!ret)
@@ -173,7 +173,7 @@ namespace knet
 			inline void add_factory_event_handler(std::true_type, FactoryPtr fac) {
 				auto evtHandler = static_cast<KNetHandler<T> *>(fac);
 				if (evtHandler) {
-					add_event_handler(evtHandler);
+					add_net_handler(evtHandler);
 				}
 			}
 
@@ -183,7 +183,7 @@ namespace knet
 
 			FactoryPtr net_factory = nullptr;
 			WorkerPtr net_worker;
-			std::vector< KNetHandler<T>*>  event_handler_chain;
+			std::vector< KNetHandler<T>*>  net_handler_chain;
 			std::unordered_map<std::string, TPtr> connections;
 			KNetUrl url_info; 
 			NetOptions net_options; 

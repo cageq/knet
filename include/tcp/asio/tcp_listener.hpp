@@ -76,22 +76,24 @@ namespace knet
 					if (!is_running)
 					{
 						is_running = true;
+                        if(net_options.workers > 0){
+                            ilog("start user workers {}", net_options.workers); 
+                            for(uint32_t i  = 0;i < net_options.workers; i ++){
+                                auto worker = std::make_shared<Worker>(); 
+                                worker->start(); 
+                                user_workers.push_back(worker); 
+                            }
+                        }
+                        ilog("start listen on {}:{} ", url_info.host, url_info.port);
 						asio::ip::tcp::endpoint endpoint(asio::ip::make_address(url_info.host),url_info.port  );
 
 						// this->tcp_acceptor.open(asio::ip::tcp::v4());
 						this->tcp_acceptor->open(endpoint.protocol());
 						if (tcp_acceptor->is_open())
 						{
-							this->tcp_acceptor->set_option(asio::socket_base::reuse_address(true));
-                            if (!net_options.tcp_delay) {
-                                this->tcp_acceptor->set_option(asio::ip::tcp::no_delay(true));
-                            }
-							// this->tcp_acceptor->non_blocking(true);
-
-							asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
-							this->tcp_acceptor->set_option(SNDBUF);
-							asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
-							this->tcp_acceptor->set_option(RCVBUF);
+							this->tcp_acceptor->set_option(asio::ip::tcp::acceptor::reuse_address(true));;
+							
+                            
 
 							asio::error_code ec;
 							this->tcp_acceptor->bind(endpoint, ec);
@@ -107,6 +109,15 @@ namespace knet
 								is_running = false;
 								return false;
 							}
+
+					 		if (net_options.sync_accept_threads > 0 ){
+								for(uint32_t i = 0; i < net_options.sync_accept_threads; i ++){
+									accept_threads.emplace_back([this](){
+										this->do_sync_accept(); 
+									});
+								}								
+								return true; 
+							}							
 							return this->do_accept();
 						}
 						else
@@ -117,12 +128,12 @@ namespace knet
 					return true;
 				}
 
-				bool start(uint16_t port, void * ssl = nullptr){
-					return start(KNetUrl{"tcp","0.0.0.0",port},{}, ssl ); 
+				bool start(uint16_t port, NetOptions opts ={}, void * ssl = nullptr){
+					return start(KNetUrl{"tcp","0.0.0.0",port},opts, ssl ); 
 				}
 		 
-				bool start(const std::string & url , void *ssl = nullptr) {					
-					return start(KNetUrl{url}, {},  ssl);
+				bool start(const std::string & url , NetOptions opts ={},void *ssl = nullptr) {					
+					return start(KNetUrl{url}, opts,  ssl);
 				}
 
 				void stop() {
@@ -139,9 +150,9 @@ namespace knet
 					}
 				}
 
-				virtual bool handle_data(TPtr conn, const std::string &msg)
+				virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen)
 				{
-					return invoke_data_chain(conn, msg);
+					return invoke_data_chain(conn, data, dataLen);
 				}
 
 				virtual bool handle_event(TPtr conn, NetEvent evt)
@@ -154,35 +165,41 @@ namespace knet
 					return ret;
 				}
 
-				void add_event_handler(KNetHandler<T> *handler)
+				void add_net_handler(KNetHandler<T> *handler)
 				{
 					if (handler)
 					{
-						event_handler_chain.push_back(handler);
+						net_handler_chain.push_back(handler);
 					}
 				}
 				void push_front(KNetHandler<T> *handler){
 					if (handler)
 					{
-						auto beg = event_handler_chain.begin(); 
-						event_handler_chain.insert(beg, handler);
+						auto beg = net_handler_chain.begin(); 
+						net_handler_chain.insert(beg, handler);
 					}
 				}
 
 				void push_back(KNetHandler<T> *handler){
 					if (handler)
 					{
-						event_handler_chain.push_back(handler);
+						net_handler_chain.push_back(handler);
 					}
 				}
 
+                uint64_t start_timer(const knet::utils::Timer::TimerHandler &  handler, uint64_t interval, bool bLoop = true){
+                    if (listen_worker){
+                        return listen_worker->start_timer(handler, interval, bLoop); 
+                    }
+                    return 0; 
+                }
 			private:
 				inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 				{
 					auto evtHandler = dynamic_cast<KNetHandler<T> *>(fac);
 					if (evtHandler)
 					{
-						add_event_handler(evtHandler);
+						add_net_handler(evtHandler);
 					}
 				}
 
@@ -190,14 +207,14 @@ namespace knet
 				{
 				}
 
-				bool invoke_data_chain(const TPtr &  conn, const std::string &msg)
+				bool invoke_data_chain(const TPtr &  conn, char * data, uint32_t dataLen)
 				{
 					bool ret = true;
-					for (auto &handler : event_handler_chain)
+					for (auto &handler : net_handler_chain)
 					{
 						if (handler)
 						{
-							ret = handler->handle_data(conn, msg);
+							ret = handler->handle_data(conn, data, dataLen);
 							if (!ret)
 							{
 								break;
@@ -210,7 +227,7 @@ namespace knet
 				bool invoke_event_chain(const TPtr &  conn, NetEvent evt)
 				{
 					bool ret = true;
-					for (auto &handler : event_handler_chain)
+					for (auto &handler : net_handler_chain)
 					{
 						if (handler)
 						{
@@ -235,6 +252,40 @@ namespace knet
 					}
 				}
 
+				bool do_sync_accept(){ 
+
+					while(is_running){  
+							auto worker = this->get_worker();
+							if (!worker) {
+								elog("no event worker, can't start tcp listener");
+								return false ;
+							} 
+
+							asio::error_code ec;
+							asio::ip::tcp::endpoint remoteAddr  ;
+							asio::ip::tcp::socket sock(tcp_acceptor->accept(worker->context(), remoteAddr, ec));
+					 
+							if (!ec) {
+								auto socket = std::make_shared<Socket>(std::move(sock),   worker->thread_id(), worker, ssl_context);
+							 
+								pthread_t curTid = pthread_self();				
+								ilog("accept new connection from {}:{}, tid {}", remoteAddr.address().to_string(), remoteAddr.port(), curTid);
+
+								socket->socket().set_option( asio::ip::tcp::no_delay(true));
+								asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
+								socket->socket().set_option(SNDBUF);
+								asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
+								socket->socket().set_option(RCVBUF);
+
+								this->init_conn(worker, socket);
+							}else {											// An error occurred.
+								elog("get remote address failed: {}:{}", ec.value(), ec.message());
+								sock.close();
+							}
+						}
+					return true; 
+				}
+
 				bool do_accept()
 				{
 					auto worker = this->get_worker();
@@ -243,15 +294,30 @@ namespace knet
 						return false ;
 					}
 
-					auto socket = std::make_shared<Socket>(worker, ssl_context);
+					auto socket = std::make_shared<Socket>(worker->thread_id(), worker, ssl_context);
 					tcp_acceptor->async_accept(socket->socket(), [this, socket, worker](std::error_code ec) {
                                 if (!ec) {
                                     socket->socket().set_option(asio::ip::tcp::no_delay(true));
-                                    dlog("accept new connection");
+								asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
+								socket->socket().set_option(SNDBUF);
+								asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
+								socket->socket().set_option(RCVBUF);
+
+								asio::error_code ec;
+								asio::ip::tcp::endpoint remoteAddr = socket->socket().remote_endpoint(ec);
+                                if (!ec) {																
+                                    ilog("accept new connection from {}:{} ", remoteAddr.address().to_string(), remoteAddr.port());
                                     this->init_conn(worker, socket);
+                                }else {											// An error occurred.
+                                    elog("get remote address failed: {}:{}", ec.value(), ec.message());
+                                    socket->socket().close();
+                                }
                                     do_accept();
                                 } else {
-                                    elog("accept error");
+								elog("accept error: {},{}",ec.value(), ec.message());
+								if (ec.value() == 24 ){  //too many open files
+									do_accept();
+								}
                                 }
 							});
                     return true; 
@@ -261,8 +327,9 @@ namespace knet
 				{
 					if (!user_workers.empty())
 					{
-						dlog("dispatch to worker {}", worker_index);
-						return user_workers[worker_index++ % user_workers.size()];
+                        auto workeIdx = (worker_index++) % user_workers.size(); 
+						//knet_tlog("dispatch to worker {}/{}", workeIdx,user_workers.size());
+						return user_workers[workeIdx];
 					}
 					else
 					{
@@ -304,8 +371,9 @@ namespace knet
 				bool is_running = false;
 				void *ssl_context = nullptr;
 				FactoryPtr net_factory = nullptr;
-				std::vector<KNetHandler<T> *> event_handler_chain;
+				std::vector<KNetHandler<T> *> net_handler_chain;
 				WorkerPtr listen_worker;	
+				std::vector<std::thread> accept_threads; 
 				std::shared_ptr<asio::ip::tcp::acceptor> tcp_acceptor;
 				
 		};

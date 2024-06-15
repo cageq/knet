@@ -18,7 +18,7 @@ public:
 		return len;
 	}
 
-	virtual bool handle_data(const std::string& msg)
+	virtual bool handle_data( char* data, uint32_t len) override
 	{
 
 //		dlog("received data   {} ", msg );
