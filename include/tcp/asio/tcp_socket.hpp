@@ -320,18 +320,13 @@ namespace knet {
 
                     bool  is_writting {false}; 
                     int32_t do_send() {  			 
-						/*
 						auto self = this->shared_from_this();
-                        asio::post(io_worker->context(), [self,this]() { 
-                                if (!is_writting){
-                                self->do_async_write(); 
+                        asio::post(io_worker->context(), [self]() { 
+                                if (!self->is_writting){
+									self->do_async_write(); 
                                 }
                             }); 					 
-							*/
-						if (!is_writting){
-							this->do_async_write(); 
-						}
-
+ 
                         return 0; 
                     }
  

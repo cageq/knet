@@ -105,7 +105,7 @@ namespace knet
 							this->tcp_acceptor->listen(net_options.backlogs, ec);
 
 							if (ec) {
-								elog("start listen failed");
+								elog("start listen failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
 								return false;
 							}
