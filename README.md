@@ -8,7 +8,7 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 
 
 ## Build 
-need c++17 supported compiler to compile it. 
+need c++17  to compile it. 
 
 It is a headonly library, basically you can copy all files to you project and use it. 
 
@@ -62,14 +62,12 @@ class TcpSession : public TcpConnection<TcpSession> {
         }
 
         //all net events
-        virtual bool handle_event(NetEvent evt) 
-        { 
+        virtual bool handle_event(NetEvent evt)  override { 
             return true; 
         }
 
         //one whole message, divided by handle_package  
-        virtual bool handle_data(const std::string &msg )
-        {
+        virtual bool handle_data(char * data, uint32_t dataLen) override{
             return true; 
         }
 }; 
@@ -99,44 +97,10 @@ connector.add_connection("127.0.0.1", 8899);
 
 ## UDP/KCP/HTTP/WEBSOCK
 
-​	It  provides the  "connection-base" UDP/KCP protocol implements, but also has the same apis with tcp.  
-​	It have basic http/websocket protocol server-side implements,  and need more work to make it complete.
+​	Provides the  "connection-base" UDP/KCP protocol implements, has the same apis with tcp.  
+​	basic http/websocket protocol server-side implements, more work to make it complete.
 
-
-
-## Bind the event handler 
-
-There are two different handlers , Event handler and Data handler, you can bind your handlers in your session . 
-using the bind_event_handler and bind_data_handler to get data or connection events. 
-
-```cpp 
-class TcpSession : public TcpConnection<TcpSession > 
-{
-	public:
-		typedef std::shared_ptr<TcpSession> TcpSessionPtr; 
-
-		TcpSession() 
-		{
-			bind_data_handler(&TcpSession::process_data); 
-			bind_event_handler([this](  TcpSessionPtr,knet::NetEvent ){
-
-			std::string msg("hello world"); 
-			this->send(msg.c_str(),msg.length()); 
-					return 0; 
-					} ); 
-	
-		}
-
-		bool process_data(const std::string & msg )
-		{
-			dlog("received data {} ",msg); 
-			this->send(msg.data(),msg.length());   
-			return msg.length(); 
-		}
-}; 
-
-```
-
+ 
 
 ## Session Factory 
 As a server, we need a manager to control all the incoming sessions's lifetime, you can create a factory to handle all sessions' events . 
@@ -146,8 +110,7 @@ As a server, we need a manager to control all the incoming sessions's lifetime, 
 class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
 	public:
-		virtual void on_create(TPtr ptr) {
-
+		virtual void on_create(TPtr ptr) { 
 			dlog("connection created event in my factory "); 
 		}
 
