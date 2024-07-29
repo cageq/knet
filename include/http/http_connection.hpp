@@ -31,11 +31,7 @@ namespace knet
 		{
 
 		public:
-			
-
-			HttpConnection(HttpRequestPtr req  = nullptr) : first_request(req) 
-			{
-				 
+			HttpConnection(HttpRequestPtr req  = nullptr) : first_request(req) {
 			}
 
 			~HttpConnection() {}
@@ -86,10 +82,10 @@ namespace knet
 				return -1;
 			}
 
-			virtual bool handle_data(const std::string &msg)
+			virtual bool handle_data(char * data, uint32_t dataLen) override 
 			{
 				auto req = std::make_shared<HttpRequest>();
-				auto msgLen = req->parse(msg.data(), msg.length());
+				auto msgLen = req->parse(data, dataLen);
 				if (msgLen > 0)
 				{
 					auto conn = this->shared_from_this();

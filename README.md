@@ -8,7 +8,7 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 
 
 ## Build 
-need c++17  to compile it. 
+need c++17 to compile it. 
 
 It is a headonly library, basically you can copy all files to you project and use it. 
 
