@@ -12,47 +12,42 @@ namespace knet {
 	namespace http {
 
 		class HttpRequest {
-			public:
+			public:				
+				HttpRequest():http_decoder(this),http_encoder(this){
 
-				
-				HttpRequest()  = default; 
+				} 
 
 				//encode methods 
 				HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
-						const std::string& type = "txt") {
-					http_encoder.init_http_message(this); 
+						const std::string& type = "txt") :http_decoder(this),http_encoder(this) {					
 			 		http_method = method; 
-					http_url = url;
+					http_url = url;		
 					http_encoder.set_content(content, type); 
 				}
 
-				HttpRequest(const std::string& url, const std::string& query = "") {
-					http_encoder.init_http_message(this); 
+				HttpRequest(const std::string& url, const std::string& query = ""):http_decoder(this),http_encoder(this) {
 					http_url = url;
 				}
 
-				HttpRequest(const char* data, uint32_t len, bool inplace = false) {
-					http_encoder.init_http_message(this); 
+				HttpRequest(const char* data, uint32_t len, bool inplace = false):http_decoder(this),http_encoder(this){
+					 content = std::string(data, len); 
 				}
 
 				inline std::string encode() const {
 					return http_encoder.encode();
-				}
-
+				} 
 		
 				void add_header(const std::string& key, const std::string& value) {
 					http_encoder.add_header(key, value);
-				}
-
+				} 
 	
 				inline std::string dump() const {
 					return http_encoder.encode();
-				} 
-
+				}  
  
 				//decode methods 
 				uint32_t parse(const char* data, uint32_t len, bool inplace = false) {
-					http_decoder.init_http_message(this); 
+		 
 					return http_decoder.parse_request(data, len, inplace);
 				}
 
@@ -63,17 +58,15 @@ namespace knet {
 				inline std::string url() const { return http_url; }
 
 				inline std::string path() const { 
-					std::string_view p = http_decoder.http_path; 
-					return std::string(p.data(), p.size()); 
+					
+					return std::string(http_decoder.http_path); 
 				}
 
-				inline std::string query() const { 
-					std::string_view q = http_decoder.http_query; 
-					return std::string(q.data(),q.size());
+				inline std::string query() const { 					
+					return std::string(http_decoder.http_query);
 				}
-				inline std::string body()  const {
-					std::string_view q = http_decoder.http_body; 
-					return std::string(q.data(),q.size());
+				inline std::string body()  const {					
+					return std::string(http_decoder.http_body);
 				}
 		 
 				inline bool is_websocket() const {
@@ -84,7 +77,9 @@ namespace knet {
 					return std::string(http_decoder.http_body);
 				} 
 
-	
+				std::string content_type;
+				std::string content;
+
 				HttpMethod http_method;
 				enum  http_method method_value; 
 				std::string method; 

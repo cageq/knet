@@ -60,18 +60,17 @@ public:
 			}  	
 			
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
-				auto req = std::make_shared<HttpRequest>();
 
 				auto ctx = std::make_shared<HttpContext>(); 
-				ctx->request = req; 
-				auto msgLen = req->parse(data, dataLen, true);
+				auto & req = ctx->request; 
+				auto msgLen = req.parse(data, dataLen, true);
 				if (msgLen > 0) {
 
-					HttpUrl urlInfo(req->url());
-					dlog("handle websocket request ", req->url());
-					ilog("request Upgrade header {}", req->get_header("Upgrade"));
-					ilog("request Connection header {}", req->get_header("Connection"));
-					if (req->get_header("Upgrade") == "websocket") {
+					HttpUrl urlInfo(req.url());
+					dlog("handle websocket request ", req.url());
+					ilog("request Upgrade header {}", req.get_header("Upgrade"));
+					ilog("request Connection header {}", req.get_header("Connection"));
+					if (req.get_header("Upgrade") == "websocket") {
 						
 						dlog("find request path is {}", urlInfo.path());
 						auto itr = wsock_routers.find(urlInfo.path());
@@ -96,9 +95,9 @@ public:
 							auto & handler = itr->second; 
 							 
 								//dlog("handle data in thread id {}", std::this_thread::get_id());
-								auto rsp = handler.call( ctx);
-								if (rsp->code() != 0) {
-									conn->write(*rsp);
+								auto ret = handler.call( ctx);
+								if (ret < 0 ) {
+									return false; 
 								}
 							
 						} else {

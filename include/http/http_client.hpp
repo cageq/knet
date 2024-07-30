@@ -43,8 +43,7 @@ public:
 
 		std::cout << httpUrl << std::endl;
 
-		auto req = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url);
-		
+		auto req = std::make_shared<HttpRequest>(HttpMethod::HTTP_GET, url); 
 
 		
 		KNetUrl urlInfo("tcp", httpUrl.host(), httpUrl.port()) ; 

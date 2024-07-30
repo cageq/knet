@@ -289,9 +289,9 @@ public:
 	HttpRequestPtr current_request; 
 	HttpResponsePtr current_response; 
 
-	bool upgrade_websocket(HttpRequestPtr req) {
+	bool upgrade_websocket(const HttpRequest &  req) {
 
-		std::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
+		std::string_view secWebSocketKey = req.get_header("Sec-WebSocket-Key");
 
 		if (secWebSocketKey.length() == 24) {
 
@@ -304,7 +304,7 @@ public:
 			rsp.add_header("Sec-WebSocket-Accept", secWebSocketAccept);
 //			rsp.add_header("Accept-Encoding","gzip, deflate"); 
 			write(rsp);
-			if (req->is_websocket()){
+			if (req.is_websocket()){
 				set_status(WSockStatus::WSOCK_OPEN);
 				is_websocket = true;
 			}			

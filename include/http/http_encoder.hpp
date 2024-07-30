@@ -42,7 +42,7 @@ namespace knet
 						}
 					}
 
-					fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->content);
+					fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->http_message->content);
 					return fmt::to_string(msgBuf);
 				}
 				return ""; 
@@ -61,8 +61,7 @@ namespace knet
 
 			std::string encode() const
 			{
-				fmt::memory_buffer msgBuf;
-
+				fmt::memory_buffer msgBuf; 
 				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}\r\n"), status_strings::to_string(coder->http_message->status_code));
 
 				for (const auto &h : coder->http_headers)
@@ -72,12 +71,12 @@ namespace knet
 						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
 					}
 				}
-				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Server: GHttp Server v0.1\r\n"));
+				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Server: KNet Http Server v0.1\r\n"));
 
 				time_t now = std::time(0);
 				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("Date: {:%a, %d %b %Y %H:%M:%S %Z}\r\n"), fmt::localtime(now));
 
-				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->content);
+				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->http_message->content);
 				return fmt::to_string(msgBuf);
 			}
 			XCoder *coder;
@@ -87,20 +86,16 @@ namespace knet
 		class HttpEncoder
 		{
 		public:
-			struct Header
-			{
-				std::string key;
-				std::string value;
-			};
+			// struct Header
+			// {
+			// 	std::string key;
+			// 	std::string value;
+			// };
 
 			HttpEncoder(T *msg = nullptr) : http_message(msg), encode_helper(this)
 			{
 			}
-			void init_http_message(T *msg)
-			{
-				http_message = msg;
-			}
-
+	
 			//void set_method(HttpMethod protocol) { http_method = protocol; }
 
 			void set_cookie(const std::string &v) { add_header("Cookie", v); }
@@ -113,9 +108,9 @@ namespace knet
 			{
 				if (!body.empty())
 				{
-					context_type = mime_types::to_mime(type);
-					content = body;
-					add_header("Content-Length", std::to_string(content.size()));
+					http_message->content_type = mime_types::to_mime(type);
+					http_message->content = body;
+					add_header("Content-Length", std::to_string(http_message->content.size()));
 				}
 			}
 			void set_agent(const std::string &agent)
@@ -203,8 +198,6 @@ namespace knet
 			// }
 
 			T *http_message = nullptr;
-			std::string context_type;
-			std::string content;
 
 			HttpEncoderHelper<HttpEncoder<T>, T> encode_helper;
 

@@ -1,29 +1,30 @@
 #pragma once
-#include <functional>
- 
+#include <functional> 
 #include "http_request.hpp"
 #include "http_response.hpp"
+ 
 namespace knet
 {
     namespace http
-    {
-
-        class HttpConnection; 
+    { 
+ 
         class HttpContext
         {
-        public:
- 
-            std::shared_ptr<HttpConnection> connection; 
+        public: 
+            HttpRequest  request; 
+            HttpResponse response; 
 
-            HttpRequestPtr  request; 
+            int32_t write(const std::string & msg){
+                return response.write(msg); 
+            }
 
-            HttpResponsePtr response; 
-            
-            std::function<void(HttpRequestPtr, HttpResponsePtr)> http_handler;
         };
 
 
-        using HttpContextPtr = std::shared_ptr<HttpContext>; 
+        using HttpContextPtr = std::shared_ptr<HttpContext>;  
+
+        using HttpRequestHandler = std::function<int32_t (HttpRequest &, HttpResponse & )> ; 
+		using HttpContextHandler = std::function<int32_t (HttpContextPtr )> ; 
 
     }
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "knet.hpp"
-#include "http_request.hpp"
-#include "http_response.hpp"
+// #include "http_request.hpp"
+// #include "http_response.hpp"
 #include "http_context.hpp"
 #include <cassert>
 #include <regex>
@@ -11,23 +11,19 @@ namespace knet
 {
 	namespace http
 	{
-		class HttpContext;  
-		using HttpRequestHandler = std::function<HttpResponsePtr(const HttpRequestPtr &, const HttpResponsePtr & )> ; 
-		using HttpContextHandler = std::function<HttpResponsePtr(const HttpContextPtr &)> ; 
- 
+
 		struct HttpHandler {
 			HttpRequestHandler http_handler; 			
 			HttpContextHandler context_handler; 
 
-			HttpResponsePtr call(const HttpContextPtr &ctx) {
+			int32_t call(HttpContextPtr &ctx) {
 				if (context_handler){
 					return context_handler(ctx); 
 				}
 				if (http_handler){
-					ctx->response = std::make_shared<HttpResponse>(); 
 					return http_handler(ctx->request, ctx->response); 
 				}
-				return ctx->response; 
+				return ctx->response.write(); 
 			}
 		}; 
 
@@ -83,9 +79,8 @@ namespace knet
 			void write(const std::string &msg, uint32_t code = 200)
 			{				
 				if (this->is_connected())
-				{
-					HttpResponse rsp(msg, code);
-					this->send(rsp.to_string());
+				{ 
+					this->send(msg );
 				}
 				// if (code >= 200)
 				// {
@@ -105,8 +100,8 @@ namespace knet
 
 			virtual bool handle_data(char * data, uint32_t dataLen) override 
 			{
-				auto req = std::make_shared<HttpRequest>();
-				auto msgLen = req->parse(data, dataLen);
+				auto ctx = std::make_shared<HttpContext>();  
+				auto msgLen = ctx->request.parse(data, dataLen);
 				if (msgLen > 0)
 				{
 					auto conn = this->shared_from_this(); 
@@ -132,39 +127,36 @@ namespace knet
 					//if (!hasHandler)
 					//{
 					//	conn->reply(HttpResponse(404));
-					//}
-					auto ctx = std::make_shared<HttpContext>(); 
-					ctx->connection = conn; 
-					ctx->request = req; 
-					ctx->response = std::make_shared<HttpResponse>(); 
-					ctx->response->writer = [=](const char * data, uint32_t  dataLen ){
-						return conn->send(data, dataLen); 						
+					//} 
+	 
+					ctx->response.writer = [=](const std::string &data){
+						return conn->send(data); 						
 					}; 
 
-					auto rsp = global_router.call(ctx);
-					if (rsp && rsp->code() != 0)
-					{
-						conn->write(*rsp);
-						return true; 
-					}
+					// auto rsp = global_router.call(ctx);
+					// if (rsp && rsp->code() != 0)
+					// {
+					// 	conn->write(*rsp);
+					// 	return true; 
+					// }
 				 
 					if ( http_routers != nullptr)
 					{
-						auto itr = http_routers->find(req->path());
+						auto itr = http_routers->find(ctx->request.path());
 						if (itr != http_routers->end())
 						{
 							auto &handler = itr->second;  
-							auto rsp = handler.call(ctx); 
-							if (rsp->code() != 0)
-							{								
-								conn->write(*rsp);
-							}
-						
-							conn->write(HttpResponse(501));						 
+							auto rst = handler.call(ctx);  
+
+							if (rst < 0){
+								conn->write(HttpResponse(501));
+							} 
+							conn->close(); 
 						}
 						else
 						{
 							conn->write(HttpResponse(404));
+							conn->close(); 
 						}
 					}
 				}

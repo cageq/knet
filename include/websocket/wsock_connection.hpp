@@ -256,9 +256,9 @@ public:
 
 
 
-	bool upgrade_websocket(HttpRequestPtr req) {
+	bool upgrade_websocket(const HttpRequest &  req) {
 
-		std::string_view secWebSocketKey = req->get_header("Sec-WebSocket-Key");
+		std::string_view secWebSocketKey = req.get_header("Sec-WebSocket-Key");
 
 		if (secWebSocketKey.size() == 24) {
 

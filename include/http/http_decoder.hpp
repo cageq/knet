@@ -120,12 +120,7 @@ namespace knet
 
 			using HttpCoder = HttpDecoder<T>;
 
-			HttpDecoder(T *msg = nullptr) : http_message(msg), input_data(nullptr), input_len(0) {}
-
-			void init_http_message(T *msg)
-			{
-				http_message = msg;
-			}
+			HttpDecoder(T *msg = nullptr) : http_message(msg), input_data(nullptr), input_len(0) {} 
 
 			uint32_t parse_request(const char *data, uint32_t len, bool inplace = false)
 			{
@@ -196,7 +191,6 @@ namespace knet
 				HttpDecoder *self = (HttpDecoder *)hp->data;
 				self->parse_header.key = std::string_view(at, len);
 				dlog("parse field {}", self->parse_header.key);
-
 				return 0;
 			}
 
@@ -304,6 +298,7 @@ namespace knet
 				parser_setting.on_message_complete = parse_message_complete;
 				parser_setting.on_chunk_header = parse_chunk_header;
 				parser_setting.on_chunk_complete = parse_chunk_complete;
+				
 				http_parser_init(&msg_parser, msgType);
 				msg_parser.data = this;
 			}
@@ -312,7 +307,7 @@ namespace knet
 			const char *input_data;
 			uint32_t input_len;
 			bool inplace_flag = false;
-			http_parser msg_parser = {0};
+			http_parser msg_parser = {};
 			http_parser_settings parser_setting;
 		};
 
