@@ -65,10 +65,9 @@ namespace knet
 
 			int32_t write(const std::string & msg, uint32_t code = 200){
 				if (writer){
-					
 					status_code = status_code  == 0? code: status_code; 				
 					http_encoder.set_content(msg); 
-	    			return writer(to_string()); 
+					return writer(to_string()); 
 				}
 				return -1; 
 			}

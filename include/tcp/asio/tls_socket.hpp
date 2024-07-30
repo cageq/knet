@@ -414,10 +414,10 @@ namespace knet {
 
                         int32_t readPos = 0; 
                         while(readPos < read_buffer_pos  && connection){   
-                            int32_t pkgLen = this->connection->process_package(&read_buffer[readPos], read_buffer_pos); 
-                            if ( pkgLen <= 0 || pkgLen >  read_buffer_pos){
+                            int32_t pkgLen = this->connection->process_package(&read_buffer[readPos], read_buffer_pos);  
+                            if ( pkgLen <= 0 || pkgLen >  read_buffer_pos - readPos ){
                                 if (pkgLen > kReadBufferSize) {
-                                //   knet_wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, kReadBufferSize);
+                                    knet_wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, static_cast<uint32_t>(kReadBufferSize));
                                     this->do_close(); 
                                     return false;
                                 }                                

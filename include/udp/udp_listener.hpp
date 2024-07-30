@@ -80,7 +80,7 @@ namespace knet {
 					auto buffer = std::make_shared<std::string>(std::move(msg));
 					asio::ip::address multiAddr = asio::ip::make_address(multi_host);
 					asio::ip::udp::endpoint multiPoint(multiAddr, listen_port);
-					knet_dlog("broadcast message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
+					knet_dlog("send multi message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
 					server_socket->async_send_to(asio::buffer(*buffer), multiPoint,
 						[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 							if (!ec) {						 

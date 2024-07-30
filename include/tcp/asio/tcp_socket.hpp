@@ -245,7 +245,7 @@ namespace knet {
 
                      int32_t mpush_sync() {                        
                          try {
-                             auto ret =  asio::write(tcp_sock, asio::const_buffer(send_buffer.data(), send_buffer.length()));                        
+                             auto ret =  asio::write(tcp_sock, asio::const_buffer(send_buffer));                        
                              send_buffer.clear(); 
                              if (ret > 0 && connection)
                              {
