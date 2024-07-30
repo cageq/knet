@@ -156,7 +156,7 @@ inline std::string normalize_reg_name(const std::string& s) {
 	return o;
 }
 
-bool is_ipv6(const char* s, const char* e) {
+inline bool is_ipv6(const char* s, const char* e) {
 	size_t l = e - s;
 	if (l < 2 || l > 254)
 		return false;
@@ -217,7 +217,7 @@ inline bool is_valid_ipv6(const std::string& s) {
 	return is_valid_ipv6(s.data(), s.data() + s.length());
 }
 
-std::string normalize_IPv6(const char* s, const char* e) {
+static std::string normalize_IPv6(const char* s, const char* e) {
 	if (!is_ipv6(s, e))
 		throw parse_error("IPv6 [" + std::string(s, e - s) + "] is invalid");
 	if ((e - s) == 2 && s[0] == ':' && s[1] == ':')
@@ -335,7 +335,7 @@ inline bool is_port(const char* s, const char* e) { return is_uint(s, e, 65535) 
 
 inline bool is_port(const std::string& s) { return is_port(s.data(), s.data() + s.length()); }
 
-std::string normalize_path(const std::string& s) {
+static std::string normalize_path(const std::string& s) {
 	if (s.empty())
 		return s;
 	std::string elem;
@@ -372,7 +372,7 @@ std::string normalize_path(const std::string& s) {
 	return so.str();
 }
 
-std::string decode(const char* s, const char* e) {
+static std::string decode(const char* s, const char* e) {
 	std::string o;
 	o.reserve(e - s);
 	while (s != e) {
@@ -387,7 +387,7 @@ std::string decode(const char* s, const char* e) {
 	return o;
 }
 
-std::string decode_plus(const char* s, const char* e) {
+static std::string decode_plus(const char* s, const char* e) {
 	std::string o;
 	o.reserve(e - s);
 	while (s != e) {
