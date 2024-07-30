@@ -68,8 +68,7 @@ namespace knet
 					
 					status_code = status_code  == 0? code: status_code; 				
 					http_encoder.set_content(msg); 
-					std::cout << to_string() << std::endl; 
-					return writer(to_string()); 
+	    			return writer(to_string()); 
 				}
 				return -1; 
 			}
