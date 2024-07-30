@@ -130,6 +130,7 @@ listener.start(port);
 ## Thread mode 
 
 ​	use one listener thread and zero or more worker threads.  we will keep one connecion's events always be in same thread. so it is safety to create a lua engine in your session, all net events will be called in the same thread.  
+    support multi thread accept 
 
   
 
