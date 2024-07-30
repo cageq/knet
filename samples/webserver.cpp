@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 
 	KNetLogIns.add_console();
 	HttpServer<> webSrv;
-
+	//when use auto , don't forget add "&"
 	webSrv.register_router("/", [](auto & req, auto & rsp)
 						   { return rsp.write("welcome my website"); });
 
