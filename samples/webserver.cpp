@@ -23,8 +23,9 @@ int main(int argc, char *argv[])
 
 	webSrv.register_router("/context", [](auto ctx)
 						   { return ctx->write("hello server"); });
-
-	webSrv.start(8888, "0.0.0.0");
+	knet::NetOptions netOpts{};
+	//netOpts.sync_accept_threads = 2;  
+	webSrv.start(8888, "0.0.0.0", netOpts);
 	char c = getchar();
 	while (c)
 	{
