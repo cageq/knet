@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <cstdlib>
 #include "tcp_socket.hpp"
 #ifdef KNET_WITH_OPENSSL
 #include "tls_socket.hpp"
@@ -14,7 +15,9 @@
 #include <thread> 
 #include "knet_worker.hpp"
 #include "knet_handler.hpp"
+#include "utils/knet_log.hpp"
 using asio::ip::tcp;
+using namespace  knet::log; 
 
 namespace knet
 {
@@ -107,7 +110,7 @@ namespace knet
 				}
 				else
 				{
-					elog("socket is invalid");
+					knet_elog("socket is invalid");
 				}
 				return false; 
 			}
@@ -138,7 +141,7 @@ namespace knet
 
 			bool connect(const KNetUrl & urlInfo    )
 			{		 
-				dlog("start to connect {}:{}", urlInfo.get_host(), urlInfo.get_port()); 
+				knet_dlog("start to connect {}:{}", urlInfo.get_host(), urlInfo.get_port()); 
 				remote_host = urlInfo.get_host(); 
 				remote_port = urlInfo.get_port(); 
 				passive_mode = false; 

@@ -74,7 +74,7 @@ namespace knet
 				{
 					return connection->is_connected();
 				}else {
-					wlog("pipe is not ready, {}",pipe_id); 
+					knet_wlog("pipe is not ready, {}",pipe_id); 
 				}
 				return false;
 			}

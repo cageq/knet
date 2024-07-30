@@ -37,11 +37,11 @@ public:
         TestMsg recvMsg; 
         gettimeofday(&recvMsg.time,0); 
         //total_time  +=  (recvMsg.time.tv_usec - tMsg->time.tv_usec) ; 
-       // dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
+       // knet_dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  ); 
 
-	    dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
+	    knet_dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
         if (last_index +1 != tMsg->index){
-            elog("wrong seqence"); 
+            knet_elog("wrong seqence"); 
             exit(0); 
         }
         last_index = tMsg->index; 
@@ -49,7 +49,7 @@ public:
 	}
 	virtual bool handle_event(knet::NetEvent evt) {
 
-//        dlog("handle net event {}", evt); 
+//        knet_dlog("handle net event {}", evt); 
 
 		if (evt == knet::NetEvent::EVT_CONNECT)
 		{
@@ -67,8 +67,8 @@ public:
 
 int main(int argc, char** argv)
 {
-		KNetLogIns.add_console();  
-	dlog("init client ");
+	knet_add_console_sink();  
+	knet_dlog("init client ");
 	TcpConnector<TcpSession>  connector;
 
 	connector.start();
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 	uint32_t speed = 2000; 
     while(true){
         
-        //dlog("connection status {}", conn->is_connected()); 
+        //knet_dlog("connection status {}", conn->is_connected()); 
         if (conn && conn->is_connected()){
 
             TestMsg recvMsg; 
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
                 conn->sync_send((const char *)&recvMsg, sizeof(TestMsg) );
             }
         }else{
-            dlog("not connected"); 
+            knet_dlog("not connected"); 
         }
 
 		if (index %speed == 0)

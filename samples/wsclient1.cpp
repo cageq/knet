@@ -10,7 +10,7 @@ using namespace knet::websocket;
 
 int main(int argc, char** argv)
 {
-	dlog("init client "); 
+	knet_dlog("init client "); 
 	Connector<WSockConnection>  connector;  
 	connector.start(); 
 

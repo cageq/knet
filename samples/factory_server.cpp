@@ -12,7 +12,7 @@ class TcpSession : public TcpConnection<TcpSession>
 		TcpSession() { }
 
 		virtual ~TcpSession() {
-			dlog("destroy tcp session");
+			knet_dlog("destroy tcp session");
 		}
  
 };
@@ -27,17 +27,17 @@ class MyFactory: public knet::KNetFactory<TcpSession>, public knet::KNetHandler<
 
 		virtual void on_create(TPtr ptr) {
 
-			dlog("connection created event in my factory "); 
+			knet_dlog("connection created event in my factory "); 
 		}
 
 		virtual void on_release(TPtr ptr) { 
-			dlog("connection release event in my factory "); 
+			knet_dlog("connection release event in my factory "); 
 		}
 
 
 
 		virtual bool handle_event(TPtr conn, knet::NetEvent evt) {
-			ilog("handle event in connection my factory {}", static_cast<uint32_t>(evt)  ); 
+			knet_ilog("handle event in connection my factory {}", static_cast<uint32_t>(evt)  ); 
 			return true; 
 		}
 
@@ -50,9 +50,9 @@ class MyFactory: public knet::KNetFactory<TcpSession>, public knet::KNetHandler<
 
 int main(int argc, char **argv)
 {
- KNetLogIns.add_console(); 
+ knet_add_console_sink();  
 	MyFactory factory; 
-	dlog("start server");
+	knet_dlog("start server");
 	TcpListener<TcpSession,MyFactory> listener(&factory);
 	int port = 8888;
 	listener.start(  port); 
@@ -60,10 +60,10 @@ int main(int argc, char **argv)
 	//			switch (evt)
 	//			{
 	//			case EVT_CREATE:
-	//			dlog("on create connection");
+	//			knet_dlog("on create connection");
 	//			break;
 	//			case EVT_CONNECT:
-	//			dlog("on connection established");
+	//			knet_dlog("on connection established");
 	//			break;
 	//			case EVT_CONNECT_FAIL:
 	//			break;
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	//
 	//			return 0;
 	//			});
-	dlog("start server on port {}", port);
+	knet_dlog("start server on port {}", port);
 
 	char c = getchar();
 	while (c)
@@ -87,6 +87,6 @@ int main(int argc, char **argv)
 	}
 
 	listener.stop(); 
-	dlog("quit server");
+	knet_dlog("quit server");
 	return 0;
 }

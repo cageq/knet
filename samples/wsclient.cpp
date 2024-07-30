@@ -10,7 +10,7 @@ using namespace knet::websocket;
 
 int main(int argc, char** argv)
 {
-	dlog("init websocket client "); 
+	knet_dlog("init websocket client "); 
 	WSockClient  wsClient;  
 	wsClient.start(); 
 
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 	WSockHandler<WSockConnection> wsHandler; 
 	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const  std::string & msg  ){
 
-		wlog("on websocket message {}", msg); 
+		knet_wlog("on websocket message {}", msg); 
 	}; 
 
 	wsconn->wsock_handler = wsHandler; 
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(5000)); 
 		wsconn->send_text("hello world");  
-		dlog("websocket client log "); 
+		knet_dlog("websocket client log "); 
 	}
 
 	//char c = getchar(); 

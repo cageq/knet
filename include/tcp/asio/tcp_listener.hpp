@@ -77,14 +77,14 @@ namespace knet
 					{
 						is_running = true;
                         if(net_options.workers > 0){
-                            ilog("start user workers {}", net_options.workers); 
+                            knet_ilog("start user workers {}", net_options.workers); 
                             for(uint32_t i  = 0;i < net_options.workers; i ++){
                                 auto worker = std::make_shared<Worker>(); 
                                 worker->start(); 
                                 user_workers.push_back(worker); 
                             }
                         }
-                        ilog("start listen on {}:{} ", url_info.host, url_info.port);
+                        knet_ilog("start listen on {}:{} ", url_info.host, url_info.port);
 						asio::ip::tcp::endpoint endpoint(asio::ip::make_address(url_info.host),url_info.port  );
 
 						// this->tcp_acceptor.open(asio::ip::tcp::v4());
@@ -96,14 +96,14 @@ namespace knet
 							asio::error_code ec;
 							this->tcp_acceptor->bind(endpoint, ec);
 							if (ec) {
-								elog("bind address failed {}:{}", url_info.host, url_info.port);
+								knet_elog("bind address failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
 								return false;
 							}
 							this->tcp_acceptor->listen(net_options.backlogs, ec);
 
 							if (ec) {
-								elog("start listen failed {}:{}", url_info.host, url_info.port);
+								knet_elog("start listen failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
 								return false;
 							}
@@ -135,7 +135,7 @@ namespace knet
 				}
 
 				void stop() {
-					dlog("stop listener thread");
+					knet_dlog("stop listener thread");
 					if (is_running)
 					{
 						is_running = false;
@@ -255,7 +255,7 @@ namespace knet
 					while(is_running){  
 							auto worker = this->get_worker();
 							if (!worker) {
-								elog("no event worker, can't start tcp listener");
+								knet_elog("no event worker, can't start tcp listener");
 								return false ;
 							} 
 
@@ -267,7 +267,7 @@ namespace knet
 								auto socket = std::make_shared<Socket>(std::move(sock),   worker->thread_id(), worker, ssl_context);
 							 
 								pthread_t curTid = pthread_self();				
-								ilog("accept new connection from {}:{}, tid {}", remoteAddr.address().to_string(), remoteAddr.port(), curTid);
+								knet_ilog("accept new connection from {}:{}, tid {}", remoteAddr.address().to_string(), remoteAddr.port(), curTid);
 
 								socket->socket().set_option( asio::ip::tcp::no_delay(true));
 								asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
@@ -277,7 +277,7 @@ namespace knet
 
 								this->init_conn(worker, socket);
 							}else {											// An error occurred.
-								elog("get remote address failed: {}:{}", ec.value(), ec.message());
+								knet_elog("get remote address failed: {}:{}", ec.value(), ec.message());
 								sock.close();
 							}
 						}
@@ -288,7 +288,7 @@ namespace knet
 				{
 					auto worker = this->get_worker();
 					if (!worker) {
-						elog("no event worker, can't start");
+						knet_elog("no event worker, can't start");
 						return false ;
 					}
 
@@ -304,15 +304,15 @@ namespace knet
 								asio::error_code ec;
 								asio::ip::tcp::endpoint remoteAddr = socket->socket().remote_endpoint(ec);
                                 if (!ec) {																
-                                    ilog("accept new connection from {}:{} ", remoteAddr.address().to_string(), remoteAddr.port());
+                                    knet_ilog("accept new connection from {}:{} ", remoteAddr.address().to_string(), remoteAddr.port());
                                     this->init_conn(worker, socket);
                                 }else {											// An error occurred.
-                                    elog("get remote address failed: {}:{}", ec.value(), ec.message());
+                                    knet_elog("get remote address failed: {}:{}", ec.value(), ec.message());
                                     socket->socket().close();
                                 }
                                     do_accept();
                                 } else {
-								elog("accept error: {},{}",ec.value(), ec.message());
+								knet_elog("accept error: {},{}",ec.value(), ec.message());
 								if (ec.value() == 24 ){  //too many open files
 									do_accept();
 								}
@@ -331,7 +331,7 @@ namespace knet
 					}
 					else
 					{
-						//dlog("dispatch work to listen worker {}", std::this_thread::get_id());
+						//knet_dlog("dispatch work to listen worker {}", std::this_thread::get_id());
 						return listen_worker;
 					}
 				}

@@ -49,7 +49,7 @@ namespace knet
 			{
 				url_info = urlInfo; 
 				if (!net_worker){
-					elog("should init worker first"); 
+					knet_elog("should init worker first"); 
 					return nullptr; 
 				}
 

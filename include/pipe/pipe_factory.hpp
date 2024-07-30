@@ -23,7 +23,7 @@ namespace knet
 			virtual bool handle_event(TPtr conn, NetEvent evt) override
 			{
 				auto session = conn->get_session();
-				//ilog("pipe factory event {} {} ", evt, event_string(evt) );
+				//knet_ilog("pipe factory event {} {} ", evt, event_string(evt) );
 				switch (evt)
 				{
 				case EVT_CONNECT:
@@ -50,7 +50,7 @@ namespace knet
 
 				if (session)
 				{
-					dlog("handle session event {}", static_cast<uint32_t>(evt));
+					knet_dlog("handle session event {}", static_cast<uint32_t>(evt));
 					session->handle_event(evt);
 				}
 				return false;
@@ -61,13 +61,13 @@ namespace knet
 				PipeMsgHead *msg = (PipeMsgHead *)data;
 				if (msg->length + sizeof(PipeMsgHead) > dataLen)
 				{
-					wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
+					knet_wlog("data not enough, need length {}", msg->length + sizeof(PipeMsgHead));
 					return 0;
 				}
-				dlog("pipe message type {}", msg->type);
+				knet_dlog("pipe message type {}", msg->type);
 				if (msg->type == PIPE_MSG_SHAKE_HAND)
 				{
-					dlog("handle pipe shake hande message ");
+					knet_dlog("handle pipe shake hande message ");
 					if (conn->is_passive())
 					{ //server side
 						process_server_handshake(conn, msg);
@@ -78,7 +78,7 @@ namespace knet
 					}
 					return true;
 				}else if (msg->type == PIPE_MSG_HEART_BEAT){
-					dlog("handle pipe heartbeat message"); 
+					knet_dlog("handle pipe heartbeat message"); 
 					if (!conn->is_passive())
 					{
 						conn->send_heartbeat(); 
@@ -95,7 +95,7 @@ namespace knet
 				{
 					if (conn->is_passive())
 					{
-						wlog("connection has no session, send shakehand challenge");
+						knet_wlog("connection has no session, send shakehand challenge");
 						PipeMsgHead shakeMsg{0, PIPE_MSG_SHAKE_HAND, 0 }; //challenge client to send shakehand again
 						conn->msend(shakeMsg);
 					}
@@ -114,13 +114,13 @@ namespace knet
 				if (msg->length > 0)
 				{
 					std::string pipeId = std::string((const char *)msg + sizeof(PipeMsgHead), msg->length);
-					dlog("handshake from client,  pipeid is {}", pipeId);
+					knet_dlog("handshake from client,  pipeid is {}", pipeId);
 					auto pipe = find_bind_pipe(pipeId);
 					if (pipe)
 					{
 						if (!pipe->is_ready()){
 							pipe->bind(conn);
-							ilog("bind pipe {} success", pipeId);
+							knet_ilog("bind pipe {} success", pipeId);
 							PipeMsgHead shakeMsg{ static_cast<uint32_t>(pipeId.length()),PIPE_MSG_SHAKE_HAND,0};
 							conn->msend(shakeMsg, pipeId);
 					
@@ -130,7 +130,7 @@ namespace knet
 					}
 					else
 					{
-						wlog("pipe id not found {}, close connection", pipeId);
+						knet_wlog("pipe id not found {}, close connection", pipeId);
 						conn->close();
 					}
 				}
@@ -146,7 +146,7 @@ namespace knet
 					}
 					else
 					{
-						//dlog("create and bind session success {}", pipeId);
+						//knet_dlog("create and bind session success {}", pipeId);
 						session = std::make_shared<PipeSession>();
 						session->bind(conn);
 						add_unbind_pipe(conn->get_cid(), session);
@@ -173,7 +173,7 @@ namespace knet
 						if (!session->is_ready()){
 							session->bind(conn);
 							session->update_pipeid(pipeId);
-							dlog("bind pipe session success, {}", pipeId);
+							knet_dlog("bind pipe session success, {}", pipeId);
 							session->handle_event(NetEvent::EVT_CONNECT);
 						}
 					}
@@ -185,7 +185,7 @@ namespace knet
 						{
 							session->bind(conn);
 							session->update_pipeid(pipeId);
-							dlog("rebind pipe session success, {}",pipeId);		
+							knet_dlog("rebind pipe session success, {}",pipeId);		
 							add_bind_pipe(pipeId, session);
 							remove_unbind_pipe(conn->get_cid());
 							session->handle_event(NetEvent::EVT_CONNECT);
@@ -193,7 +193,7 @@ namespace knet
 						}
 						else
 						{
-							wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
+							knet_wlog("pipe id not found {} cid is {}", pipeId, conn->get_cid());
 							conn->close();
 						}
 					}
@@ -201,7 +201,7 @@ namespace knet
 				else
 				{
 					conn->send_shakehand(conn->get_pipeid());
-					wlog("handshake from server is empty, resend client shakehand {}", conn->get_cid());
+					knet_wlog("handshake from server is empty, resend client shakehand {}", conn->get_cid());
 				}
 			}
 
@@ -283,13 +283,13 @@ namespace knet
 					{
 						if (cid != 0)
 						{
-							dlog("add unbind pipe {}", cid);
+							knet_dlog("add unbind pipe {}", cid);
 							add_unbind_pipe(cid, pipe);
 						}
 					}
 					else
 					{
-						dlog("add normal pipe {}", pipe->get_pipeid());
+						knet_dlog("add normal pipe {}", pipe->get_pipeid());
 						add_bind_pipe(pipe->get_pipeid(), pipe);
 					}
 				}
@@ -305,7 +305,7 @@ namespace knet
 						auto &pipe = item.second;
 						if (pipe && pipe->get_port() != 0 && !pipe->get_host().empty())
 						{
-							dlog("start connect pipe to {}:{}", pipe->get_host(), pipe->get_port());
+							knet_dlog("start connect pipe to {}:{}", pipe->get_host(), pipe->get_port());
 							if (handler)
 							{
 								handler(pipe);
@@ -321,7 +321,7 @@ namespace knet
 						auto &pipe = item.second;
 						if (pipe && pipe->get_port() != 0 && !pipe->get_host().empty())
 						{
-							dlog("start connect pipe to {}:{}", pipe->get_host(), pipe->get_port());
+							knet_dlog("start connect pipe to {}:{}", pipe->get_host(), pipe->get_port());
 							if (handler)
 							{
 								handler(pipe);

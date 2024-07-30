@@ -14,7 +14,7 @@ void * user_task()
 	while(true) { 
 		if (!data_buffer.empty()){ 
 
-			dlog("process message in user thread" ); 
+			knet_dlog("process message in user thread" ); 
 			data_mutex.lock(); 
 			for(auto & msg:data_buffer) 
 			{
@@ -36,8 +36,8 @@ void * user_task()
 
 
 int TcpSession::on_recv(char *pBuf, uint32_t len) {
-	//		dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
-	//		dlog("received data %s ", pBuf);
+	//		knet_dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
+	//		knet_dlog("received data %s ", pBuf);
 
 	data_mutex.lock(); 
 	NetMsg msg { shared_from_this(), std::string(pBuf,len)}; 
@@ -49,18 +49,18 @@ int TcpSession::on_recv(char *pBuf, uint32_t len) {
 
 
 void MyFactory::destroy(TPtr conn) {
-	dlog("connection factory destroy connection in factory "); 
+	knet_dlog("connection factory destroy connection in factory "); 
 }	
 
 		void MyFactory::handle_event(TPtr conn, NetEvent evt) { 
-	ilog("### handle event in my connection factory ", evt); 
+	knet_ilog("### handle event in my connection factory ", evt); 
 	if (evt == EVT_CONNECT) 
 	{
 	} else if (evt == EVT_DISCONNECT) 
 	{
 	}
 }
-int32_t MyFactory::handle_data(TPtr conn, const char * data, uint32_t len) { 
+int32_t MyFactory::handle_data(TPtr conn,  char * data, uint32_t len) { 
 	return len ;
 }; 
 
@@ -70,11 +70,11 @@ int32_t MyFactory::handle_data(TPtr conn, const char * data, uint32_t len) {
 int main(int argc, char **argv)
 {
 	MyFactory factory; 
-	dlog("start server");
+	knet_dlog("start server");
 	Listener<TcpSession> listener(factory);
 	int port = 8899;
 	listener.start(  port); 
-	dlog("start server on port %d", port);
+	knet_dlog("start server on port %d", port);
 
 	//pthread_t tid ; 
 	//pthread_create(&tid,nullptr, &user_task, nullptr); 
@@ -91,6 +91,6 @@ int main(int argc, char **argv)
 	}
 	user_thread.join(); 
 
-	dlog("quit server");
+	knet_dlog("quit server");
 	return 0;
 }

@@ -36,7 +36,7 @@ namespace knet
 				}
 			}
 			bool start(const KNetUrl &  url, EventHandler evtHandler = nullptr, FactoryPtr fac  = nullptr){
-				dlog("start kcp server at {}:{}",url.host,url.port); 
+				knet_dlog("start kcp server at {}:{}",url.host,url.port); 
 				net_factory = fac; 
 				listen_port = url.port;  
 				run();
@@ -120,7 +120,7 @@ namespace knet
 												  {
 													  if (!ec && bytes_recvd > 0)
 													  {
-														  dlog("received data {} from {}:{}", bytes_recvd,
+														  knet_dlog("received data {} from {}:{}", bytes_recvd,
 															   remote_point.address().to_string(), remote_point.port());
 
 														  auto conn = this->find_connection(this->remote_point);
@@ -143,7 +143,7 @@ namespace knet
 													  }
 													  else
 													  {
-														  elog("receive error");
+														  knet_elog("receive error");
 													  }
 												  });
 			}
@@ -153,7 +153,7 @@ namespace knet
 
 				default_worker->post([this]()
 									 {
-										 dlog("start kcp server @ {}", listen_port);
+										 knet_dlog("start kcp server @ {}", listen_port);
 										 server_socket = std::make_shared<udp::socket>(default_worker->context(), udp::endpoint(udp::v4(), listen_port));
 										 do_receive();
 				 });

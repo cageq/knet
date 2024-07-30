@@ -40,7 +40,7 @@ namespace knet
 
 			bool start(uint16_t port = 8888, const std::string &host = "0.0.0.0", const NetOptions & netOpts = {})
 			{
-				dlog("start http server {}:{}", host, port);
+				knet_dlog("start http server {}:{}", host, port);
 				http_listener.start({"tcp", host, port}, netOpts);
 				return true;
 			}

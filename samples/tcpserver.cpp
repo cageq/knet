@@ -10,35 +10,45 @@ class TcpSession : public TcpConnection<TcpSession>{
 	public: 
 		typedef std::shared_ptr<TcpSession> TcpSessionPtr; 
 		TcpSession() { 
-			//ilog("session create with {}", val);
+			//knet_ilog("session create with {}", val);
 			// bind_data_handler(&TcpSession::on_recv ); 
 			//bind_event_handler([](   TcpSessionPtr, knet::NetEvent evt  ){ 
-			//		ilog("on recv event", evt);
+			//		knet_ilog("on recv event", evt);
 			//		return 0; 
 			//		} ); 
 		}
 		virtual ~TcpSession() {
-			dlog("destroy tcp session");
+			knet_dlog("destroy tcp session");
 		}
 		virtual bool handle_event(knet::NetEvent evt) {
 
-		//	dlog("handle my tcp event {}", evt); 
+		//	knet_dlog("handle my tcp event {}", evt); 
+        if (evt == knet::EVT_CONNECT){
+
+            //auto timerId = start_timer([](){
+            //    dlog(" my timer timeout " ); 
+            //    return true; 
+            //        }, 1000000); 
+
+            //dlog("my timer id is {}", timerId); 
+        }
 
 			return true; 
 		}
 	
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
-		virtual bool handle_data(const std::string &msg ) {
-			//this->send(msg);
+		virtual bool handle_data(char * data, uint32_t dataLen ) {
 			
-            this->send(msg); 
+ //           knet_dlog("handle message :{}", data); 
+//            this->sync_send(msg.data(), msg.length() ); 
+            this->send(data, dataLen ); 
 			return true; 		
 		}
 };
 
 int main(int argc, char **argv)
 {
-	KNetLogIns.add_console(); 
+	knet_add_console_sink();  
  
     // dout << "test tcp server with cout format " << std::endl; 
     // iout << "test tcp server with cout format " << std::endl; 
@@ -72,10 +82,10 @@ int main(int argc, char **argv)
 //			switch (evt)
 //			{
 //			case EVT_CREATE:
-//			dlog("on create connection");
+//			knet_dlog("on create connection");
 //			break;
 //			case EVT_CONNECT:
-//			dlog("on connection established");
+//			knet_dlog("on connection established");
 //			break;
 //			case EVT_CONNECT_FAIL:
 //			break;
@@ -85,7 +95,7 @@ int main(int argc, char **argv)
 //
 //			return 0;
 //			});
-	dlog("start server on port {} , status {}", port,ret );
+	knet_dlog("start server on port {} , status {}", port,ret );
   	//co_sched.Start(4);
 
 	char c = getchar();
@@ -100,6 +110,6 @@ int main(int argc, char **argv)
 	}
     listener.stop(); 
 
-	//dlog("quit server");
+	//knet_dlog("quit server");
 	return 0;
 }

@@ -7,15 +7,15 @@ using namespace knet::websocket;
 int main(int argc, char** argv)
 {
 
-	KNetLogIns.add_console(); 
+	knet_add_console_sink(); 
  
-	dlog("init websocket server "); 
+	knet_dlog("init websocket server "); 
 	WSockSslServer<> wsServer; 
 
 	WSockHandler<WSockSslConnection> wsHandler; 
 	wsHandler.message = [](std::shared_ptr<WSockSslConnection> conn, const std::string_view &  msg){
 
-		wlog("on websocket message:  {}", msg); 
+		knet_wlog("on websocket message:  {}", msg); 
 	 	conn->send_text("hello client",OpCode::TEXT_FRAME,false); 
 	}; 
 	wsServer.register_router("/echo", wsHandler); 

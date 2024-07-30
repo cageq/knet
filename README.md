@@ -8,7 +8,7 @@ Simple morden c++ network library wrapper based on asio standalone version, prov
 
 
 ## Build 
-need c++17 to compile it. 
+need c++17 supported compiler to compile it. 
 
 It is a headonly library, basically you can copy all files to you project and use it. 
 
@@ -107,17 +107,17 @@ class MyFactory: public KNetFactory<TcpSession> {
 // TcpSession is your real session class  to process your session events and data 
     public:
         virtual void on_create(TPtr ptr) override { 
-            dlog("connection created event in my factory "); 
+            knet_dlog("connection created event in my factory "); 
         }
 
         virtual void on_release(TPtr ptr) override { 
-            dlog("connection release event in my factory "); 
+            knet_dlog("connection release event in my factory "); 
         } 
 		 
 }; 
 
 MyFactory factory; 
-dlog("start server");
+knet_dlog("start server");
 // create a factory instance and pass it to listener.
 TcpListener<TcpSession,MyFactory> listener(&factory);
 int port = 8899;

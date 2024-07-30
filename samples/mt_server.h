@@ -25,7 +25,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 		}
 
 		virtual ~TcpSession() {
-			dlog("destroy tcp session");
+			knet_dlog("destroy tcp session");
 		}
 
 
@@ -36,7 +36,7 @@ class TcpSession : public TcpConnection<TcpSession> {
 		}
 
 		void on_disconnect() {
-			dlog("on session disconnect");
+			knet_dlog("on session disconnect");
 			//   trace;
 		}
 
@@ -57,7 +57,7 @@ class MyFactory: public ConnFactory<TcpSession > {
 
 		virtual void handle_event(TPtr conn, NetEvent evt) ; 
 
-		virtual bool handle_data(TPtr conn, const char * data, uint32_t len) ;  
+		virtual bool handle_data(TPtr conn,   char * data, uint32_t len) override ;  
 
 
 }; 

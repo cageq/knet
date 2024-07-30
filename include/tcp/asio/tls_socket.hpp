@@ -79,7 +79,7 @@ namespace knet {
                         char subject_name[256];
                         X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
                         X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);                        
-                        dlog("verifying ca {}", subject_name); 
+                        knet_dlog("verifying ca {}", subject_name); 
                         // return preverified;
                         return true;
                     }
@@ -88,7 +88,7 @@ namespace knet {
                         url_info = urlInfo; 
                         tcp::resolver resolver(io_worker->context());
                         auto result = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
-                        dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);                        
+                        knet_dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);                        
                         //sslsock.lowest_layer().close(); 
                        // sslsock.lowest_layer() = std::move(tcp::socket(io_context)); 
                         if ( urlInfo.has("bind_port")) {
@@ -109,11 +109,11 @@ namespace knet {
                                     self->sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
                                 }
                                 
-                                dlog("connect to {}:{} success",url_info.host,url_info.port);       
+                                knet_dlog("connect to {}:{} success",url_info.host,url_info.port);       
                                 self->init_read(true); 
                                                                     
                             }else {
-                                dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
+                                knet_dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
                                 self->sslsock.lowest_layer().close();
                                 self->socket_status = SocketStatus::SOCKET_CLOSED; 
                             }
@@ -123,18 +123,18 @@ namespace knet {
                     }
 
                     void handshake(bool isClient = false) {
-                        dlog("start ssl handshake");
+                        knet_dlog("start ssl handshake");
                        
                         auto self = TlsSocket<T>::shared_from_this();
                         sslsock.async_handshake(isClient ? asio::ssl::stream_base::client : asio::ssl::stream_base::server,
                             [self](const std::error_code& error) {
                                 if (!error) {
                                     self->ssl_shakehand = true;
-                                    dlog("tls handshake success ");
+                                    knet_dlog("tls handshake success ");
                                     self->connection->handle_event(EVT_CONNECT);
                                     self->do_read();
                                 } else {
-                                    elog("tls handshake failed {}", error.message());                                     
+                                    knet_elog("tls handshake failed {}", error.message());                                     
                                     self->sslsock.lowest_layer().close();
                                 }
                             });
@@ -168,18 +168,18 @@ namespace knet {
                                 sslsock.async_read_some(
                                         buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
                                         if (!ec) {
-                                            dlog("received data length {}", bytes_transferred);								 
+                                            knet_dlog("received data length {}", bytes_transferred);								 
                                             process_data(bytes_transferred);
                                             self->do_read();
                                         }
                                         else {
-                                            elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+                                            knet_elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
                                             do_close();
                                         }
                                         });
 
                             }else {						
-                                wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
+                                knet_wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
                                 process_data(0);
                                 if (read_buffer_pos >= kReadBufferSize ){
                                     //packet size exceed the limit, so we close it. 
@@ -189,7 +189,7 @@ namespace knet {
                             }	
                         }
                         else {
-                            dlog("socket is not open");
+                            knet_dlog("socket is not open");
                         }
                     }
                     int32_t sync_send(const char* pData, uint32_t dataLen) {
@@ -197,7 +197,7 @@ namespace knet {
                             try {
                                 return asio::write(sslsock.lowest_layer(), asio::const_buffer(pData, dataLen));
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_send write failed {}", ex.what()); 
+                                knet_elog("sync_send write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -213,7 +213,7 @@ namespace knet {
                             try {
                                 return asio::write(sslsock.lowest_layer(), asioBuffers);
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_sendv write failed {}", ex.what()); 
+                                knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -229,7 +229,7 @@ namespace knet {
                             try {
                                 return asio::write(sslsock.lowest_layer(), asioBuffers);
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_sendv write failed {}", ex.what()); 
+                                knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -256,7 +256,7 @@ namespace knet {
                             return asio::write(sslsock.lowest_layer(), asio::const_buffer(send_buffer));      
                         
                         }  catch(const  asio::system_error &ex ){
-                            elog("mpush_sync failed {}", ex.what()); 
+                            knet_elog("mpush_sync failed {}", ex.what()); 
                         }
                         return -1; 
                      }
@@ -369,7 +369,7 @@ namespace knet {
                                     cache_buffer.clear();                                 
                                     self->do_async_write();                          
                                 }else {
-                                    ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
+                                    knet_ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
                                     cache_buffer.clear(); //drop cache buffer
                                     self->do_close();
                                 }
@@ -393,7 +393,7 @@ namespace knet {
                             int32_t pkgLen = this->connection->process_package(&read_buffer[readPos], read_buffer_pos); 
                             if ( pkgLen <= 0 || pkgLen >  read_buffer_pos){
                                 if (pkgLen > kReadBufferSize) {
-                                //   wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, kReadBufferSize);
+                                //   knet_wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, kReadBufferSize);
                                     this->do_close(); 
                                     return false;
                                 }                                
@@ -416,7 +416,7 @@ namespace knet {
                     void close() { 
 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("close, in status {}", static_cast<uint32_t>(socket_status));
+                            knet_dlog("close, in status {}", static_cast<uint32_t>(socket_status));
                             return;
                         }
 
@@ -449,7 +449,7 @@ namespace knet {
 
                     void do_close( ) {			 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            dlog("do close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
+                            knet_dlog("do close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
                             return;
                         }  
                         socket_status = SocketStatus::SOCKET_CLOSING;   

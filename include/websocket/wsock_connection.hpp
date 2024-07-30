@@ -4,7 +4,8 @@
 //	author:		arthur wong
 //***************************************************************
 #pragma once
- #include <fmt/format.h>
+#include <iostream> 
+#include <fmt/format.h>
 
 #include "http/http_url.hpp" 
 #include "http/http_parser.hpp"
@@ -41,7 +42,7 @@ public:
 			
 				if (first_request) {
 					auto msg = first_request->encode();
-					dlog("send first request  {} :\n{}", msg.length(), msg);
+					knet_dlog("send first request  {} :\n{}", msg.length(), msg);
 					this->msend(first_request->encode());
 					m_status = WSockStatus::WSOCK_CONNECTING;
 				} 
@@ -54,10 +55,10 @@ public:
 		// bind_data_handler(&WSockConnection::handle_data);
 
 		// bind_message_handler([this](const char* pMsg, uint32_t len ) {
-		// 	// dlog("handle message {}", std::string(pMsg, len));
-		// 	dlog("handle message {}", pMsg);
-		// 	dlog("message length {}", len);
-		// 	dlog("message status {}", status);
+		// 	// knet_dlog("handle message {}", std::string(pMsg, len));
+		// 	knet_dlog("handle message {}", pMsg);
+		// 	knet_dlog("message length {}", len);
+		// 	knet_dlog("message status {}", status);
 
 		// 	//this->send_text(std::string(pMsg, len));
 		// });
@@ -71,22 +72,22 @@ public:
 	// int read_packet(const char* pData, uint32_t dataLen) {
 	// 	if (m_status == WSockStatus::WSOCK_CONNECTING) {
 	// 		size_t parseRst = http_parser_execute(&m_parser, &m_parse_settings, pData, dataLen);
-	// 		dlog("received message \n{}", pData);
-	// 		dlog("received data length is %ld parse result is %ld", dataLen, parseRst);
+	// 		knet_dlog("received message \n{}", pData);
+	// 		knet_dlog("received data length is %ld parse result is %ld", dataLen, parseRst);
 	// 		if (m_parser.upgrade) {
 	// 			m_status = WSockStatus::WSOCK_OPEN;
-	// 			dlog("success upgrade to websocket ");
+	// 			knet_dlog("success upgrade to websocket ");
 	// 			return parseRst;
 	// 		}
 	// 	} else {
 	// 	}
 
-	// 	dlog("on read package ");
+	// 	knet_dlog("on read package ");
 	// 	return dataLen;
 	// }
 
 	int send_text(const std::string& msg, OpCode op = TEXT_FRAME, bool mask = true) {
-		dlog("send text length is {}", msg.length());
+		knet_dlog("send text length is {}", msg.length());
 		std::vector<uint8_t> header;
 		//uint8_t maskKey[4] = {0x12, 0x34, 0x56, 0x78}; 
 		uint8_t maskKey[4] ; 
@@ -157,7 +158,7 @@ public:
 		}
 		
 		parse_message((const char*)header.data(), header.size());
-		dlog("send head length {}, message length {} ", header.size(),sendMsg.length()); 
+		knet_dlog("send head length {}, message length {} ", header.size(),sendMsg.length()); 
 
 		return this->msend(std::string((char*)header.data(), header.size()), sendMsg);
 	}
@@ -175,25 +176,25 @@ public:
 
 	// will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 	// int32_t handle_raw_data(char* pBuf, uint32_t len) {
-	// 	// dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
+	// 	// knet_dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
 
 	// 	if (m_status == WSockStatus::WSOCK_CONNECTING) {
 	// 		size_t parseRst = http_parser_execute(&m_parser, &m_parse_settings, pBuf, len);
 
-	// 		dlog("received message \n{}", pBuf);
-	// 		dlog("received data length is {} parse result is {}", len, parseRst);
+	// 		knet_dlog("received message \n{}", pBuf);
+	// 		knet_dlog("received data length is {} parse result is {}", len, parseRst);
 	// 		if (m_parser.upgrade) {
 	// 			m_status = WSockStatus::WSOCK_OPEN;
-	// 			dlog("success upgrade to websocket ");
+	// 			knet_dlog("success upgrade to websocket ");
 	// 			is_websocket = true;
 	// 			// this->send_text("hello world");
 	// 			return parseRst;
 	// 		}
 	// 	} else {
-	// 		dlog("received buffer length {}", len);
+	// 		knet_dlog("received buffer length {}", len);
 	// 		uint32_t ret = wsock_reader.read(pBuf, len, message_handler);
 
-	// 		dlog("have read buffer data {}", ret);
+	// 		knet_dlog("have read buffer data {}", ret);
 	// 		return ret;
 	// 	}
 
@@ -271,12 +272,12 @@ public:
 			rsp.add_header("Sec-WebSocket-Accept", secWebSocketAccept);
 			rsp.add_header("Accept-Encoding","gzip, deflate"); 
 			write(rsp);
-			dlog("send websocket response success");
+			knet_dlog("send websocket response success");
 
 			is_websocket = true;
 			return true;
 		}else {
-			elog("bad websocket key {}", secWebSocketKey);
+			knet_elog("bad websocket key {}", secWebSocketKey);
 			reply("bad websocket key",400); 
 		}
 		

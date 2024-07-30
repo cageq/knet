@@ -11,12 +11,12 @@ class MyConnection : public UdpConnection<MyConnection >
 
     virtual ~MyConnection(){}
 	virtual PackageType handle_package(const std::string & msg ) {
-	    wlog("on recv udp message {} , lenght is {}", msg.data(), msg.length());
+	    knet_wlog("on recv udp message {} , lenght is {}", msg.data(), msg.length());
 	    return PACKAGE_USER;
 	}
     virtual bool handle_data(const std::string &msg)
     {
-        dlog("hand udp message {}",msg); 
+        knet_dlog("hand udp message {}",msg); 
         return true; 
     }
 }; 
@@ -24,7 +24,7 @@ class MyConnection : public UdpConnection<MyConnection >
 int main(int argc , char * argv[])
 {   
 
-	KNetLogIns.add_console(); 
+	knet_add_console_sink(); 
     UdpConnector<MyConnection> connector; 
     connector.start(); 
 
@@ -33,7 +33,7 @@ int main(int argc , char * argv[])
 
 	while(1){
 		conn->send("hello world",11);  
-//		dlog("udp client log "); 
+//		knet_dlog("udp client log "); 
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000)); 
     }
 

@@ -3,6 +3,7 @@
 #include "utils/knet_log.hpp"
 #include "http_message.hpp"
 
+using namespace knet::log; 
 namespace knet
 {
 	namespace http
@@ -175,14 +176,14 @@ namespace knet
 			// 			fmt::format_to(msgBuf, "\r\n{}", content);
 			// 		}
 
-			//         dlog("send response : \n{}", fmt::to_string(msgBuf));
+			//         knet_dlog("send response : \n{}", fmt::to_string(msgBuf));
 			// 		return fmt::to_string(msgBuf);
 			// 	} else {
 			// 		auto body = status_strings::to_string(status_code);
 			// 		fmt::format_to(msgBuf, "Content-Type: {}\r\n", mime_types::to_mime("txt"));
 			// 		fmt::format_to(msgBuf, "Content-Length: {}\r\n", body.length());
 			// 		fmt::format_to(msgBuf, "\r\n{}", body);
-			// 		dlog("send response : \n{}", fmt::to_string(msgBuf));
+			// 		knet_dlog("send response : \n{}", fmt::to_string(msgBuf));
 			// 		return fmt::to_string(msgBuf);
 			// 	}
 			// }

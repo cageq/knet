@@ -32,7 +32,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 	//	    running = false; 
 	//    }
 
-	//	ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 
+	//	knet_ilog("on recv udp message {} , lenght is {} ,cid is ", msg, msg.length(),cid); 
 		//std::string rsp = "message from server" ; 
 	//	send(msg.data(), msg.length()); 
 		send("welcome"); 
@@ -46,7 +46,7 @@ class MyConnection : public UdpConnection<MyConnection> {
 };
 int main(int argc, char* argv[]) {
 
-	KNetLogIns.add_console(); 
+	knet_add_console_sink(); 
 	UdpListener<MyConnection> udpListener;
 	udpListener.start(9000);
 

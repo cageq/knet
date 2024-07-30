@@ -1,12 +1,12 @@
 
 #include "http/http_server.hpp"
-
+#include <iostream> 
 using namespace knet::http;
 
 int main(int argc, char *argv[])
 {
 
-	KNetLogIns.add_console();
+	knet_add_console_sink();
 	HttpServer<> webSrv;
 	//when use auto , don't forget add "&"
 	webSrv.register_router("/", [](auto & req, auto & rsp)

@@ -18,27 +18,27 @@ class TcpSession : public TcpConnection<TcpSession, TlsSocket<TcpSession> >
 		}
 
 		virtual ~TcpSession() {
-			dlog("destroy tcp session");
+			knet_dlog("destroy tcp session");
 		}
 
 		// connection events
 		void on_connect() {
-			dlog("on connected "); 
+			knet_dlog("on connected "); 
 		}
 		//read on buffer for one package
 		//return one package length ,if not enough return -1
 
 		void on_disconnect()
 		{
-			dlog("on session disconnect");
+			knet_dlog("on session disconnect");
 			//   trace;
 		}
 
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 
-		bool handle_data(const std::string & msg ) {
-			//		dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
-					dlog("received data {} ", msg);
+		bool handle_data(char * data, uint32_t dataLen) override {
+			//		knet_dlog(" connection id %d on thread %d", m_id, std::this_thread::get_id());
+					knet_dlog("received data {} ", data);
                     return true; 
 			
 		}
@@ -49,8 +49,8 @@ class TcpSession : public TcpConnection<TcpSession, TlsSocket<TcpSession> >
 
 int main(int argc, char **argv)
 {
-	KNetLogIns.add_console();
-	dlog("start server");
+	knet_add_console_sink();
+	knet_dlog("start server");
 	TcpListener<TcpSession > listener; 
 	uint16_t  port = 8899;
 	auto sslCtx = init_ssl("ca/kstar.pem", "cert/dh2048.pem" ); 
@@ -62,10 +62,10 @@ int main(int argc, char **argv)
 //			switch (evt)
 //			{
 //			case EVT_CREATE:
-//			dlog("on create connection");
+//			knet_dlog("on create connection");
 //			break;
 //			case EVT_CONNECT:
-//			dlog("on connection established");
+//			knet_dlog("on connection established");
 //			break;
 //			case EVT_CONNECT_FAIL:
 //			break;
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 //
 //			return 0;
 //			});
-	dlog("start server on port {}", port);
+	knet_dlog("start server on port {}", port);
 
 	char c = getchar();
 	while (c)
@@ -88,6 +88,6 @@ int main(int argc, char **argv)
 		c = getchar();
 	}
 
-	dlog("quit server");
+	knet_dlog("quit server");
 	return 0;
 }

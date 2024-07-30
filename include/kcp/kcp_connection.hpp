@@ -56,7 +56,7 @@ public:
 	}
  
 	int32_t send(const char * data ,uint32_t len){
-		dlog("send user message on status {}", static_cast<uint32_t>(status));
+		knet_dlog("send user message on status {}", static_cast<uint32_t>(status));
 		if (status == CONN_KCP_READY) {
 			if (kcp) {
 				return ikcp_send(kcp, data, len);
@@ -122,7 +122,7 @@ public:
     }
 
 	virtual int32_t handle_package(const char* data, uint32_t len) { 
-		dlog("on recv kcp message {} , length {}", data, len);
+		knet_dlog("on recv kcp message {} , length {}", data, len);
 		return len;
 	}
 
@@ -142,7 +142,7 @@ public:
 				asio::buffer((const char*)&disconnect_message_, sizeof(KcpShakeHandMsg)),
 				remote_point, [=](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (ec) {						
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+						knet_dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
 
 					if (event_handler) {
@@ -168,7 +168,7 @@ private:
 	friend class KcpConnector;
 
 	void init_kcp() { 
-		dlog("create kcp cid is {}", cid);
+		knet_dlog("create kcp cid is {}", cid);
 		if (kcp != nullptr) {
 			ikcp_release(kcp);
 			kcp = nullptr;
@@ -200,7 +200,7 @@ private:
 		}
 
 		status = CONN_KCP_READY;
-		dlog("init kcp success , change status  to ready {}", static_cast<uint32_t>(status) );
+		knet_dlog("init kcp success , change status  to ready {}", static_cast<uint32_t>(status) );
 	}
 
 
@@ -208,7 +208,7 @@ private:
 	{
 		if (kcp_sock) {
 				asio::error_code ec;
-				dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
+				knet_dlog("send message {} to {}:{}", len, remote_point.address().to_string(),
 				remote_point.port());
 				int32_t ret = kcp_sock->send_to(asio::const_buffer(data, len), remote_point,0, ec); 
  
@@ -221,7 +221,7 @@ private:
 
 	int32_t do_send(const char* data, std::size_t length) {
 		if (kcp_sock) {
-			dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
+			knet_dlog("send message {} to {}:{}", length, remote_point.address().to_string(),
 				remote_point.port()); 
 	
 			auto buffer = std::make_shared<std::string>(data, length);
@@ -232,7 +232,7 @@ private:
 							event_handler(this->shared_from_this(), EVT_SEND,  "");
 						}
 					} else {
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+						knet_dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
 				 
 				});
@@ -246,7 +246,7 @@ private:
 
 		if (status != CONN_CLOSED) {
 			status = CONN_CLOSED;
-			dlog("release all resources {}", this->cid);
+			knet_dlog("release all resources {}", this->cid);
 			event_worker->stop_timer(heartbeat_timerid);
 			event_worker->stop_timer(kcp_timerid);
 
@@ -275,7 +275,7 @@ private:
 						timeNow.time_since_epoch() - last_msg_time);
 
 					if (elapseTime.count() > 3000) {
-						wlog("check heartbeat failed, closing connection");
+						knet_wlog("check heartbeat failed, closing connection");
 
 						if (event_handler) {
 							event_handler(self->shared_from_this(), EVT_DISCONNECT, {});
@@ -287,7 +287,7 @@ private:
 						self->send_heartbeat();
 					}
 
-					//ilog("check heartbeat timer {}", elapseTime.count());
+					//knet_ilog("check heartbeat timer {}", elapseTime.count());
 					return true; 
 				},
 				1000000);
@@ -308,7 +308,7 @@ private:
 						timeNow.time_since_epoch() - last_msg_time);
 
 					if (elapseTime.count() > 3000) {
-						wlog("check heartbeat failed, closing connection");
+						knet_wlog("check heartbeat failed, closing connection");
 
 						if (event_handler) {
 							event_handler(this->shared_from_this(), EVT_DISCONNECT, {});
@@ -321,7 +321,7 @@ private:
 						this->send_heartbeat();
 					}
 
-					//ilog("check heartbeat timer {}", elapseTime.count());
+					//knet_ilog("check heartbeat timer {}", elapseTime.count());
 					return true; 
 				},
 				1000000);
@@ -335,18 +335,18 @@ private:
 
 		if (kcp_sock) {
 			shakehand_request_.conv = id == 0 ? this->cid : id;
-			dlog("send shakehand request to client {}", shakehand_request_.conv);
+			knet_dlog("send shakehand request to client {}", shakehand_request_.conv);
 			kcp_sock->async_send_to(
 				asio::buffer((const char*)&shakehand_request_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-						dlog("send shakehand request successful {}", shakehand_request_.conv);
+						knet_dlog("send shakehand request successful {}", shakehand_request_.conv);
 					} else {
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+						knet_dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
 				});
 		} else {
-			elog("socket is not ready");
+			knet_elog("socket is not ready");
 		}
 	}
 
@@ -360,10 +360,10 @@ private:
 				asio::buffer((const char*)&shakehand_response_, sizeof(KcpShakeHandMsg)),
 				remote_point, [this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-					//dlog("send to remote point {}", remote_point); 
-						dlog("send shakehand response successful  {}", shakehand_response_.conv);
+					//knet_dlog("send to remote point {}", remote_point); 
+						knet_dlog("send shakehand response successful  {}", shakehand_response_.conv);
 					} else {
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+						knet_dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
 				});
 		}
@@ -375,9 +375,9 @@ private:
 				asio::buffer((const char*)&heartbeat_message_, sizeof(KcpHeartbeat)), remote_point,
 				[this](std::error_code ec, std::size_t len /*bytes_sent*/) {
 					if (!ec) {
-						//dlog("send heartbeat message successful {}", shakehand_response_.conv);
+						//knet_dlog("send heartbeat message successful {}", shakehand_response_.conv);
 					} else {
-						dlog("sent message , error code {}, {}", ec.value(), ec.message());
+						knet_dlog("sent message , error code {}, {}", ec.value(), ec.message());
 					}
 				});
 		}
@@ -386,7 +386,7 @@ private:
 		static uint32_t server_conv_index = 0x1000; 
 		KcpMsgHead* head = (KcpMsgHead*)pData;
 
-		//dlog("check shakehand status is {}, type is {}", status, head->cmd);
+		//knet_dlog("check shakehand status is {}, type is {}", status, head->cmd);
 		if (status == CONN_OPEN) {
 
 			switch (head->cmd) {
@@ -394,11 +394,11 @@ private:
 				KcpShakeHandMsg* shakeMsg = (KcpShakeHandMsg*)pData;
 				if (passive && shakeMsg->conv == 0 && this->cid == 0) {
 					this->cid = server_conv_index++;
-					wlog("allocate cid to client {}", this->cid);
+					knet_wlog("allocate cid to client {}", this->cid);
 				}
 
 				this->cid = shakeMsg->conv == 0 ? this->cid : shakeMsg->conv;
-				dlog("get shakehand request, cid is {} ", shakeMsg->conv);
+				knet_dlog("get shakehand request, cid is {} ", shakeMsg->conv);
 				if (this->cid != 0) {
 					this->shakehand_response(this->cid);
 					this->init_kcp();
@@ -411,9 +411,9 @@ private:
 			case KCP_SHAKEHAND_RESPONSE: {
 
 				KcpShakeHandMsg* shakeMsg = (KcpShakeHandMsg*)pData;
-				dlog("get shakehand response on open status, cid is {}", shakeMsg->conv);
+				knet_dlog("get shakehand response on open status, cid is {}", shakeMsg->conv);
 				if (this->cid == 0) {
-					wlog("update cid from other side {}", shakeMsg->conv);
+					knet_wlog("update cid from other side {}", shakeMsg->conv);
 					this->cid = shakeMsg->conv;
 				}
 
@@ -423,11 +423,11 @@ private:
 				}
 			} break;
 			case KCP_HEARTBEAT: {
-				dlog("receive heartbeat , ignore it ");
+				knet_dlog("receive heartbeat , ignore it ");
 			} break;
 
 			default:
-				wlog("on open state, need shakehand, send shakehand request ");
+				knet_wlog("on open state, need shakehand, send shakehand request ");
 				this->shakehand_request(); // lost cid ,request cid again
 				return true; // ignore message on open state , treat it as control message
 			}
@@ -436,9 +436,9 @@ private:
 			switch (head->cmd) {
 			case KCP_SHAKEHAND_REQUEST: {
 				KcpShakeHandMsg* shakeMsg = (KcpShakeHandMsg*)pData;
-				wlog("get shakehand request when kcp ready, cid is {} ", shakeMsg->conv);
+				knet_wlog("get shakehand request when kcp ready, cid is {} ", shakeMsg->conv);
 				if (shakeMsg->conv == 0) {
-					wlog("request shakehand cid is 0 ,using my cid {}", this->cid);
+					knet_wlog("request shakehand cid is 0 ,using my cid {}", this->cid);
 				} else {
 					if (this->cid == 0) {
 						this->cid = shakeMsg->conv;
@@ -450,7 +450,7 @@ private:
 			} break;
 			case KCP_SHAKEHAND_RESPONSE: {
 				KcpShakeHandMsg* shakeMsg = (KcpShakeHandMsg*)pData;
-				wlog("get shakehand response on kcp ready status, cid is {} ", shakeMsg->conv);
+				knet_wlog("get shakehand response on kcp ready status, cid is {} ", shakeMsg->conv);
 				if (this->cid == 0) {
 					this->cid = shakeMsg->conv;
 				}
@@ -458,7 +458,7 @@ private:
 			} break;
 
 			case KCP_HEARTBEAT: {
-				//dlog("receive heartbeat, ignore it on ready");
+				//knet_dlog("receive heartbeat, ignore it on ready");
 			} break;
 			default:;
 			}
@@ -472,7 +472,7 @@ private:
 		kcp_sock->async_receive_from(asio::buffer(recv_buffer, kMaxMessageLength), sender_point,
 			[this](std::error_code ec, std::size_t bytes_recvd) {
 				if (!ec && bytes_recvd > 0) {
-					dlog("receive message from {} length {}", sender_point.address().to_string(), bytes_recvd);
+					knet_dlog("receive message from {} length {}", sender_point.address().to_string(), bytes_recvd);
 					recv_buffer[bytes_recvd] = 0;
 
 					auto timeNow = std::chrono::system_clock::now();
@@ -485,7 +485,7 @@ private:
 					}
 					do_receive();
 				} else {
-					elog("async receive error {}, {}", ec.value(), ec.message());
+					knet_elog("async receive error {}, {}", ec.value(), ec.message());
 				}
 			});
 	}
@@ -495,10 +495,10 @@ private:
  
 		if (kcp) {
 			int32_t cmd = ikcp_input(kcp, data, dataLen);
-			// dlog("kcp input command  {}", cmd);
+			// knet_dlog("kcp input command  {}", cmd);
 
 			if (cmd == IKCP_CMD_ACK) {
-				//ilog("it's ack command ,ignore it");
+				//knet_ilog("it's ack command ,ignore it");
 				return;
 			}
 			uint32_t recvLen = 0; 
@@ -513,7 +513,7 @@ private:
 				int32_t kcp_recvd_bytes = ikcp_recv(kcp, kcpBuf, sizeof(kcpBuf));
 				if (kcp_recvd_bytes >  0) {
 					recvLen += msgLen ; 
-			//		dlog("received kcp message length {}", kcp_recvd_bytes);
+			//		knet_dlog("received kcp message length {}", kcp_recvd_bytes);
 					this->handle_package(kcpBuf, kcp_recvd_bytes);
 					if (event_handler) {
 						event_handler(this->shared_from_this(), EVT_RECV, {data, dataLen});

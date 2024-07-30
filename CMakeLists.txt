@@ -36,7 +36,7 @@ endif()
 
 
 ADD_DEFINITIONS(-DASIO_STANDALONE)
-
+add_definitions(-DFMT_HEADER_ONLY=ON)
 #add the executable
 #add_executable(server samples/server.cpp  )
 #add_executable(mtserver samples/mt_server.cpp  )

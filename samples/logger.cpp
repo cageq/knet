@@ -24,12 +24,12 @@ int main(int argc, char **argv)
 //        iout <<" iout log from xout " << index ;
 //        wout <<" wout log from xout " << index ;
 //        eout <<" eout log from xout " << index ; 
-        //dlog("debug log from dlog"); 
-        //elog("debug log from elog"); 
-        //        dlog("debug log from xlog {}  ", index ); 
-        //        ilog("info log from xlog  {}  ", index ); 
-        //        wlog("warn log from xlog  {}  ", index ); 
-        //        elog("error log from xlog {}  ", index ); 
+        //knet_dlog("debug log from knet_dlog"); 
+        //knet_elog("debug log from knet_elog"); 
+        //        knet_dlog("debug log from xlog {}  ", index ); 
+        //        knet_ilog("info log from xlog  {}  ", index ); 
+        //        knet_wlog("warn log from xlog  {}  ", index ); 
+        //        knet_elog("error log from xlog {}  ", index ); 
 
 
         dput("dput log from xput", index); 

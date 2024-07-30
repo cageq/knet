@@ -31,7 +31,7 @@ public:
 	}
 	virtual ~TcpSession()
 	{
-		dlog("destroy tcp session");
+		knet_dlog("destroy tcp session");
 	}
 	virtual bool handle_event(knet::NetEvent evt)
 	{
@@ -39,7 +39,7 @@ public:
         if (evt == knet::NetEvent::EVT_DISCONNECT){
             last_index  = 0; 
         }
-		//	dlog("handle my tcp event {}", evt);
+		//	knet_dlog("handle my tcp event {}", evt);
 
 		return true;
 	}
@@ -61,12 +61,12 @@ public:
 		TestMsg recvMsg;
 		gettimeofday(&recvMsg.time, 0);
 		//total_time += (recvMsg.time.tv_usec - tMsg->time.tv_usec);
-		// dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  );
+		// knet_dlog("{}# {}:{} => {}:{} elapse {}",tMsg->index, tMsg->time.tv_sec, tMsg->time.tv_usec, recvMsg.time.tv_sec, recvMsg.time.tv_usec, recvMsg.time.tv_usec - tMsg->time.tv_usec  );
 
-	    dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
+	    knet_dlog("{}# spent {}",tMsg->index,   (recvMsg.time.tv_sec * 1000000 + recvMsg.time.tv_usec) - (tMsg->time.tv_sec * 1000000 + tMsg->time.tv_usec)   ); 
 		if (last_index + 1 != tMsg->index)
 		{
-			elog("wrong seqence");
+			knet_elog("wrong seqence");
 			exit(0);
 		}
 		last_index = tMsg->index;
@@ -84,7 +84,7 @@ public:
 
 int main(int argc, char **argv)
 {
-		KNetLogIns.add_console(); 
+	knet_add_console_sink(); 
 
 	int port = 8888;
     if (argc > 1){
@@ -127,10 +127,10 @@ int main(int argc, char **argv)
 	//			switch (evt)
 	//			{
 	//			case EVT_CREATE:
-	//			dlog("on create connection");
+	//			knet_dlog("on create connection");
 	//			break;
 	//			case EVT_CONNECT:
-	//			dlog("on connection established");
+	//			knet_dlog("on connection established");
 	//			break;
 	//			case EVT_CONNECT_FAIL:
 	//			break;
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	//
 	//			return 0;
 	//			});
-	dlog("start server on port {} , status {}", port, ret);
+	knet_dlog("start server on port {} , status {}", port, ret);
 	// co_sched.Start(4);
 
 	while(1){
@@ -159,6 +159,6 @@ int main(int argc, char **argv)
 	}
 	listener.stop();
 
-	// dlog("quit server");
+	// knet_dlog("quit server");
 	return 0;
 }

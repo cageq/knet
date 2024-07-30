@@ -6,13 +6,16 @@ using namespace knet::websocket;
 
 int main(int argc, char** argv)
 {
-	dlog("init websocket server "); 
+
+	knet_add_console_sink();  
+ 
+	knet_dlog("init websocket server "); 
 	WSockServer<> wsServer; 
 
 	WSockHandler<WSockConnection> wsHandler; 
 	wsHandler.message = [](std::shared_ptr<WSockConnection> conn, const std::string &  msg ){
 
-		wlog("on websocket message {}", msg); 
+		knet_wlog("on websocket message {}", msg); 
 		conn->send_text("hello client",OpCode::TEXT_FRAME,false); 
 		return true; 
 	}; 

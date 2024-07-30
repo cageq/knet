@@ -14,14 +14,14 @@ public:
 
 	}
 	virtual int32_t handle_package(const char* data, uint32_t len) {
-//		dlog("received package length is {}", len);
+//		knet_dlog("received package length is {}", len);
 		return len;
 	}
 
 	virtual bool handle_data( char* data, uint32_t len) override
 	{
 
-//		dlog("received data   {} ", msg );
+//		knet_dlog("received data   {} ", msg );
 //		std::string mymsg("hello world");
 		//this->send(mymsg);
 
@@ -43,8 +43,8 @@ public:
 
 int main(int argc, char** argv)
 {
-	KNetLogIns.add_console(); 
-	dlog("init client ");
+	knet_add_console_sink();  
+	knet_dlog("init client ");
 	TcpConnector<TcpSession>  connector;
 
 	connector.start();

@@ -10,15 +10,15 @@ class MyChannel : public PipeSession{
 		}
 		virtual ~MyChannel(){}
 
-		virtual bool handle_event(knet::NetEvent evt) { dlog("handle net event {}", static_cast<uint32_t>(evt)); return true;  }
-		virtual int32_t handle_message(const std::string& msg, uint64_t ) {
-			dlog("---------------{}----------------", msg.size()); 
-			dlog("{}",msg); 
-			dlog("---------------------------------"); 
+		virtual bool handle_event(knet::NetEvent evt) override{ knet_dlog("handle net event {}", static_cast<uint32_t>(evt)); return true;  }
+		virtual int32_t handle_message(char * data, uint32_t dataLen, uint64_t ) override {
+			knet_dlog("---------------{}----------------", dataLen); 
+			knet_dlog("{}",data); 
+			knet_dlog("---------------------------------"); 
 
 			//			this->msend(std::string(msg.data(), msg.length())); 
 			//
-			return msg.size(); 
+			return dataLen; 
 		} 
 
 }; 
@@ -26,13 +26,13 @@ class MyChannel : public PipeSession{
 
 int main(int argc, char * argv[]){ 
 
-	KNetLogIns.add_console();
+	knet_add_console_sink();
 //	auto mySession = std::make_shared<MyChannel>("1" ); 
 
 	KPipe<>  spipe(PipeMode::PIPE_SERVER_MODE);  
 	//spipe.attach(mySession);  
 
-	dlog("start server at {} ", 9999); 
+	knet_dlog("start server at {} ", 9999); 
 	spipe.start("127.0.0.1",9999);  
 
 	while(1){

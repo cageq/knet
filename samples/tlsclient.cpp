@@ -13,7 +13,7 @@ public:
 
         /*
 		bind_event_handler([](TcpSessionPtr session, knet::NetEvent evt ) {
-			dlog("handle event in event handler");
+			knet_dlog("handle event in event handler");
 			if (evt == knet::NetEvent::EVT_CONNECT)
 			{
 				session->send(std::string("hello workd"));
@@ -26,12 +26,12 @@ public:
 	}
 
 	void on_connect() {
-		dlog("on connected ");
+		knet_dlog("on connected ");
 		std::string msg("hello world");
 		this->send(msg.c_str(), msg.length());
 	}
     virtual bool handle_event(knet::NetEvent evt) {
-        dlog("handle event in event handler");
+        knet_dlog("handle event in event handler");
 			if (evt == knet::NetEvent::EVT_CONNECT)
 			{
 				this->send(std::string("hello workd"));
@@ -45,12 +45,12 @@ public:
 
 	void on_disconnect() {
 		// trace;
-		dlog("on disconnected");
+		knet_dlog("on disconnected");
 	}
 
 	void on_recv(const char* pBuf, uint32_t len) {
 		//    trace;
-		dlog("received data %s ", pBuf);
+		knet_dlog("received data %s ", pBuf);
 		std::string msg(pBuf, len);
 	//	this->send(msg.c_str(), len);
 	}
@@ -58,8 +58,8 @@ public:
 
 int main(int argc, char** argv) {
 
-	KNetLogIns.add_console();
-	dlog("init client ");
+	knet_add_console_sink();
+	knet_dlog("init client ");
 	TcpConnector<TcpSession> connector;
 
 	//( [](NetEvent evt, std::shared_ptr<TcpSession> pArg) {
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
         std::string msg = "hello world" ; 
         conn->send(msg); 
 
-        dlog("send message {}" , msg); 
+        knet_dlog("send message {}" , msg); 
         std::this_thread::sleep_for(std::chrono::seconds(1)); 
     }
 

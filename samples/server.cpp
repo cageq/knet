@@ -20,26 +20,26 @@ class TcpSession : public TcpConnection<TcpSession> {
 		}
 
 		virtual ~TcpSession() {
-			dlog("destroy tcp session");
+			knet_dlog("destroy tcp session");
 		}
  
 
 		//will invoke in multi-thread , if you want to process it main thread , push it to msg queue
 		uint32_t on_recv(const std::string_view & msg  ) {
-			//		dlog(" connection id  on thread {}", m_id, std::this_thread::get_id());
+			//		knet_dlog(" connection id  on thread {}", m_id, std::this_thread::get_id());
 			if (status == 1)
 			{
 				if (msg.length() < 4) 
 				{
-					wlog("buffer not enough for head"); 
+					knet_wlog("buffer not enough for head"); 
 					return 0; 
 				}
-				dlog("process head first {} :{}", msg.length() , msg ); 
+				knet_dlog("process head first {} :{}", msg.length() , msg ); 
 
 				return 10; 
 			}
 			else {
-				dlog("process data chunk {} :{}", msg.length() , msg); 
+				knet_dlog("process data chunk {} :{}", msg.length() , msg); 
 				return msg.length() ;
 			}
 	//		this->send(pBuf, 10);
@@ -52,12 +52,12 @@ class TcpSession : public TcpConnection<TcpSession> {
 
 int main(int argc, char **argv)
 {
-	KNetLogIns.add_console();
-	dlog("start server");
+	knet_add_console_sink(); 
+	knet_dlog("start server");
 	TcpListener<TcpSession> listener;
 	int port = 8899;
 	listener.start(  port); 
-	dlog("start server on port {}", port);
+	knet_dlog("start server on port {}", port);
 	char c = getchar();
 	while (c)
 	{
@@ -75,6 +75,6 @@ int main(int argc, char **argv)
 		c = getchar();
 	}
 
-	dlog("quit server");
+	knet_dlog("quit server");
 	return 0;
 }

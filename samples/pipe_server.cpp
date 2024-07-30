@@ -10,16 +10,16 @@ class MyChannel : public PipeSession{
 		}
 		virtual ~MyChannel(){}
 
-		virtual bool handle_event(knet::NetEvent evt) { dlog("handle net event {}", static_cast<uint32_t>(evt));  return true; }
-		virtual int32_t handle_message(const std::string_view& msg, uint64_t obdata = 0 ) {
-			ilog("---------------{}----------------", msg.size()); 
-			ilog("outband data is {}", obdata); 
-			ilog("{}",msg); 
-			ilog("---------------------------------"); 
+		virtual bool handle_event(knet::NetEvent evt) override { knet_dlog("handle net event {}", static_cast<uint32_t>(evt));  return true; }
+		virtual int32_t handle_message(char * data, uint32_t dataLen, uint64_t obdata = 0 ) override{
+			knet_ilog("---------------{}----------------", dataLen); 
+			knet_ilog("outband data is {}", obdata); 
+			knet_ilog("{}",data); 
+			knet_ilog("---------------------------------"); 
 
 			//			this->msend(std::string(msg.data(), msg.length())); 
 			//
-			return msg.size(); 
+			return dataLen; 
 		} 
 
 }; 
@@ -28,14 +28,14 @@ class MyChannel : public PipeSession{
 int main(int argc, char * argv[]){ 
 
 	  
-	KNetLogIns.add_console(); 
+	knet_add_console_sink();  
 	auto mySession = std::make_shared<MyChannel>("pipe1" ); 
 
 	KPipe<>  spipe(PipeMode::PIPE_SERVER_MODE);  
 	spipe.attach(mySession);  
 
 	uint32_t port = 6688; 
-	dlog("start server at {} ", port); 
+	knet_dlog("start server at {} ", port); 
 	spipe.start("127.0.0.1",port);  
 	uint64_t obid = 10000; 
 

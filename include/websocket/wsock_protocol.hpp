@@ -83,7 +83,7 @@ struct WSMessageReader {
 
 	uint32_t read( const char* pData, uint32_t dataLen, WSMessageHandler handler) {
  
-		dlog("reading websocket message {} status {}", dataLen, status);
+		knet_dlog("reading websocket message {} status {}", dataLen, status);
 		if (dataLen < sizeof(uint16_t)) {
 			return 0;
 		}
@@ -91,10 +91,13 @@ struct WSMessageReader {
 		if (status == 0) {
 
 			uint8_t* vals = (uint8_t*)pData;
-			dout << "fin is " << ((vals[0] & 0x80) == 0x80)  ;
-			dout << "opcode is " << (vals[0] & 0x0f)  ;
-			dout << "length is " << (vals[1] & 0x7F)  ;
-			dout << "mask is " << ((vals[1] & 0x80) == 0x80)  ;
+ 
+
+
+			knet_dlog("fin is     : {}" , ((vals[0] & 0x80) == 0x80) );
+			knet_dlog("opcode is  : {}" , (vals[0] & 0x0f) );
+			knet_dlog("length is  : {}" , (vals[1] & 0x7F) );
+			knet_dlog("mask is    : {}" , ((vals[1] & 0x80) == 0x80) );
 
 			head.fin = ((vals[0] & 0x80) == 0x80);
 			head.opcode = (vals[0] & 0x0f);
@@ -109,7 +112,7 @@ struct WSMessageReader {
 			if (payloadMark < 126) {
 				this->payload_length = payloadMark;
 				if (handler) {
-					dlog("payload length is {} head size {} , mask size {}", payload_length, headSize , maskSize); 
+					knet_dlog("payload length is {} head size {} , mask size {}", payload_length, headSize , maskSize); 
 					if (head.mask)
 					{
 						std::string payload ; 

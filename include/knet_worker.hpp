@@ -43,13 +43,13 @@ namespace knet
 			if (!is_running)
 			{
 				is_running = true; 
-				// dlog("start event work {}", std::this_thread::get_id());
+				// knet_dlog("start event work {}", std::this_thread::get_id());
 				work_starter = starter;
 				if (self_context != nullptr)
 				{
 					for (uint32_t i = 0; i < thrds; i++)
 					{
-						//	wlog("real start event work here {}", std::this_thread::get_id());
+						//	knet_wlog("real start event work here {}", std::this_thread::get_id());
 						work_threads.emplace_back(std::thread(&KNetWorker::run, this));
 					}
 				}
@@ -127,7 +127,7 @@ namespace knet
 			io_context->run();
 
 			std::call_once(deinit_flag, [&](){ this->deinit(); });
-			//dlog("exit event worker");
+			//knet_dlog("exit event worker");
 		}
 		 
 

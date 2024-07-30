@@ -47,9 +47,9 @@ public:
 		 
 
 		auto cliKey = WSockHandshake::random_string(16);
-		dlog("key is {}", cliKey);
+		knet_dlog("key is {}", cliKey);
 		auto secKey = WSockHandshake::base64(cliKey);
-		dlog("sec key is {}", secKey);
+		knet_dlog("sec key is {}", secKey);
 
 		firstReq->add_header("Sec-WebSocket-Key", secKey);
 		return firstReq;

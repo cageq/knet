@@ -12,10 +12,12 @@
 #include <type_traits>
 #include <string_view> 
 #include "utils/knet_url.hpp"
+#include "utils/knet_log.hpp"
 #include "knet_worker.hpp"
 #include <asio/use_future.hpp>
 
 using namespace knet::utils; 
+using namespace knet::log; 
 
 namespace knet {
     namespace tcp {
@@ -68,18 +70,18 @@ namespace knet {
                         try {
                             addrResult = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
                             if (addrResult.empty()){
-                                wlog("resolve address {} failed", urlInfo.host); 
+                                knet_wlog("resolve address {} failed", urlInfo.host); 
                                 return false; 
                             }
-                            dlog("resolve result :"); 
+                            knet_dlog("resolve result :"); 
                             for(auto &e : addrResult){
-                                dlog("  ip {}", e.endpoint().address().to_string()); 
+                                knet_dlog("  ip {}", e.endpoint().address().to_string()); 
                             }
                         }catch(... ){
-                            wlog("resolve address {}:{} failed", urlInfo.host, urlInfo.port); 
+                            knet_wlog("resolve address {}:{} failed", urlInfo.host, urlInfo.port); 
                             return false; 
                         }
-                        dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);
+                        knet_dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);
                         
                         tcp_sock.close(); 
                         tcp_sock = tcp::socket(io_worker->context()); 
@@ -110,11 +112,11 @@ namespace knet {
                                     }
                                     //self->tcp_sock.set_option(asio::socket_base::keep_alive(true));
                                 
-                                dlog("connect to {}:{} success {}",remote_url.host,remote_url.port, self->tcp_sock.is_open());       
+                                knet_dlog("connect to {}:{} success {}",remote_url.host,remote_url.port, self->tcp_sock.is_open());       
                                 self->init_read(false); 
                                                                     
                             }else {
-                                ilog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
+                                knet_ilog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
                                 self->tcp_sock.close();
                                 self->socket_status = SocketStatus::SOCKET_CLOSED; 
                             }
@@ -148,7 +150,7 @@ namespace knet {
                                         process_data(bytes_transferred);
                                         self->do_read();
                                     }else {
-                                        ilog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+                                        knet_ilog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
                                         cache_buffer.clear(); //drop cache buffer
                                         do_close();
                                     }
@@ -158,13 +160,13 @@ namespace knet {
                                 
                                 process_data(0);
                                 if (read_buffer_pos >= kReadBufferSize ){
-                                    wlog("read buffer {} is full, check package size, read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
+                                    knet_wlog("read buffer {} is full, check package size, read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
                                     //packet size exceed the limit, so we close it. 
                                     this->do_close();                                                 
                                 }						
                             }	
                         } else {
-                            ilog("socket is not open");
+                            knet_ilog("socket is not open");
                         }
                     }
 
@@ -178,7 +180,7 @@ namespace knet {
                                 }
                                 return ret; 
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_send write failed {}", ex.what()); 
+                                knet_elog("sync_send write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -198,7 +200,7 @@ namespace knet {
                                 }
                                 return ret; 
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_sendv write failed {}", ex.what()); 
+                                knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -220,7 +222,7 @@ namespace knet {
                                 }
                                 return ret; 
                             }  catch(const  asio::system_error &ex ){
-                                elog("sync_sendv write failed {}", ex.what()); 
+                                knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
                         }
                         return -1; 
@@ -252,7 +254,7 @@ namespace knet {
 
                              return ret; 
                         }  catch(const  asio::system_error &ex ){
-                            elog("mpush_sync failed {}", ex.what()); 
+                            knet_elog("mpush_sync failed {}", ex.what()); 
                         }
                         return -1; 
                      }
@@ -358,7 +360,7 @@ namespace knet {
                                     cache_buffer.clear();                                 
                                     self->do_async_write();                          
                                 }else {
-                                    ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
+                                    knet_ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
                                     cache_buffer.clear(); //drop cache buffer
                                     self->do_close();
                                 }
@@ -383,7 +385,7 @@ namespace knet {
                             int32_t pkgLen = this->connection->process_package(&read_buffer[readPos], read_buffer_pos);  
                             if ( pkgLen <= 0 || pkgLen >  read_buffer_pos - readPos ){
                                 if (pkgLen > kReadBufferSize) {
-                                //   wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, kReadBufferSize);
+                                //   knet_wlog("single package size {} exceeds max buffer size ({}) , check package size", pkgLen, kReadBufferSize);
                                     this->do_close(); 
                                     return false;
                                 }                                
@@ -403,7 +405,7 @@ namespace knet {
 
                     void close() { 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            wlog("close, status is {}", static_cast<uint32_t>(socket_status));
+                            knet_wlog("close, status is {}", static_cast<uint32_t>(socket_status));
                             return;
                         }
 
@@ -443,7 +445,7 @@ namespace knet {
 
                     void do_close( ) {			 
                         if (socket_status == SocketStatus::SOCKET_CLOSING || socket_status == SocketStatus::SOCKET_CLOSED) {
-                            wlog("do close, in status {}", static_cast<uint32_t>(socket_status) );
+                            knet_wlog("do close, in status {}", static_cast<uint32_t>(socket_status) );
                             return;
                         }  
                         if (socket_status < SocketStatus::SOCKET_CLOSING){

@@ -51,12 +51,12 @@ namespace knet {
 				if (!multiHost.empty()) {
 					multi_host = multiHost;
 					// Create the socket so that multiple may be bound to the same address.
-					dlog("join multi address {}", multiHost);
+					knet_dlog("join multi address {}", multiHost);
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
 					server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 				}
  
-				dlog("start udp server {}:{}", url_info.host, url_info.port);
+				knet_dlog("start udp server {}:{}", url_info.host, url_info.port);
 				do_receive();
 				return true; 		
 			}
@@ -80,14 +80,14 @@ namespace knet {
 					auto buffer = std::make_shared<std::string>(std::move(msg));
 					asio::ip::address multiAddr = asio::ip::make_address(multi_host);
 					asio::ip::udp::endpoint multiPoint(multiAddr, listen_port);
-					dlog("broadcast message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
+					knet_dlog("broadcast message to {}:{}", multiPoint.address().to_string(), multiPoint.port());
 					server_socket->async_send_to(asio::buffer(*buffer), multiPoint,
 						[this, buffer](std::error_code ec, std::size_t len /*bytes_sent*/) {
 							if (!ec) {						 
 								this->handle_event(nullptr, EVT_SEND); 
 							}
 							else {
-								dlog("sent message error : {}, {}", ec.value(), ec.message());
+								knet_dlog("sent message error : {}, {}", ec.value(), ec.message());
 							}
 						});
 				}
@@ -105,7 +105,7 @@ namespace knet {
 					conn = std::make_shared<T>();
 				}
 		 
-				dlog("add remote connection {}", addrstr(pt));
+				knet_dlog("add remote connection {}", addrstr(pt));
 				connections[addrstr(pt)] = conn;
 				return conn;
 			}
@@ -210,7 +210,7 @@ namespace knet {
 					[this](std::error_code ec, std::size_t bytes_recvd) {
 						auto conn = this->find_connection(remote_point);
 						if (!ec && bytes_recvd > 0) {
-							dlog("get message from {}:{}", remote_point.address().to_string(), remote_point.port());						
+							knet_dlog("get message from {}:{}", remote_point.address().to_string(), remote_point.port());						
 							if (!conn) {
 								conn = this->create_connection(remote_point);
 								conn->init(server_socket, net_worker, static_cast<KNetHandler<T>*>(this)  );							
@@ -244,7 +244,7 @@ namespace knet {
 							}
 
 						}else {
-							elog("receive error from {}:{}", remote_point.address().to_string(), remote_point.port());							
+							knet_elog("receive error from {}:{}", remote_point.address().to_string(), remote_point.port());							
 							if(conn){
 								bool ret = conn->handle_event(EVT_DISCONNECT);  
 								if (ret){

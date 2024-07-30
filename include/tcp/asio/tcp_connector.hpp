@@ -205,7 +205,7 @@ namespace knet
 				}
 				else
 				{
-					elog("no event worker, please create at least one worker");
+					knet_elog("no event worker, please create at least one worker");
 					return nullptr;
 				}
 			}

@@ -14,7 +14,7 @@ class MyConnection : public KcpConnection<MyConnection> {
             }
         virtual ~MyConnection(){}
         virtual int32_t handle_package(const char* data, uint32_t len) {
-            ilog("on recv udp message\n{} , lenght is {}", data, len);
+            knet_ilog("on recv udp message\n{} , lenght is {}", data, len);
             return len;
         }
 
@@ -22,7 +22,7 @@ class MyConnection : public KcpConnection<MyConnection> {
 
 int main(int argc, char* argv[]) {
 
-    KNetLogIns.add_console(); 
+    knet_add_console_sink();  
     KcpConnector<MyConnection> connector;
     connector.start();
 

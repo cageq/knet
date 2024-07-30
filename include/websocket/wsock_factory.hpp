@@ -26,25 +26,28 @@ public:
 	WSockFactory() {  }
 	virtual bool handle_event(TPtr conn, NetEvent evt) {
 
-		ilog("handle event in http factory ", static_cast<uint32_t>(evt));
+		knet_ilog("handle event {} in websocket factory ", static_cast<uint32_t>(evt));
 
 		switch (evt) {
 		case EVT_THREAD_INIT:
-			//dlog("handle thread init event {}", std::this_thread::get_id());
+			//knet_dlog("handle thread init event {}", std::this_thread::get_id());
 			// worker_.start(routers);
 			break;
 		case EVT_THREAD_EXIT:
-			dlog("handle thread exit event");
+			knet_dlog("handle thread exit event");
 			// worker_.stop();
 			break;
 		case EVT_CREATE:
-			//dlog("handle new http session, thread id is", std::this_thread::get_id());
+			//knet_dlog("handle new http session, thread id is", std::this_thread::get_id());
 			break;
 		case EVT_RECV:
 			break;
 		case EVT_SEND:
 			//	conn->close();
 			break;
+        case EVT_DISCONNECT:
+
+            break; 
 		default:;
 		}
 		return true; 
@@ -52,13 +55,16 @@ public:
 
 	virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen)  override {  
 
-			dlog("handle factory data , is websocket {}", conn->is_websocket); 
+			knet_dlog("handle factory data , is websocket {}", conn->is_websocket); 
 			if (conn->is_websocket) {
 				auto readLen = conn->read_websocket(data, dataLen );
-				dlog("read websocket data len is {}/{}", readLen, dataLen);
+				knet_dlog("read websocket data len is {}/{}", readLen, dataLen);
 				return true;
 			}  	
 			
+			knet_dlog("websocket status is {}", static_cast<uint32_t>(conn->get_status()) ); 
+
+	
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
 
 				auto ctx = std::make_shared<HttpContext>(); 
@@ -67,34 +73,34 @@ public:
 				if (msgLen > 0) {
 
 					HttpUrl urlInfo(req.url());
-					dlog("handle websocket request ", req.url());
-					ilog("request Upgrade header {}", req.get_header("Upgrade"));
-					ilog("request Connection header {}", req.get_header("Connection"));
+					knet_dlog("handle websocket request ", req.url());
+					knet_ilog("request Upgrade header {}", req.get_header("Upgrade"));
+					knet_ilog("request Connection header {}", req.get_header("Connection"));
 					if (req.get_header("Upgrade") == "websocket") {
 						
-						dlog("find request path is {}", urlInfo.path());
+						knet_dlog("find request path is {}", urlInfo.path());
 						auto itr = wsock_routers.find(urlInfo.path());
 						if (itr != wsock_routers.end()) {
-							dlog("found websocket handle , send back websocket response");
+							knet_dlog("found websocket handle , send back websocket response");
 							auto ret = conn->upgrade_websocket(req);
 							if (ret) {
 								conn->is_websocket = true;
 								conn->wsock_handler = itr->second;
 							}
 						} else {
-							wlog("not found websocket handler :{}", urlInfo.path());
+							knet_wlog("not found websocket handler :{}", urlInfo.path());
 							conn->write(HttpResponse(404));
 						}
 
 					} else {
 
-						dlog("request path is {}", urlInfo.path()); 
+						knet_dlog("request path is {}", urlInfo.path()); 
 
 						auto itr = http_routers.find(urlInfo.path());
 						if (itr != http_routers.end()) {
 							auto & handler = itr->second; 
 							 
-								//dlog("handle data in thread id {}", std::this_thread::get_id());
+								//knet_dlog("handle data in thread id {}", std::this_thread::get_id());
 								auto ret = handler.call( ctx);
 								if (ret < 0 ) {
 									return false; 
@@ -112,9 +118,9 @@ public:
 				HttpResponse rsp;
 				auto msgLen = rsp.parse(data, dataLen);
 				if (msgLen > 0) {
-					dlog("parse response len is {},  {}", dataLen, msgLen);
+					knet_dlog("parse response len is {},  {}", dataLen, msgLen);
 					if (rsp.is_websocket()) {
-						dlog("upgrade to websocket success");
+						knet_dlog("upgrade to websocket success");
 						conn->is_websocket = true;
 					}
 				} else {
@@ -126,16 +132,16 @@ public:
 	}
 
 	// virtual int32_t handle_data(TPtr conn, const char* data, uint32_t len) {
-	// dlog("handle data in http factory  {}", data);
+	// knet_dlog("handle data in http factory  {}", data);
 
 	// auto req = std::make_shared<HttpRequest>();
 
-	// dlog("http request url is {}", conn->request_url);
+	// knet_dlog("http request url is {}", conn->request_url);
 
 	// auto itr = http_routers.find(conn->request_url);
 	// if (itr != http_routers.end()) {
 	// 	if (itr->second) {
-	// 		dlog("handle data in thread id {}", std::this_thread::get_id());
+	// 		knet_dlog("handle data in thread id {}", std::this_thread::get_id());
 	// 		auto req = std::make_shared<HttpRequest>();
 	// 		req->conn = conn;
 

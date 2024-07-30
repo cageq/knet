@@ -12,7 +12,7 @@ class MyConnection : public KcpConnection<MyConnection> {
  
 	virtual ~MyConnection(){}
     virtual int32_t handle_package(const char* data, uint32_t len) { 
-		ilog("on message {} , lenght  {} ,cid is {}", data, len,cid); 
+		knet_ilog("on message {} , lenght  {} ,cid is {}", data, len,cid); 
 		this->send("response from server"); 
 		return len;
 	}
@@ -20,14 +20,14 @@ class MyConnection : public KcpConnection<MyConnection> {
 
 int main(int argc, char* argv[]) {
 
-	KNetLogIns.add_console(); 
-	dlog("start kcp server"); 
+	knet_add_console_sink();  
+	knet_dlog("start kcp server"); 
 	knet::KNetWorkerPtr worker = std::make_shared<knet::KNetWorker>(); 
 	worker->start(nullptr, 4); //4 threads 
 
 	KcpListener<MyConnection> kcpLis(worker);
 	kcpLis.start(8700, [](MyConnection::TPtr, knet::NetEvent evt, const std::string & dv) {
-		ilog("received connection event {} , {}", static_cast<uint32_t>(evt),event_string(evt));
+		knet_ilog("received connection event {} , {}", static_cast<uint32_t>(evt),event_string(evt));
 		return nullptr;
 	});
 

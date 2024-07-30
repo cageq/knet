@@ -40,12 +40,12 @@ namespace knet {
 					void start(const std::string& host = "0.0.0.0", uint16_t port = 9999) {
 
 						if ((pipe_mode & PIPE_SERVER_MODE) && port > 0) {
-							dlog("start pipe on server mode {}", port);
+							knet_dlog("start pipe on server mode {}", port);
 							listener->start(port);
 						}
 
 						if (pipe_mode & PIPE_CLIENT_MODE) {
-							dlog("start pipe on client mode {}", port);
+							knet_dlog("start pipe on client mode {}", port);
 							connector->start();
 							connect();
 						}
@@ -54,7 +54,7 @@ namespace knet {
 
 					void attach(PipeSessionPtr pipe, const std::string& host = "", uint16_t port = 0) {
 						if (pipe) {
-							dlog("bind pipe host {} port {} pipe id {}", host, port, pipe->get_pipeid());
+							knet_dlog("bind pipe host {} port {} pipe id {}", host, port, pipe->get_pipeid());
 							pipe_factory.register_pipe(pipe);
 
 							if (!host.empty()) {
@@ -79,7 +79,7 @@ namespace knet {
 						auto pipe = std::make_shared<PipeSession>(); 
 						auto conn = connector->add_connection({"tcp",host, port});
 						conn->enable_reconnect(); 
-						dlog("register unbind pipe {}",conn->get_cid()); 
+						knet_dlog("register unbind pipe {}",conn->get_cid()); 
 						pipe_factory.register_pipe(pipe,conn->get_cid());
 						pipe_worker->post([=](){								 
 								pipe->handle_event(NetEvent::EVT_THREAD_INIT); 
@@ -104,7 +104,7 @@ namespace knet {
 					PipeSessionPtr find(const std::string& pid) { return pipe_factory.find_bind_pipe(pid); }
 
 					virtual void destroy(TPtr conn) {
-						dlog("connection factory destroy connection in my factory ");
+						knet_dlog("connection factory destroy connection in my factory ");
 					}
 
 
@@ -121,7 +121,7 @@ namespace knet {
 
 				private:
 					void connect() {
-						dlog("start pipe client connection " ); 
+						knet_dlog("start pipe client connection " ); 
 						if (pipe_mode & PIPE_CLIENT_MODE) {
 
 							pipe_factory.start_clients([this](PipeSessionPtr pipe){ 

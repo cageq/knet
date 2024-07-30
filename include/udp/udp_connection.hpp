@@ -86,7 +86,7 @@ namespace knet
 				if (!multiHost.empty())
 				{
 					// Create the socket so that multiple may be bound to the same address.
-					//dlog("join multi address {}", multiHost);
+					//knet_dlog("join multi address {}", multiHost);
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
 					udp_socket->set_option(asio::ip::multicast::join_group(multiAddr));
 				}
@@ -147,7 +147,7 @@ namespace knet
 
 			virtual bool handle_event(NetEvent evt)
 			{
-				//dlog("handle event in connection {}", evt);
+				//knet_dlog("handle event in connection {}", evt);
 				return true;
 			}
 
@@ -209,11 +209,11 @@ namespace knet
 							if (!ec)
 							{
 								send_buffer.commit(dataLen); 
-								dlog("send msg to {}  len {}",remote_point.address().to_string(), dataLen); 
+								knet_dlog("send msg to {}  len {}",remote_point.address().to_string(), dataLen); 
 							}
 							else
 							{
-								elog("sent message error : {}, {}, {}", ec.value(), ec.message(),dataLen);
+								knet_elog("sent message error : {}, {}, {}", ec.value(), ec.message(),dataLen);
 							}
 						});
 						return dataLen; 
@@ -267,12 +267,12 @@ namespace knet
 				this->udp_socket = std::make_shared<udp::socket>(event_worker->context());
 				if (udp_socket)
 				{
-					dlog("local address is {}:{}", localAddr, localPort); 
+					knet_dlog("local address is {}:{}", localAddr, localPort); 
 					udp_socket->open(pt.protocol()); 
 
 					if (remote_point.address().is_multicast())
 					{				 
-						dlog("bind local multi address {}:{}", localAddr, remote_point.port());
+						knet_dlog("bind local multi address {}:{}", localAddr, remote_point.port());
 						asio::ip::udp::endpoint bindAddr(asio::ip::make_address(localAddr.empty()?"0.0.0.0":localAddr), remote_point.port());				
 				//		udp_socket->open(bindAddr.protocol());
 						udp_socket->set_option(asio::ip::udp::socket::reuse_address(true));
@@ -317,7 +317,7 @@ namespace knet
 							if (!ec && bytes_recvd > 0)
 							{
 								last_msg_time = std::chrono::steady_clock::now();
-								//dlog("get message from {}:{}", sender_point.address().to_string(),
+								//knet_dlog("get message from {}:{}", sender_point.address().to_string(),
 								//	sender_point.port());
 								this->sender_point = sender_point; 
 								recv_buffer[bytes_recvd] = 0;
@@ -331,7 +331,7 @@ namespace knet
 							}
 							else
 							{
-								elog("async receive error {}, {}", ec.value(), ec.message());
+								knet_elog("async receive error {}, {}", ec.value(), ec.message());
 							}
 						});
 			}
