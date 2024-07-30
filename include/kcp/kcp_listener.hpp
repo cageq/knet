@@ -147,11 +147,11 @@ namespace knet
 
             void run()
             {
-                default_worker->post([this]()
-                                     {
+                default_worker->post([this]() {
                         knet_dlog("start kcp server @ {}", listen_port);
                         server_socket = std::make_shared<udp::socket>(default_worker->context(), udp::endpoint(udp::v4(), listen_port));
-                        do_receive(); });
+                        do_receive(); 
+				});
             }
 
             inline WorkerPtr get_worker()
