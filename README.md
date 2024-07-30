@@ -35,30 +35,26 @@ Create a tcp server, you need define a tcp session inherited to TcpConnection cl
 Start it with the port. now you get a discard tcp server. 
 
 ```cpp
-
-/*
+ 
 //Sample protocol head 
 struct UserMsgHead {
     uint32_t length; //body length 
     uint32_t type;
     char     data[0];  
 }; 
-*/
+ 
 
 #include "knet.hpp"
 using namespace knet::tcp; 
 class TcpSession : public TcpConnection<TcpSession> {
     public:
-       virtual int32_t handle_package(const char * data, uint32_t len ){
-       /*
+       virtual int32_t handle_package(const char * data, uint32_t len ) override{ 
             //sample usage message head 
             if (len  < sizeof(UserMsgHead)){
                 return 0; 
             }
             UserMsgHead * head = (UserMsgHead*) data;  
-            return head->length + sizeof(UserMsgHead);   
-            */ 
-            return len  ; 
+            return head->length + sizeof(UserMsgHead); 
         }
 
         //all net events
@@ -110,22 +106,22 @@ As a server, we need a manager to control all the incoming sessions's lifetime, 
 class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
     public:
-        virtual void on_create(TPtr ptr) { 
+        virtual void on_create(TPtr ptr) override { 
             dlog("connection created event in my factory "); 
         }
 
-        virtual void on_release(TPtr ptr) { 
+        virtual void on_release(TPtr ptr) override { 
             dlog("connection release event in my factory "); 
         } 
 		 
 }; 
 
-    MyFactory factory; 
-    dlog("start server");
-    // create a factory instance and pass it to listener.
-    TcpListener<TcpSession,MyFactory> listener(&factory);
-    int port = 8899;
-    listener.start(port); 
+MyFactory factory; 
+dlog("start server");
+// create a factory instance and pass it to listener.
+TcpListener<TcpSession,MyFactory> listener(&factory);
+int port = 8899;
+listener.start(port); 
 
 ```
 
