@@ -72,7 +72,7 @@ namespace knet {
                     }
 
                     inline bool connect(){
-                        return connect(url_info ); 
+                        return connect(remote_url ); 
                     }
 
                     bool verify_certificate(bool preverified, asio::ssl::verify_context& ctx) {
@@ -85,9 +85,23 @@ namespace knet {
                     }
                                     
                     bool connect(const KNetUrl & urlInfo  ) {                       
-                        url_info = urlInfo; 
-                        tcp::resolver resolver(io_worker->context());
-                        auto result = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
+                        remote_url = urlInfo; 
+                        tcp::resolver resolver(io_worker->context()); 
+                        tcp::resolver::results_type addrResult ; 
+                        try {
+                            addrResult = resolver.resolve(urlInfo.host, std::to_string(urlInfo.port));
+                            if (addrResult.empty()){
+                                knet_wlog("resolve address {} failed", urlInfo.host); 
+                                return false; 
+                            }
+                            knet_dlog("resolve result :"); 
+                            for(auto &e : addrResult){
+                                knet_dlog("  ip {}", e.endpoint().address().to_string()); 
+                            }
+                        }catch(... ){
+                            knet_wlog("resolve address {}:{} failed", urlInfo.host, urlInfo.port); 
+                            return false; 
+                        }
                         knet_dlog("connect to server {}:{}", urlInfo.host, urlInfo.port);                        
                         //sslsock.lowest_layer().close(); 
                        // sslsock.lowest_layer() = std::move(tcp::socket(io_context)); 
@@ -101,23 +115,23 @@ namespace knet {
                         auto self = this->shared_from_this();
                         socket_status = SocketStatus::SOCKET_CONNECTING; 
                        
-                        async_connect(sslsock.lowest_layer(), result,
-                            [self, this ](asio::error_code ec, typename decltype(result)::endpoint_type endpoint) {
-                            if (!ec) {
-                                if (!self->net_options.tcp_delay)
-                                {
-                                    self->sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
-                                }
-                                
-                                knet_dlog("connect to {}:{} success",url_info.host,url_info.port);       
-                                self->init_read(true); 
-                                                                    
-                            }else {
-                                knet_dlog("connect to {}:{} failed, error : {}", url_info.host, url_info.port, ec.message() );
-                                self->sslsock.lowest_layer().close();
-                                self->socket_status = SocketStatus::SOCKET_CLOSED; 
-                            }
-                        }); 
+                               async_connect(sslsock.lowest_layer(), addrResult,
+                                    [self, this ](asio::error_code ec, typename decltype(addrResult)::endpoint_type endpoint) {
+                                    if (!ec) {
+                                        if (!self->net_options.tcp_delay)
+                                        {
+                                            self->sslsock.lowest_layer().set_option(asio::ip::tcp::no_delay(true));        
+                                        }
+                                        
+                                        knet_dlog("connect to {}:{} success",remote_url.host,remote_url.port);       
+                                        self->init_read(true); 
+                                                                           
+                                    }else {
+                                        knet_dlog("connect to {}:{} failed, error : {}", remote_url.host, remote_url.port, ec.message() );
+                                        self->sslsock.lowest_layer().close();
+                                        self->socket_status = SocketStatus::SOCKET_CLOSED; 
+                                    }
+                                }); 
 
                         return true;  
                     }
@@ -163,7 +177,7 @@ namespace knet {
                     void do_read() {
                         if (sslsock.lowest_layer().is_open() ) {					                           
                             auto self = this->shared_from_this();
-                            auto buf = asio::buffer((char*)read_buffer + read_buffer_pos, kReadBufferSize - read_buffer_pos);
+                            auto buf = asio::buffer( &read_buffer[read_buffer_pos], kReadBufferSize - read_buffer_pos);
                             if (kReadBufferSize > read_buffer_pos){
                                 sslsock.async_read_some(
                                         buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
@@ -195,7 +209,11 @@ namespace knet {
                     int32_t sync_send(const char* pData, uint32_t dataLen) {
                         if (is_open() ) {	 
                             try {
-                                return asio::write(sslsock.lowest_layer(), asio::const_buffer(pData, dataLen));
+                                auto ret = asio::write(sslsock, asio::const_buffer(pData, dataLen));
+                                if (ret >0  && connection){
+                                    connection->process_event(EVT_SEND);
+                                }
+                                return ret; 
                             }  catch(const  asio::system_error &ex ){
                                 knet_elog("sync_send write failed {}", ex.what()); 
                             }
@@ -211,7 +229,11 @@ namespace knet {
 			                    asioBuffers.push_back(asio::const_buffer(buf.data(), buf.length())); 
 			                }
                             try {
-                                return asio::write(sslsock.lowest_layer(), asioBuffers);
+                                auto ret = asio::write(sslsock, asioBuffers);
+                                if (ret >0  && connection){
+                                    connection->process_event(EVT_SEND);
+                                }
+                                return ret; 
                             }  catch(const  asio::system_error &ex ){
                                 knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
@@ -227,7 +249,12 @@ namespace knet {
 			                    asioBuffers.push_back(asio::const_buffer(buf.data(), buf.length())); 
 			                }
                             try {
-                                return asio::write(sslsock.lowest_layer(), asioBuffers);
+                                auto ret =  asio::write(sslsock, asioBuffers);
+                                if (ret > 0 &&  connection)
+                                {
+                                    connection->process_event(EVT_SEND);
+                                }
+                                return ret; 
                             }  catch(const  asio::system_error &ex ){
                                 knet_elog("sync_sendv write failed {}", ex.what()); 
                             }
@@ -252,28 +279,30 @@ namespace knet {
 
                      int32_t mpush_sync() {                        
                          try {  
-
-                            return asio::write(sslsock.lowest_layer(), asio::const_buffer(send_buffer));      
-                        
+                             auto ret =  asio::write(sslsock, asio::const_buffer(send_buffer));                        
+                             send_buffer.clear(); 
+             
+                             if (ret > 0 && connection)
+                             {
+                                 connection->process_event(EVT_SEND);
+                             }
+                             return ret; 
                         }  catch(const  asio::system_error &ex ){
                             knet_elog("mpush_sync failed {}", ex.what()); 
                         }
                         return -1; 
                      }
 
-
-
-                    inline int32_t send(const char* pData, uint32_t dataLen) { 
+                    inline int32_t send(const char* pData, uint32_t dataLen) {                      
                         return msend(std::string_view(pData, dataLen));
                     }
 
-                    int32_t send(const std::string_view& msg) {
-           
+                    inline int32_t send(const std::string_view& msg) {             
                         return msend(msg);
                     }
 
                     template <class P, class... Args>
-                        int32_t msend(const P& first, const Args&... rest) {  
+                        int32_t msend(const P& first, Args&& ... rest) {
                             if (is_open()){ 
 								 
                                 int32_t sent = 0; 
@@ -325,18 +354,13 @@ namespace knet {
                     }
                     bool  is_writting {false}; 
                     int32_t do_send() {  			 
-						/*
 						auto self = this->shared_from_this();
-                        asio::post(io_worker->context(), [self,this]() { 
-                                if (!is_writting){
-                                self->do_async_write(); 
+                        asio::post(io_worker->context(), [self]() { 
+                                if (!self->is_writting){
+									self->do_async_write(); 
                                 }
                             }); 					 
-							*/
-						if (!is_writting){
-							this->do_async_write(); 
-						}
-
+ 
                         return 0; 
                     }
 
@@ -429,13 +453,19 @@ namespace knet {
                                     if (  !send_buffer.empty()) {
                                         do_async_write(); //try last write
                                     }
-                                    conn->process_event(EVT_DISCONNECT); 
+                                    if (self->socket_status <=  SocketStatus::SOCKET_CLOSING ){
+                                        conn->process_event(EVT_DISCONNECT); 
+                                    }
                                     self->socket_status = SocketStatus::SOCKET_CLOSED;
                                     if (sslsock.lowest_layer().is_open()) {
                                     sslsock.lowest_layer().close();
                                 }
-                                    conn->release();
-                                    conn.reset(); 
+                                    if (conn->need_reconnect()) {
+                                        socket_status = SocketStatus::SOCKET_RECONNECT;
+                                    }else {
+                                        conn->release();
+                                        conn.reset(); 
+                                    }
                                 }else {
                                     self->socket_status = SocketStatus::SOCKET_CLOSED;
                                     if (sslsock.lowest_layer().is_open()) {
@@ -452,8 +482,10 @@ namespace knet {
                             knet_dlog("do close, already in closing socket_status {}", static_cast<uint32_t>(socket_status));
                             return;
                         }  
-                        socket_status = SocketStatus::SOCKET_CLOSING;   
-                        auto & conn = connection; 
+                        if (socket_status < SocketStatus::SOCKET_CLOSING){
+                            socket_status = SocketStatus::SOCKET_CLOSING;   
+                        } 
+						auto & conn = connection; 
                         if (conn) {
 							send_buffer.clear();
                             cache_buffer.clear(); //drop cache data
@@ -509,7 +541,7 @@ namespace knet {
                     std::string cache_buffer; 
                     SocketStatus socket_status = SocketStatus::SOCKET_IDLE;
                     std::thread::id worker_tid;
-                    KNetUrl url_info; 
+                    KNetUrl remote_url; 
                     NetOptions net_options; 
             };
 

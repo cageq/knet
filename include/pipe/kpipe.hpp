@@ -35,21 +35,32 @@ namespace knet {
 							}
 						}
 
-					virtual ~KPipe(){						
-					}
-					void start(const std::string& host = "0.0.0.0", uint16_t port = 9999) {
+			virtual ~KPipe() {}
+
+					bool start(const std::string& host = "0.0.0.0", uint16_t port = 9999) {
 
 						if ((pipe_mode & PIPE_SERVER_MODE) && port > 0) {
 							knet_dlog("start pipe on server mode {}", port);
-							listener->start(port);
+							bool ret = listener->start(port);
+							if (!ret)
+							{
+								knet_elog("start kpipe listener failed");
+								return false;
+							}
 						}
 
 						if (pipe_mode & PIPE_CLIENT_MODE) {
 							knet_dlog("start pipe on client mode {}", port);
-							connector->start();
+							bool ret = connector->start();
+							if (!ret)
+							{
+								knet_elog("start kpipe connector failed");
+								return false;
+							}
 							connect();
 						}
 						is_started = true;
+						return is_started; 
 					}
 
 					void attach(PipeSessionPtr pipe, const std::string& host = "", uint16_t port = 0) {

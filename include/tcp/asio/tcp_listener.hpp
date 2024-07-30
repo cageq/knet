@@ -10,6 +10,8 @@
 #include <vector>
 #include "tcp_connection.hpp"
 #include "knet_factory.hpp"
+#include "utils/knet_log.hpp"
+using namespace knet::log; 
 
 namespace knet
 {
@@ -96,18 +98,19 @@ namespace knet
 							asio::error_code ec;
 							this->tcp_acceptor->bind(endpoint, ec);
 							if (ec) {
-								knet_elog("bind address failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
+								knet_elog("bind address failed {}:{}", url_info.host, url_info.port);
 								return false;
 							}
 							this->tcp_acceptor->listen(net_options.backlogs, ec);
 
 							if (ec) {
-								knet_elog("start listen failed {}:{}", url_info.host, url_info.port);
 								is_running = false;
+								knet_elog("start listen failed {}:{}", url_info.host, url_info.port);
 								return false;
 							}
 
+                            //multi threads accept, accept connection faster 
 					 		if (net_options.sync_accept_threads > 0 ){
 								for(uint32_t i = 0; i < net_options.sync_accept_threads; i ++){
 									accept_threads.emplace_back([this](){
@@ -118,12 +121,8 @@ namespace knet
 							}							
 							return this->do_accept();
 						}
-						else
-						{
-							return false;
-						}
 					}
-					return true;
+					return false ;
 				}
 
 				bool start(uint16_t port, NetOptions opts ={}, void * ssl = nullptr){
@@ -191,6 +190,11 @@ namespace knet
                     }
                     return 0; 
                 }
+
+				inline WorkerPtr get_listen_worker(){
+					return listen_worker;
+				}
+
 			private:
 				inline void add_factory_event_handler(std::true_type, FactoryPtr fac)
 				{
@@ -250,45 +254,44 @@ namespace knet
 					}
 				}
 
-				bool do_sync_accept(){ 
+                bool do_sync_accept(){ 
+                    while(is_running){  
+                        auto worker = this->get_worker();
+                        if (!worker) {
+                            knet_elog("no event worker, can't start tcp listener");
+                            return false ;
+                        } 
 
-					while(is_running){  
-							auto worker = this->get_worker();
-							if (!worker) {
-								knet_elog("no event worker, can't start tcp listener");
-								return false ;
-							} 
+                        asio::error_code ec;
+                        asio::ip::tcp::endpoint remoteAddr  ;
+                        asio::ip::tcp::socket sock(tcp_acceptor->accept(worker->context(), remoteAddr, ec));
 
-							asio::error_code ec;
-							asio::ip::tcp::endpoint remoteAddr  ;
-							asio::ip::tcp::socket sock(tcp_acceptor->accept(worker->context(), remoteAddr, ec));
-					 
-							if (!ec) {
-								auto socket = std::make_shared<Socket>(std::move(sock),   worker->thread_id(), worker, ssl_context);
-							 
-								pthread_t curTid = pthread_self();				
-								knet_ilog("accept new connection from {}:{}, tid {}", remoteAddr.address().to_string(), remoteAddr.port(), curTid);
+                        if (!ec) {
+                            auto socket = std::make_shared<Socket>(std::move(sock),   worker->thread_id(), worker, ssl_context);
 
-								socket->socket().set_option( asio::ip::tcp::no_delay(true));
-								asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
-								socket->socket().set_option(SNDBUF);
-								asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
-								socket->socket().set_option(RCVBUF);
+                            knet_ilog("new connection from {}:{}", remoteAddr.address().to_string(), remoteAddr.port());
 
-								this->init_conn(worker, socket);
-							}else {											// An error occurred.
-								knet_elog("get remote address failed: {}:{}", ec.value(), ec.message());
-								sock.close();
-							}
-						}
-					return true; 
-				}
+                            socket->socket().set_option( asio::ip::tcp::no_delay(true));
+                            asio::socket_base::send_buffer_size SNDBUF(net_options.send_buffer_size);
+                            socket->socket().set_option(SNDBUF);
+                            asio::socket_base::receive_buffer_size RCVBUF(net_options.recv_buffer_size);
+                            socket->socket().set_option(RCVBUF);
+
+                            this->init_conn(worker, socket);
+                        }else {											// An error occurred.
+                            knet_elog("get remote address failed: {}:{}", ec.value(), ec.message());
+                            sock.close();
+                            return false; 
+                        }
+                    }
+                    return true; 
+                }
 
 				bool do_accept()
 				{
 					auto worker = this->get_worker();
 					if (!worker) {
-						knet_elog("no event worker, can't start");
+						knet_elog("no event worker, can't start tcp listener");
 						return false ;
 					}
 
@@ -340,12 +343,15 @@ namespace knet
 				{
 					if (worker)
 					{
-						asio::dispatch(worker->context(), [=]() {
+						asio::post(worker->context(), [this, socket, worker]() {
 								auto conn = create_connection(socket, worker);				 
                                     if (!this->net_options.sync ) {
                                         socket->init_read(true);
                                     }
 								});
+ 
+					}else {
+						knet_wlog("get empty worker"); 
 					}
 				}
 
