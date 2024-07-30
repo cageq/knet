@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <functional>
 #include "http_message.hpp"
 #include "http_decoder.hpp"
 
@@ -10,17 +11,14 @@ namespace knet
 
 		class HttpResponse
 		{
-
 		public:
-
 			friend class HttpDecoder<HttpResponse>;
 			friend class HttpEncoder<HttpResponse>;
-
-			HttpResponse() {}
-			HttpResponse(const std::string &rsp, uint32_t c = 200,  const std::string &type = "txt")
+			HttpResponse() = default; 
+			HttpResponse(const std::string &rsp, uint32_t code = 200,  const std::string &type = "txt")
 			{
 				http_encoder.init_http_message(this);
-				status_code = c;
+				status_code = code;
 				http_encoder.set_content(rsp, type);
 			}
 
@@ -43,6 +41,11 @@ namespace knet
 				http_encoder.add_header(key, value);
 			}
 
+			std::string json(){
+
+				return ""; 
+			}
+
 			inline uint32_t code() const { return status_code; }
 
 			inline std::string to_string() const { return http_encoder.encode(); }
@@ -57,9 +60,10 @@ namespace knet
 			std::string uri;
 			std::string content;
 			uint32_t status_code = 0;
-			uint32_t length = 0; 
-		private:
-			
+			uint32_t length      = 0; 
+			std::function<int32_t (const char * , uint32_t)> writer; 
+
+		private:			
 			HttpDecoder<HttpResponse> http_decoder;
 			HttpEncoder<HttpResponse> http_encoder;
 		};

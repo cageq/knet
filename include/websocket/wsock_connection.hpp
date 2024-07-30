@@ -270,7 +270,7 @@ public:
 			rsp.add_header("Connection", "Upgrade");
 			rsp.add_header("Sec-WebSocket-Accept", secWebSocketAccept);
 			rsp.add_header("Accept-Encoding","gzip, deflate"); 
-			reply(rsp);
+			write(rsp);
 			dlog("send websocket response success");
 
 			is_websocket = true;
@@ -284,7 +284,7 @@ public:
 		return false;
 	}
 
-	void reply(const HttpResponsePtr rsp) {
+	void write(const HttpResponsePtr rsp) {
 		this->send(rsp->to_string());
 
 		if (rsp->code() >= 200) {
@@ -292,7 +292,7 @@ public:
 		}
 	}
 
-	void reply(const HttpResponse& rsp) {
+	void write(const HttpResponse& rsp) {
 		this->send(rsp.to_string());
 
 		if (rsp.code() >= 200) {

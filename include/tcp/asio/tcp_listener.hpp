@@ -92,9 +92,7 @@ namespace knet
 						if (tcp_acceptor->is_open())
 						{
 							this->tcp_acceptor->set_option(asio::ip::tcp::acceptor::reuse_address(true));;
-							
-                            
-
+							 
 							asio::error_code ec;
 							this->tcp_acceptor->bind(endpoint, ec);
 							if (ec) {

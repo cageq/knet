@@ -50,7 +50,7 @@ public:
 		return true; 
 	}
 
-	virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen) {  
+	virtual bool handle_data(TPtr conn, char * data, uint32_t dataLen)  override {  
 
 			dlog("handle factory data , is websocket {}", conn->is_websocket); 
 			if (conn->is_websocket) {
@@ -61,6 +61,9 @@ public:
 			
 			if (conn->is_status(WSockStatus::WSOCK_INIT)) {
 				auto req = std::make_shared<HttpRequest>();
+
+				auto ctx = std::make_shared<HttpContext>(); 
+				ctx->request = req; 
 				auto msgLen = req->parse(data, dataLen, true);
 				if (msgLen > 0) {
 
@@ -81,27 +84,25 @@ public:
 							}
 						} else {
 							wlog("not found websocket handler :{}", urlInfo.path());
-							conn->reply(HttpResponse(404));
+							conn->write(HttpResponse(404));
 						}
 
 					} else {
 
-						dlog("request path is {}", urlInfo.path());
-						req->replier = [conn](const HttpResponse& rsp) { conn->reply(rsp); };
+						dlog("request path is {}", urlInfo.path()); 
 
 						auto itr = http_routers.find(urlInfo.path());
 						if (itr != http_routers.end()) {
-							if (itr->second) {
+							auto & handler = itr->second; 
+							 
 								//dlog("handle data in thread id {}", std::this_thread::get_id());
-								auto rsp = itr->second( req);
+								auto rsp = handler.call( ctx);
 								if (rsp->code() != 0) {
-									conn->reply(*rsp);
+									conn->write(*rsp);
 								}
-							} else {
-								conn->reply(HttpResponse(501));
-							}
+							
 						} else {
-							conn->reply(HttpResponse(404));
+							conn->write(HttpResponse(404));
 						}
 					}
 				} else {

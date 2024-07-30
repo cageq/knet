@@ -268,7 +268,7 @@ namespace knet
 			{
 				return msg_parser.upgrade;
 			}
-			std::string_view get_header(const std::string &key)
+			std::string_view get_header(const std::string &key) const 
 			{
 				for (auto &item : headers)
 				{

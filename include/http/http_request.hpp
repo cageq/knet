@@ -13,12 +13,15 @@ namespace knet {
 
 		class HttpRequest {
 			public:
-				HttpRequest() {}
+
+				
+				HttpRequest()  = default; 
+
+				//encode methods 
 				HttpRequest(HttpMethod method, const std::string& url, const std::string& content = "",
 						const std::string& type = "txt") {
 					http_encoder.init_http_message(this); 
 			 		http_method = method; 
-
 					http_url = url;
 					http_encoder.set_content(content, type); 
 				}
@@ -41,17 +44,22 @@ namespace knet {
 					http_encoder.add_header(key, value);
 				}
 
+	
+				inline std::string dump() const {
+					return http_encoder.encode();
+				} 
 
+ 
+				//decode methods 
 				uint32_t parse(const char* data, uint32_t len, bool inplace = false) {
 					http_decoder.init_http_message(this); 
 					return http_decoder.parse_request(data, len, inplace);
 				}
 
-				std::string_view get_header(const std::string& key) {
+				std::string_view get_header(const std::string& key)  const {
 					return http_decoder.get_header(key);
 				}
-
-				// std::string url() const { return http_decoder->request_url; }
+ 
 				inline std::string url() const { return http_url; }
 
 				inline std::string path() const { 
@@ -68,21 +76,15 @@ namespace knet {
 					return std::string(q.data(),q.size());
 				}
 		 
-
-				inline std::string to_string() const {
-					return http_encoder.encode();
-				}
-				void reply(const std::string &msg, uint32_t code = 200){
-					if(replier){
-						replier(HttpResponse(msg, code )); 
-					}
-				}
-
 				inline bool is_websocket() const {
 					return http_decoder.is_websocket();
 				}
+ 
+ 				inline std::string to_string() const {
+					return std::string(http_decoder.http_body);
+				} 
 
-				std::function<void(const HttpResponse&)> replier;
+	
 				HttpMethod http_method;
 				enum  http_method method_value; 
 				std::string method; 

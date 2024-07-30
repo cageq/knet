@@ -2,6 +2,7 @@
 #include "knet.hpp"
 #include "http_request.hpp"
 #include "http_response.hpp"
+#include "http_context.hpp"
 #include <cassert>
 #include <regex>
 
@@ -10,9 +11,27 @@ namespace knet
 {
 	namespace http
 	{
+		class HttpContext;  
+		using HttpRequestHandler = std::function<HttpResponsePtr(const HttpRequestPtr &, const HttpResponsePtr & )> ; 
+		using HttpContextHandler = std::function<HttpResponsePtr(const HttpContextPtr &)> ; 
+ 
+		struct HttpHandler {
+			HttpRequestHandler http_handler; 			
+			HttpContextHandler context_handler; 
 
-		using HttpHandler = std::function<HttpResponsePtr(const HttpRequestPtr &)>;
-		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>;
+			HttpResponsePtr call(const HttpContextPtr &ctx) {
+				if (context_handler){
+					return context_handler(ctx); 
+				}
+				if (http_handler){
+					ctx->response = std::make_shared<HttpResponse>(); 
+					return http_handler(ctx->request, ctx->response); 
+				}
+				return ctx->response; 
+			}
+		}; 
+
+		using HttpRouteMap = std::unordered_map<std::string, HttpHandler>; 
 
 		class RegexOrderable : public std::regex
 		{
@@ -36,10 +55,10 @@ namespace knet
 
 			~HttpConnection() {}
 
-			void init_routers(const HttpHandler & router,   HttpRouteMap * routers)				
+			void init_routers(  HttpHandler & router, HttpRouteMap * routers)				
 			{ 
 				global_router = router; 
-				http_routers = routers; 
+				http_routers  = routers; 
 			}
 
 
@@ -48,29 +67,31 @@ namespace knet
 				this->send(req.to_string());
 			}
 
-			void reply(const HttpResponse &rsp)
+			void write(const HttpResponse &rsp)
 			{
 				if (this->is_connected())
 				{
 					this->send(rsp.to_string());
 				}
-				if (rsp.code() >= 200)
-				{
-					this->close();
-				}
+				// if (rsp.code() >= 200)
+				// {
+				// 	this->close();
+				// }
+				this->close(); 
 			}
 
-			void reply(const std::string &msg, uint32_t code = 200)
-			{
-				HttpResponse rsp(msg, code);
+			void write(const std::string &msg, uint32_t code = 200)
+			{				
 				if (this->is_connected())
 				{
+					HttpResponse rsp(msg, code);
 					this->send(rsp.to_string());
 				}
-				if (code >= 200)
-				{
-					this->close();
-				}
+				// if (code >= 200)
+				// {
+				// 	this->close();
+				// }
+				this->close(); 
 			}
 
 			int send_first_request()
@@ -88,8 +109,7 @@ namespace knet
 				auto msgLen = req->parse(data, dataLen);
 				if (msgLen > 0)
 				{
-					auto conn = this->shared_from_this();
-					req->replier = [conn](const HttpResponse &rsp){ conn->reply(rsp); };
+					auto conn = this->shared_from_this(); 
 
 					//bool hasHandler = false;
 					//for(auto & router : http_routers){
@@ -113,36 +133,38 @@ namespace knet
 					//{
 					//	conn->reply(HttpResponse(404));
 					//}
+					auto ctx = std::make_shared<HttpContext>(); 
+					ctx->connection = conn; 
+					ctx->request = req; 
+					ctx->response = std::make_shared<HttpResponse>(); 
+					ctx->response->writer = [=](const char * data, uint32_t  dataLen ){
+						return conn->send(data, dataLen); 						
+					}; 
 
-					if (global_router)
+					auto rsp = global_router.call(ctx);
+					if (rsp && rsp->code() != 0)
 					{
-						auto rsp = global_router(req);
-						if (rsp && rsp->code() != 0)
-						{
-							conn->reply(*rsp);
-						}
+						conn->write(*rsp);
+						return true; 
 					}
-					else if ( http_routers != nullptr)
+				 
+					if ( http_routers != nullptr)
 					{
 						auto itr = http_routers->find(req->path());
 						if (itr != http_routers->end())
 						{
-							if (itr->second)
-							{
-								auto rsp = itr->second(req);
-								if (rsp->code() != 0)
-								{								
-									conn->reply(*rsp);
-								}
+							auto &handler = itr->second;  
+							auto rsp = handler.call(ctx); 
+							if (rsp->code() != 0)
+							{								
+								conn->write(*rsp);
 							}
-							else
-							{
-								conn->reply(HttpResponse(501));
-							}
+						
+							conn->write(HttpResponse(501));						 
 						}
 						else
 						{
-							conn->reply(HttpResponse(404));
+							conn->write(HttpResponse(404));
 						}
 					}
 				}
@@ -151,10 +173,9 @@ namespace knet
 			}
 
 		private:
-			HttpRequestPtr first_request;
-
-			HttpHandler  global_router; 
-			HttpRouteMap * http_routers; 
+			HttpRequestPtr first_request; 
+			HttpHandler    global_router; 
+			HttpRouteMap * http_routers = nullptr; 
 		};
 		using HttpConnectionPtr = std::shared_ptr<HttpConnection>;
 

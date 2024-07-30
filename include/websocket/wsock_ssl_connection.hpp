@@ -303,7 +303,7 @@ public:
 			rsp.add_header("Connection", "Upgrade");
 			rsp.add_header("Sec-WebSocket-Accept", secWebSocketAccept);
 //			rsp.add_header("Accept-Encoding","gzip, deflate"); 
-			reply(rsp);
+			write(rsp);
 			if (req->is_websocket()){
 				set_status(WSockStatus::WSOCK_OPEN);
 				is_websocket = true;
@@ -314,14 +314,14 @@ public:
 			return true;
 		}else {
 			elog("bad websocket key {}", secWebSocketKey);
-			reply("bad websocket key",400); 
+			write("bad websocket key",400); 
 		}
 		
 
 		return false;
 	}
 
-	void reply(const HttpResponsePtr rsp) {
+	void write(const HttpResponsePtr rsp) {
 		this->send(rsp->to_string());
 
 		if (rsp->code() >= 200) {
@@ -329,7 +329,7 @@ public:
 		}
 	}
 
-	void reply(const HttpResponse& rsp) {
+	void write(const HttpResponse& rsp) {
 		this->send(rsp.to_string());
 		if (rsp.code() >= 200) {
 			this->close();
@@ -340,7 +340,7 @@ public:
 	void set_status(WSockStatus status) { m_status = status; }
 	bool is_status(WSockStatus status) { return m_status == status; }
 
-	void reply(const std::string& msg, uint32_t code = 200, bool fin = true) {
+	void write(const std::string& msg, uint32_t code = 200, bool fin = true) {
 		HttpResponse rsp(msg, code);
 
 		if (this->is_connected()) {

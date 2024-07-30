@@ -31,18 +31,21 @@ namespace knet
 			std::string encode() const
 			{
 				fmt::memory_buffer msgBuf;
-				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(coder->http_message->http_method), coder->http_message->http_url, http_version_1_1);
+				if (coder && coder->http_message){
+					fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{} {} {}\r\n"), http_method_string(coder->http_message->http_method), coder->http_message->http_url, http_version_1_1);
 
-				for (const auto &h : coder->http_headers)
-				{
-					if (!h.first.empty())
+					for (const auto &h : coder->http_headers)
 					{
-						fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
+						if (!h.first.empty())
+						{
+							fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("{}: {}\r\n"), h.first, h.second);
+						}
 					}
-				}
 
-				fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->content);
-				return fmt::to_string(msgBuf);
+					fmt::format_to(std::back_inserter(msgBuf), FMT_STRING("\r\n{}"), coder->content);
+					return fmt::to_string(msgBuf);
+				}
+				return ""; 
 			}
 
 			XCoder *coder;
@@ -199,7 +202,7 @@ namespace knet
 			// 	add_header("Date",szBuf);
 			// }
 
-			T *http_message;
+			T *http_message = nullptr;
 			std::string context_type;
 			std::string content;
 
