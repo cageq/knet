@@ -52,7 +52,7 @@ class TcpSession : public TcpConnection<TcpSession> {
         }
 
         //all net events
-        virtual bool handle_event(NetEvent evt)  override { 
+        virtual bool handle_event(NetEvent evt) override { 
             return true; 
         }
 
@@ -79,10 +79,7 @@ TcpConnector<TcpSession>  connector;
 connector.start(); 
 connector.add_connection("127.0.0.1", 8899);
 
-
 ```
-
-
 
 ## UDP/KCP/HTTP/WEBSOCK
 

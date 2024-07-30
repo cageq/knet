@@ -31,13 +31,8 @@ namespace knet
 		    friend Sock; 
 
 			using KNetEventHandler = std::function<bool( NetEvent)>;
-			using SelfEventHandler = bool (T::*)( NetEvent);
-
 			using PackageHandler = std::function<int32_t(const char * , uint32_t len  )>;
-			using SelfPackageHandler = int32_t (T::*)(const char * , uint32_t len  );
-
-			using KNetDataHandler = std::function<bool(char *, uint32_t)>;
-			using SelfDataHandler = bool (T::*)(char * , uint32_t );
+			using KNetDataHandler = std::function<bool(char *, uint32_t)>;			
 
 			using SocketPtr = std::shared_ptr<Sock >; 
 
@@ -54,8 +49,7 @@ namespace knet
 			}
 
 			void init(NetOptions opts,  SocketPtr sock = nullptr,const  KNetWorkerPtr  & worker = nullptr, KNetHandler<T> * evtHandler = nullptr)
-			{
-                
+			{                
 				event_worker = worker;			 
 				tcp_socket   = sock;
 				if (tcp_socket){
@@ -114,27 +108,7 @@ namespace knet
 				}
 				return false; 
 			}
-			
-			inline void bind_package_handler(const PackageHandler & handler) { package_handler = handler; }
-			void bind_package_handler(const SelfPackageHandler & handler)
-			{
-				T *child = static_cast<T *>(this);
-				package_handler = std::bind(handler, child, std::placeholders::_1, std::placeholders::_2);
-			}
-
-			inline void bind_data_handler(const KNetDataHandler & handler) { data_handler = handler; }
-			void bind_data_handler(const SelfDataHandler & handler)
-			{
-				T *child = static_cast<T *>(this);
-				data_handler = std::bind(handler, child, std::placeholders::_1);
-			}
-
-			inline void bind_event_handler(const KNetEventHandler & handler) { event_handler = handler; }
-			void bind_event_handler(const SelfEventHandler & handler)
-			{
-				T *child = static_cast<T *>(this);
-				event_handler = std::bind(handler, child, std::placeholders::_1);
-			}
+		 
 
 			inline bool is_connected() { return tcp_socket && tcp_socket->is_open(); }
 			inline bool is_connecting() { return tcp_socket && tcp_socket->is_connecting(); }
@@ -316,19 +290,13 @@ namespace knet
 		 
 		 
 		 	int32_t process_package(const char * data , uint32_t len){
-				 if (package_handler){
-					 return package_handler(data , len); 
-				 } 			 	 
+ 		 	 
 				 return handle_package(data, len); 
 			}
 
 			bool process_data(char * data, uint32_t dataLen ){
 				bool ret = true; 
-				if (data_handler)
-				{
-					ret = data_handler(data, dataLen);
-				}
-
+	 
 				if (ret && user_event_handler)
 				{
 					ret = user_event_handler->handle_data(this->shared_from_this(), data, dataLen );
@@ -344,12 +312,7 @@ namespace knet
 	private:
 			bool process_event(NetEvent evt){
 				bool ret = true; 
-				if (event_handler)
-				{
-					ret =  event_handler(evt);
-				}
-
-				if (ret && user_event_handler)
+				if (user_event_handler)
 				{
 					 ret = user_event_handler->handle_event(this->shared_from_this(), evt);
 				}	
@@ -372,13 +335,10 @@ namespace knet
 
 			std::mutex  timer_mutex; 
 			std::vector<uint64_t> conn_timers;  //timerid should not duplicated 
-			SocketPtr tcp_socket = nullptr;
-			KNetEventHandler    event_handler   = nullptr;
-			KNetDataHandler     data_handler    = nullptr;
-			PackageHandler  package_handler = nullptr;  
+			SocketPtr tcp_socket = nullptr;		
+
 			KNetWorkerPtr   event_worker = nullptr;
-			KNetHandler<T>* user_event_handler = nullptr;
-	 
+			KNetHandler<T>* user_event_handler = nullptr;	 
 		};
 
 	} // namespace tcp

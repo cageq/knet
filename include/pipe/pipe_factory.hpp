@@ -56,7 +56,7 @@ namespace knet
 				return false;
 			}
 
-			bool handle_data(TPtr conn, char *data, uint32_t dataLen) override
+			virtual bool handle_data(TPtr conn, char *data, uint32_t dataLen) override
 			{
 				PipeMsgHead *msg = (PipeMsgHead *)data;
 				if (msg->length + sizeof(PipeMsgHead) > dataLen)
