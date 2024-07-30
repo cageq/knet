@@ -48,10 +48,10 @@ struct UserMsgHead {
 #include "knet.hpp"
 using namespace knet::tcp; 
 class TcpSession : public TcpConnection<TcpSession> {
-      public:
-		virtual int32_t handle_package(const char * data, uint32_t len ){
-            /*
-			//sample use message head 
+    public:
+       virtual int32_t handle_package(const char * data, uint32_t len ){
+       /*
+            //sample usage message head 
             if (len  < sizeof(UserMsgHead)){
                 return 0; 
             }
@@ -109,23 +109,23 @@ As a server, we need a manager to control all the incoming sessions's lifetime, 
 
 class MyFactory: public KNetFactory<TcpSession> { 
 // TcpSession is your real session class  to process your session events and data 
-	public:
-		virtual void on_create(TPtr ptr) { 
-			dlog("connection created event in my factory "); 
-		}
+    public:
+        virtual void on_create(TPtr ptr) { 
+            dlog("connection created event in my factory "); 
+        }
 
-		virtual void on_release(TPtr ptr) { 
-			dlog("connection release event in my factory "); 
-		} 
+        virtual void on_release(TPtr ptr) { 
+            dlog("connection release event in my factory "); 
+        } 
 		 
 }; 
 
-	MyFactory factory; 
-	dlog("start server");
-  	// create a factory instance and pass it to listener.
-	TcpListener<TcpSession,MyFactory> listener(&factory);
-	int port = 8899;
-	listener.start(port); 
+    MyFactory factory; 
+    dlog("start server");
+    // create a factory instance and pass it to listener.
+    TcpListener<TcpSession,MyFactory> listener(&factory);
+    int port = 8899;
+    listener.start(port); 
 
 ```
 
