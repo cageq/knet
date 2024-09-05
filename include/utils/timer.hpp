@@ -125,7 +125,10 @@ namespace knet
 
                 {
                     std::lock_guard<std::mutex> guard(timer_mutex); 
-                    timerNode = timer_nodes[timerId]; 
+                    auto itr = timer_nodes.find(timerId); 
+                    if (itr != timer_nodes.end()){
+						timerNode = itr->second; 
+					}
                 }
 
                 if (timerNode)
@@ -144,7 +147,10 @@ namespace knet
                 TimerNodePtr timerNode = nullptr; 
                 {
                     std::lock_guard<std::mutex> guard(timer_mutex); 
-                    timerNode = timer_nodes[timerId]; 
+                    auto itr = timer_nodes.find(timerId); 
+                    if (itr != timer_nodes.end()){
+						timerNode = itr->second; 
+					}
                 }
                 if (timerNode)
                 {
@@ -157,8 +163,11 @@ namespace knet
             {
                 TimerNodePtr timerNode = nullptr; 
                 {
-                    std::lock_guard<std::mutex> guard(timer_mutex); 
-                    timerNode = timer_nodes[timerId]; 
+                    std::lock_guard<std::mutex> guard(timer_mutex);                     
+					auto itr = timer_nodes.find(timerId); 
+                    if (itr != timer_nodes.end()){
+						timerNode = itr->second; 
+					}
                 }
                 if (timerNode)
                 {						

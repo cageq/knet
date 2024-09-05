@@ -329,7 +329,6 @@ namespace knet
 			uint32_t reconn_interval = 0; 
 
 			bool passive_mode = true; 
-
 			std::string remote_host; 
 			uint16_t remote_port =0; 
 

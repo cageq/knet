@@ -6,8 +6,6 @@
 #pragma once
 #include <string>
 #include <memory>
-
-
 #include <asio.hpp>
 #include "utils/knet_log.hpp"
 #include "utils/timer.hpp"
