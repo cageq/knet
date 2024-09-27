@@ -41,22 +41,24 @@ namespace knet {
 				net_factory = fac; 
 				asio::ip::address lisAddr = asio::ip::make_address(url_info.host);
 				server_socket = std::make_shared<udp::socket>(net_worker->context());
-				
-				asio::ip::udp::endpoint lisPoint(lisAddr, url_info.port);
-				server_socket->open(lisPoint.protocol());
-				server_socket->set_option(asio::ip::udp::socket::reuse_address(opt.reuse));
-				server_socket->bind(lisPoint);
-
-				std::string multiHost = url.get("multi"); 				
+				knet_dlog("start udp server {}:{}", url_info.host, url_info.port);
+				listen_port = url_info.port; 
+				std::string multiHost = url.get("multi"); 		
+				asio::ip::udp::endpoint lisPoint(lisAddr, url_info.port);					
+				server_socket->open(lisPoint.protocol());				
+				if (multiHost.empty() && url_info.port > 0 ){
+							
+					server_socket->set_option(asio::ip::udp::socket::reuse_address(opt.reuse));
+					server_socket->bind(lisPoint); 
+				}				 
+					
 				if (!multiHost.empty()) {
 					multi_host = multiHost;
 					// Create the socket so that multiple may be bound to the same address.
 					knet_dlog("join multi address {}", multiHost);
 					asio::ip::address multiAddr = asio::ip::make_address(multiHost);
-					server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
-				}
- 
-				knet_dlog("start udp server {}:{}", url_info.host, url_info.port);
+				 	server_socket->set_option(asio::ip::multicast::join_group(multiAddr));
+				} 
 				do_receive();
 				return true; 		
 			}
@@ -75,8 +77,7 @@ namespace knet {
 						auto conn = item.second;
 						conn->send(msg);
 					}
-				}
-				else {
+				}else {
 					auto buffer = std::make_shared<std::string>(std::move(msg));
 					asio::ip::address multiAddr = asio::ip::make_address(multi_host);
 					asio::ip::udp::endpoint multiPoint(multiAddr, listen_port);

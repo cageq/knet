@@ -13,7 +13,6 @@
 #include "utils/timer.hpp"
 #include "utils/knet_url.hpp"
 #include "knet_worker.hpp"
-#include "utils/loop_buffer.hpp"
 
 using namespace knet::utils;
 using namespace std::chrono;
@@ -111,12 +110,8 @@ namespace knet
 			template <class P, class... Args>
 			int32_t msend(const P &first, const Args &...rest)
 			{
-				{
-				
-					std::lock_guard<std::mutex> lock (write_mutex); 				
-					mpush( first, rest...);
-				}
-				return do_send(); 
+				auto sendBuffer = std::make_shared<std::string>(); //calc all params size
+				return mpush(sendBuffer, first, rest...);
 			}
 
 			virtual PackageType handle_package(const std::string &msg)
@@ -158,67 +153,68 @@ namespace knet
 
 			uint32_t cid = 0;
 		private:
-
-		
-				template <typename P >  
-					inline uint32_t write_data( const P & data  ){
-						return send_buffer.push((const char*)&data, sizeof(P));  
-					} 
-
-
-				inline uint32_t  write_data(const std::string_view &  data ){
-					return send_buffer.push(data.data(), data.length());  
-				}
-
-				inline uint32_t write_data(const std::string &  data ){
-					return send_buffer.push(data.data(), data.length()); 
-
-				}
-
-				inline uint32_t write_data(const char* data ){
-					if (data != nullptr ){ 
-						return send_buffer.push(data , strlen(data));  
-					}
-					return 0;                         
-				}
-
-				template <typename F, typename ... Args>
-					int32_t mpush(const F &  data, Args... rest) { 					
-						this->write_data(data  ) ;    
-						return mpush(rest...);
-					} 
- 
-
-
-			int32_t mpush()
+			template <typename P>
+			inline int32_t write_data(SendBufferPtr &sndBuf, const P &data)
 			{
-				return 0; 
+				sndBuf->append(std::string_view((const char *)&data, sizeof(P)));
+				return sizeof(P); 
 			}
-			
-			int32_t do_send(){
-			 
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string_view &data)
+			{
+				sndBuf->append(data);
+				return data.length(); 
+			}
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const std::string &data)
+			{
+				sndBuf->append(data);
+				return data.length(); 
+			}
+
+			inline int32_t write_data(SendBufferPtr &sndBuf, const char *data)
+			{
+				sndBuf->append(std::string(data));
+				return strlen(data); 
+			}
+
+
+			template <typename F, typename... Args>
+			int32_t mpush(SendBufferPtr &sndBuf, const F &data, Args... rest)
+			{
+				auto ret = this->write_data(sndBuf, data);
+				auto rst = mpush(sndBuf, rest...);
+				if (rst < 0)
+				{
+					return -1; 
+				}
+				return ret + rst; 
+			}
+
+			int32_t mpush(SendBufferPtr &sndBuf)
+			{
 				if (!udp_socket)
 				{
 					return -1;
 				}
 
-				auto sentLen  = send_buffer.read([this](const char * data,uint32_t dataLen ){
-					udp_socket->async_send_to(asio::const_buffer(data, dataLen), 
-						remote_point, [this, dataLen](std::error_code ec, std::size_t len /*bytes_sent*/)
-						{
-							if (!ec)
-							{
-								send_buffer.commit(dataLen); 
-								knet_dlog("send msg to {}  len {}",remote_point.address().to_string(), dataLen); 
-							}
-							else
-							{
-								knet_elog("sent message error : {}, {}, {}", ec.value(), ec.message(),dataLen);
-							}
-						});
-						return dataLen; 
-				});  
-				return sentLen;
+				if (!sndBuf->empty())
+				{
+					udp_socket->async_send_to(asio::const_buffer(sndBuf->data(), sndBuf->length()), 
+						  remote_point, [this, sndBuf](std::error_code ec, std::size_t len /*bytes_sent*/)
+						  {
+							  if (!ec)
+							  {
+								  knet_dlog("send msg to {}  len {}",remote_point.address().to_string(), sndBuf->length());
+							  }
+							  else
+							  {
+								  knet_elog("sent message error : {}, {}, {}", ec.value(), ec.message(),sndBuf->length());
+							  }
+						  });
+					return sndBuf->length();
+				}
+				return 0;
 			}
 
 
@@ -357,9 +353,6 @@ namespace knet
 			KNetWorkerPtr event_worker = nullptr;
 			ConnectionStatus net_status;
 			std::unique_ptr<knet::utils::Timer> net_timer = nullptr;
-			std::mutex write_mutex;  
-            LoopBuffer<8192> send_buffer;  
-
 			
 		};
 

@@ -11,12 +11,14 @@
 #include <chrono>
 #include <type_traits>
 #include <string_view> 
-#include <asio/use_future.hpp>
-#include <asio/ssl.hpp>
 #include "utils/knet_url.hpp"
+#include "utils/knet_log.hpp"
+#include "utils/string_thief.hpp"
 #include "knet_worker.hpp"
-#include "utils/loop_buffer.hpp"
+ 
+#include <asio/ssl.hpp>
 using namespace knet::utils; 
+using namespace knet::log; 
 
 namespace knet {
     namespace tcp {
@@ -179,33 +181,33 @@ namespace knet {
                             auto self = this->shared_from_this();
                             auto buf = asio::buffer( &read_buffer[read_buffer_pos], kReadBufferSize - read_buffer_pos);
                             if (kReadBufferSize > read_buffer_pos){
-                                sslsock.async_read_some(
-                                        buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
-                                        if (!ec) {
-                                            knet_dlog("received data length {}", bytes_transferred);								 
-                                            process_data(bytes_transferred);
-                                            self->do_read();
-                                        }
-                                        else {
-                                            knet_elog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
-                                            do_close();
-                                        }
-                                        });
-
+                                sslsock.async_read_some(buf, [this, self](std::error_code ec, std::size_t bytes_transferred) {
+ 
+                                    if (!ec) {                                        				 
+                                        process_data(bytes_transferred);
+                                        self->do_read();
+                                    }else {
+                                        knet_ilog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
+                                        //cache_buffer.clear(); //drop cache buffer
+                                        string_resize(cache_buffer, 0); 
+                                        do_close();
+                                    }
+                                });
                             }else {						
-                                knet_wlog("read buffer {} is full, increase your receive buffer size,read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
+                                
                                 process_data(0);
                                 if (read_buffer_pos >= kReadBufferSize ){
+                                    knet_wlog("read buffer {} is full, check package size, read pos is {}", static_cast<uint32_t>(kReadBufferSize), read_buffer_pos); 
                                     //packet size exceed the limit, so we close it. 
-                                    std::this_thread::sleep_for(std::chrono::microseconds(100)); 
-                                }			
-                                 self->do_read();			
+                                    this->do_close();                                                 
+                                }						
+                                
                             }	
-                        }
-                        else {
-                            knet_dlog("socket is not open");
+                        } else {
+                            knet_ilog("socket is not open");
                         }
                     }
+
                     int32_t sync_send(const char* pData, uint32_t dataLen) {
                         if (is_open() ) {	 
                             try {
@@ -280,7 +282,8 @@ namespace knet {
                      int32_t mpush_sync() {                        
                          try {  
                              auto ret =  asio::write(sslsock, asio::const_buffer(send_buffer));                        
-                             send_buffer.clear(); 
+                             //send_buffer.clear(); 
+                             string_resize(send_buffer,0); 
              
                              if (ret > 0 && connection)
                              {
@@ -390,11 +393,13 @@ namespace knet {
                                     {
                                         connection->process_event(EVT_SEND);
                                 	}
-                                    cache_buffer.clear();                                 
+                                    //cache_buffer.clear();                                 
+                                    string_resize(cache_buffer, 0); 
                                     self->do_async_write();                          
                                 }else {
                                     knet_ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
-                                    cache_buffer.clear(); //drop cache buffer
+                                    //cache_buffer.clear(); //drop cache buffer
+                                    string_resize(cache_buffer, 0); 
                                     self->do_close();
                                 }
                             });
@@ -487,9 +492,13 @@ namespace knet {
                         } 
 						auto & conn = connection; 
                         if (conn) {
-							send_buffer.clear();
-                            cache_buffer.clear(); //drop cache data
-                            conn->process_event(EVT_DISCONNECT);					
+							//send_buffer.clear();
+                            string_resize(send_buffer, 0); 
+                            //cache_buffer.clear(); //drop cache data
+                            string_resize(cache_buffer, 0); 
+                            if (socket_status <=  SocketStatus::SOCKET_CLOSING ){
+                                conn->process_event(EVT_DISCONNECT); 
+                            }			
                             if (conn->need_reconnect()) {
                                 socket_status = SocketStatus::SOCKET_RECONNECT;
                             }else {

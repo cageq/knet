@@ -67,15 +67,18 @@ namespace knet
 				asio::ip::address remoteAddr = asio::ip::make_address(url_info.host);
 				asio::ip::udp::endpoint remotePoint(remoteAddr, url_info.port);
 
-				std::string bindAddr = url_info.get("bind_addr"); 
-				uint16_t bindPort = url_info.get<uint16_t>("bind_port",8888); 
 				
 				if (remoteAddr.is_multicast())
-				{
-					conn->connect(remotePoint, bindPort, bindAddr);
+				{		
+                    knet_dlog("connect to multicast {}:{}", remotePoint.address().to_string(),url_info.port); 
+					conn->connect(remotePoint, url_info.port, "0.0.0.0");	
 				}
 				else
 				{
+
+					std::string bindAddr = url_info.get("bind_addr"); 				
+					uint16_t bindPort = url_info.get<uint16_t>("bind_port",0); 
+
 					udp::resolver resolver(net_worker->context());
 					udp::resolver::results_type endpoints =
 						resolver.resolve(remotePoint.protocol(), url_info.host, std::to_string(url_info.port));

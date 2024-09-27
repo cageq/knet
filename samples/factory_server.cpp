@@ -21,28 +21,28 @@ class MyFactory : public knet::KNetFactory<TcpSession>, public knet::KNetHandler
 {
 
 public:
-    virtual void destroy(TPtr conn)
+    virtual void destroy(ConnectionPtr conn)
     {
     }
 
-    virtual void on_create(TPtr ptr)
+    virtual void on_create(ConnectionPtr ptr)
     {
 
         knet_dlog("connection created event in my factory ");
     }
 
-    virtual void on_release(TPtr ptr)
+    virtual void on_release(ConnectionPtr ptr)
     {
         knet_dlog("connection release event in my factory ");
     }
 
-    virtual bool handle_event(TPtr conn, knet::NetEvent evt)
+    virtual bool handle_event(ConnectionPtr conn, knet::NetEvent evt)
     {
         knet_ilog("handle event in connection my factory {}", static_cast<uint32_t>(evt));
         return true;
     }
 
-    virtual bool handle_data(TPtr conn, char *data, uint32_t dataLen) override
+    virtual bool handle_data(ConnectionPtr conn, char *data, uint32_t dataLen) override
     {
         conn->send(data, dataLen);
         return dataLen;

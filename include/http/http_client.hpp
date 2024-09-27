@@ -24,7 +24,7 @@ public:
 		connector.start();
 	}
 
-	virtual void handle_event(TPtr conn, NetEvent evt) {
+	virtual void handle_event(ConnectionPtr conn, NetEvent evt) {
 		switch (evt) {
 		case NetEvent::EVT_CONNECT:
 			conn->send_first_request() ;

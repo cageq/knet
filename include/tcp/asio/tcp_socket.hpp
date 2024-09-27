@@ -13,6 +13,8 @@
 #include <string_view> 
 #include "utils/knet_url.hpp"
 #include "utils/knet_log.hpp"
+#include "utils/string_thief.hpp"
+
 #include "knet_worker.hpp"
 #include <asio/use_future.hpp>
 
@@ -151,7 +153,8 @@ namespace knet {
                                         self->do_read();
                                     }else {
                                         knet_ilog("read error, close connection {} , reason : {} ", ec.value(), ec.message() );
-                                        cache_buffer.clear(); //drop cache buffer
+                                        //cache_buffer.clear(); //drop cache buffer
+                                        string_resize(cache_buffer, 0); 
                                         do_close();
                                     }
                                 });
@@ -246,7 +249,8 @@ namespace knet {
                      int32_t mpush_sync() {                        
                          try {
                              auto ret =  asio::write(tcp_sock, asio::const_buffer(send_buffer));                        
-                             send_buffer.clear(); 
+                             //send_buffer.clear(); 
+                             string_resize(send_buffer,0); 
                              if (ret > 0 && connection)
                              {
                                  connection->process_event(EVT_SEND);
@@ -357,11 +361,13 @@ namespace knet {
                                     {
                                         connection->process_event(EVT_SEND);
                                 	}
-                                    cache_buffer.clear();                                 
+                                    //cache_buffer.clear();                                 
+                                    string_resize(cache_buffer, 0); 
                                     self->do_async_write();                          
                                 }else {
                                     knet_ilog("write error, status is {}", static_cast<uint32_t>(self->socket_status)); 
-                                    cache_buffer.clear(); //drop cache buffer
+                                    //cache_buffer.clear(); //drop cache buffer
+                                    string_resize(cache_buffer, 0); 
                                     self->do_close();
                                 }
                             });
@@ -453,8 +459,10 @@ namespace knet {
                         }  
  
                         if (connection) {
-							send_buffer.clear();
-                            cache_buffer.clear(); //drop cache data
+							//send_buffer.clear();
+                            string_resize(send_buffer, 0); 
+                            //cache_buffer.clear(); //drop cache data
+                            string_resize(cache_buffer, 0); 
                             if (socket_status <=  SocketStatus::SOCKET_CLOSING ){
                                 connection->process_event(EVT_DISCONNECT); 
                             }			

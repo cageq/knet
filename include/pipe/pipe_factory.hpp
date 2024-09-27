@@ -20,7 +20,7 @@ namespace knet
 			PipeFactory(PipeMode mode = PipeMode::PIPE_SERVER_MODE)
 				: pipe_mode(mode) {}
 
-			virtual bool handle_event(TPtr conn, NetEvent evt) override
+			virtual bool handle_event(ConnectionPtr conn, NetEvent evt) override
 			{
 				auto session = conn->get_session();
 				//knet_ilog("pipe factory event {} {} ", evt, event_string(evt) );
@@ -56,7 +56,7 @@ namespace knet
 				return false;
 			}
 
-			virtual bool handle_data(TPtr conn, char *data, uint32_t dataLen) override
+			virtual bool handle_data(ConnectionPtr conn, char *data, uint32_t dataLen) override
 			{
 				PipeMsgHead *msg = (PipeMsgHead *)data;
 				if (msg->length + sizeof(PipeMsgHead) > dataLen)
@@ -109,7 +109,7 @@ namespace knet
 				return fmt::format("pid{}", pid_index++);
 			}
 
-			void process_server_handshake(TPtr conn, PipeMsgHead *msg)
+			void process_server_handshake(ConnectionPtr conn, PipeMsgHead *msg)
 			{
 				if (msg->length > 0)
 				{
@@ -161,7 +161,7 @@ namespace knet
 				}
 			}
 
-			void process_client_handshake(TPtr conn, PipeMsgHead *msg)
+			void process_client_handshake(ConnectionPtr conn, PipeMsgHead *msg)
 			{
 
 				if (msg->length > 0)

@@ -56,6 +56,7 @@ struct WSockHandler {
 
 	std::function<void(std::shared_ptr<WsConn>)> open = nullptr;
 	std::function<void(std::shared_ptr<WsConn>, const std::string & )> message = nullptr;
+	std::function<void(std::shared_ptr<WsConn>)> close = nullptr;
 };
 enum class WSockStatus { WSOCK_INIT, WSOCK_CONNECTING, WSOCK_OPEN, WSOCK_CLOSING, WSOCK_CLOSED };
 
